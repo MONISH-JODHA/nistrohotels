@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Register Your Hotel{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h2>Register Your Hotel</h2>
+        <p>Fill out the form below. Your hotel will be reviewed by an admin before appearing on the site.</p>
+        <form method="POST" action="{{ url_for('register_hotel') }}">
+            <div class="mb-3">
+                <label for="name" class="form-label">Hotel Name</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="location" class="form-label">Location (e.g., City, Country)</label>
+                <input type="text" class="form-control" id="location" name="location" required>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="price_per_night" class="form-label">Price per Night (USD)</label>
+                <input type="number" step="0.01" class="form-control" id="price_per_night" name="price_per_night" required>
+            </div>
+            <div class="mb-3">
+                <label for="image_url" class="form-label">Image URL (optional)</label>
+                <input type="url" class="form-control" id="image_url" name="image_url" placeholder="https://example.com/image.jpg">
+                <small class="form-text text-muted">Provide a direct link to an image of your hotel.</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit for Approval</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

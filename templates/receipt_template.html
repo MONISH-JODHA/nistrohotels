@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Booking Receipt - #{{ booking.id }}</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        .container {
+            width: 80%;
+            margin: 30px auto;
+            background-color: #fff;
+            padding: 30px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            color: #005A9C; /* Your primary color */
+            text-align: center;
+            border-bottom: 2px solid #005A9C;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .app-name {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #005A9C;
+            margin-bottom: 20px;
+        }
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr; /* Label column, Value column */
+            gap: 10px 20px; /* Row gap, Column gap */
+            margin-bottom: 25px;
+        }
+        .details-grid dt {
+            font-weight: bold;
+            color: #555;
+        }
+        .details-grid dd {
+            margin-left: 0;
+        }
+        .total-price {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #005A9C;
+            text-align: right;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px dashed #ccc;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #777;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            color: #005A9C;
+        }
+        .item-summary th {
+             background-color: #e9f5ff; /* Lighter primary */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="app-name">HotelApp Booking Confirmation</div>
+        <h1>Booking Receipt</h1>
+
+        <dl class="details-grid">
+            <dt>Booking ID:</dt>
+            <dd>#{{ booking.id }}</dd>
+
+            <dt>Booked By:</dt>
+            <dd>{{ user.username }} ({{ user.email }})</dd>
+
+            <dt>Booking Date:</dt>
+            <dd>{{ booking_date.strftime('%B %d, %Y %I:%M %p UTC') }}</dd> {# Display UTC explicitly or convert #}
+        </dl>
+
+        <h2>Hotel & Stay Details</h2>
+        <table>
+            <tr>
+                <th>Hotel Name</th>
+                <td>{{ hotel.name }}</td>
+            </tr>
+            <tr>
+                <th>Location</th>
+                <td>{{ hotel.location }}</td>
+            </tr>
+            <tr>
+                <th>Check-in Date</th>
+                <td>{{ booking.check_in_date.strftime('%A, %B %d, %Y') }}</td>
+            </tr>
+            <tr>
+                <th>Check-out Date</th>
+                <td>{{ booking.check_out_date.strftime('%A, %B %d, %Y') }}</td>
+            </tr>
+             <tr>
+                <th>Number of Nights</th>
+                <td>{{ num_nights }}</td>
+            </tr>
+        </table>
+
+        <h2>Payment Summary</h2>
+        <table class="item-summary">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Rate</th>
+                    <th>Nights</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ hotel.name }} - Room Charge</td>
+                    <td>${{ "%.2f"|format(hotel.price_per_night) }}</td>
+                    <td>{{ num_nights }}</td>
+                    <td>${{ "%.2f"|format(booking.total_price) }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="total-price">
+            Total Amount Paid: ${{ "%.2f"|format(booking.total_price) }}
+        </div>
+
+        <div class="footer">
+            <p>Thank you for booking with HotelApp!</p>
+            <p>If you have any questions, please contact our support.</p>
+        </div>
+    </div>
+</body>
+</html>

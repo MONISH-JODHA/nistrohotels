@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Booking Confirmed - #{{ booking.id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="card shadow-lg">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Booking Confirmed!</h4>
+                </div>
+                <div class="card-body p-4">
+                    <i class="fas fa-check-circle fa-5x text-success mb-4"></i> <!-- Font Awesome Icon -->
+                    <h3 class="card-title">Thank You, {{ current_user.username }}!</h3>
+                    <p class="lead">Your booking for <strong>{{ booking.hotel.name }}</strong> has been successfully processed.</p>
+                    <hr>
+                    <div class="row mb-3">
+                        <div class="col-sm-6 text-start"><strong>Booking ID:</strong></div>
+                        <div class="col-sm-6 text-start">#{{ booking.id }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-6 text-start"><strong>Hotel:</strong></div>
+                        <div class="col-sm-6 text-start">{{ booking.hotel.name }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-6 text-start"><strong>Check-in:</strong></div>
+                        <div class="col-sm-6 text-start">{{ booking.check_in_date.strftime('%A, %B %d, %Y') }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-6 text-start"><strong>Check-out:</strong></div>
+                        <div class="col-sm-6 text-start">{{ booking.check_out_date.strftime('%A, %B %d, %Y') }}</div>
+                    </div>
+                     <div class="row mb-3">
+                        <div class="col-sm-6 text-start"><strong>Total Price:</strong></div>
+                        <div class="col-sm-6 text-start"><strong>${{ "%.2f"|format(booking.total_price) }}</strong></div>
+                    </div>
+                    <hr>
+                    <p>A receipt for your booking is available for download.</p>
+                    <a href="{{ url_for('download_receipt', booking_id=booking.id) }}" class="btn btn-primary btn-lg mt-2">
+                        <i class="fas fa-download"></i> Download Receipt (PDF)
+                    </a>
+                    <div class="mt-4">
+                        <a href="{{ url_for('my_bookings') }}" class="btn btn-outline-secondary">View All My Bookings</a>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Browse More Hotels</a>
+                    </div>
+                </div>
+                <div class="card-footer text-muted">
+                    Booking made on: {{ booking.created_at.strftime('%B %d, %Y at %I:%M %p UTC') }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

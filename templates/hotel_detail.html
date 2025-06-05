@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}{{ hotel.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <img src="{{ hotel.image_url }}" class="img-fluid rounded mb-3" alt="{{ hotel.name }}" style="max-height: 400px; width: 100%; object-fit: cover;">
+        <h1>{{ hotel.name }}</h1>
+        <p class="lead"><small class="text-muted">{{ hotel.location }}</small></p>
+        <p>{{ hotel.description }}</p>
+        <h4>${{ "%.2f"|format(hotel.price_per_night) }} <small class="text-muted">/ night</small></h4>
+    </div>
+    <div class="col-md-4">
+        <h3>Book Your Stay</h3>
+        {% if current_user.is_authenticated %}
+            <form method="POST" action="{{ url_for('hotel_detail', hotel_id=hotel.id) }}">
+                <div class="mb-3">
+                    <label for="check_in_date" class="form-label">Check-in Date</label>
+                    <input type="date" class="form-control" id="check_in_date" name="check_in_date" min="{{ today }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="check_out_date" class="form-label">Check-out Date</label>
+                    <input type="date" class="form-control" id="check_out_date" name="check_out_date" min="{{ today }}" required>
+                </div>
+                <button type="submit" class="btn btn-success w-100">Book Now</button>
+            </form>
+        {% else %}
+            <p>Please <a href="{{ url_for('login', next=request.url) }}">log in</a> to book this hotel.</p>
+        {% endif %}
+    </div>
+</div>
+<hr>
+<a href="{{ url_for('index') }}" class="btn btn-outline-secondary mt-3">Back to Hotels</a>
+
+<script>
+    // Simple script to ensure check_out_date is after check_in_date
+    const checkInInput = document.getElementById('check_in_date');
+    const checkOutInput = document.getElementById('check_out_date');
+
+    if (checkInInput && checkOutInput) {
+        checkInInput.addEventListener('change', function() {
+            if (this.value) {
+                checkOutInput.min = this.value;
+                // If check_out_date is earlier, clear it or set to one day after
+                if (checkOutInput.value && checkOutInput.value <= this.value) {
+                    let nextDay = new Date(this.value);
+                    nextDay.setDate(nextDay.getDate() + 2); // Add 2 because toISOString is UTC and might shift
+                    checkOutInput.value = nextDay.toISOString().split('T')[0];
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}
