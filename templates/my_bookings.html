@@ -11,13 +11,13 @@
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-striped table-hover align-middle mb-0">
-                    <thead><tr><th>Booking ID</th><th>Hotel</th><th>Location</th><th>Check-in</th><th>Check-out</th><th>Total Price</th><th>Status</th><th>Actions</th></tr></thead>
+                    <thead><tr><th class="ps-3">Booking ID</th><th>Hotel</th><th>Room Type</th><th>Check-in</th><th>Check-out</th><th>Total Price</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody>
                         {% for booking in bookings %}
                         <tr>
-                            <td>#{{ booking.id }}</td>
+                            <td class="ps-3">#{{ booking.id }}</td>
                             <td><a href="{{ url_for('hotel_detail', hotel_id=booking.hotel.id) }}">{{ booking.hotel.name }}</a></td>
-                            <td>{{ booking.hotel.location }}</td>
+                            <td>{{ booking.room_type.name }}</td>
                             <td>{{ booking.check_in_date.strftime('%Y-%m-%d') }}</td>
                             <td>{{ booking.check_out_date.strftime('%Y-%m-%d') }}</td>
                             <td>${{ "%.2f"|format(booking.total_price) }}</td>

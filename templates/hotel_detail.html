@@ -2,42 +2,151 @@
 {% block title %}{{ hotel.name }} - Hotel Details{% endblock %}
 {% block content %}
 <div class="container mt-4 mb-5">
-    <div class="row">
-        <div class="col-lg-8 mb-4">
-            <div class="card shadow-sm border-0">
-                {% if carousel_images %}<div id="hotelImageCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel">{% if carousel_images|length > 1 %}<div class="carousel-indicators">{% for image_info in carousel_images %}<button type="button" data-bs-target="#hotelImageCarousel" data-bs-slide-to="{{ loop.index0 }}" {% if loop.first %}class="active" aria-current="true"{% endif %} aria-label="Slide {{ loop.index }}"></button>{% endfor %}</div>{% endif %}<div class="carousel-inner" style="border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem;">{% for image_info in carousel_images %}<div class="carousel-item {% if loop.first %}active{% endif %}"><img src="{{ image_info.url }}" class="d-block w-100" alt="{{ image_info.alt }}" style="height: 500px; object-fit: cover;"></div>{% endfor %}</div>{% if carousel_images|length > 1 %}<button class="carousel-control-prev" type="button" data-bs-target="#hotelImageCarousel" data-bs-slide="prev"><span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="visually-hidden">Previous</span></button><button class="carousel-control-next" type="button" data-bs-target="#hotelImageCarousel" data-bs-slide="next"><span class="carousel-control-next-icon" aria-hidden="true"></span><span class="visually-hidden">Next</span></button>{% endif %}</div>{% else %}<img src="https://via.placeholder.com/800x500.png?text=No+Image+Available" class="card-img-top" alt="No Image Available" style="height: 500px; object-fit: cover; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem;">{% endif %}
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h1 class="card-title display-5 mb-2">{{ hotel.name }}</h1>
-                            <p class="lead text-muted mb-2"><i class="fas fa-map-marker-alt text-secondary me-2"></i>{{ hotel.location }}</p>
-                            {% if hotel.star_rating %}<p class="mb-3 h5 text-warning">{% for i in range(hotel.star_rating) %}<i class="fas fa-star"></i>{% endfor %}{% for i in range(5 - hotel.star_rating) %}<i class="far fa-star"></i>{% endfor %}<span class="ms-2 text-muted small align-middle"> ({{ hotel.star_rating }} Star{{ 's' if hotel.star_rating > 1 }})</span></p>{% endif %}
-                        </div>
-                        {% if current_user.is_authenticated and current_user.role == 'user' %}
-                            <div class="ms-3">
-                                {% if is_hotel_in_wishlist(hotel.id) %}
-                                    <form action="{{ url_for('remove_from_wishlist', hotel_id=hotel.id) }}" method="POST"><button type="submit" class="btn btn-danger btn-lg" title="Remove from Wishlist"><i class="fas fa-heart-broken"></i> <span class="d-none d-md-inline">In Wishlist</span></button></form>
-                                {% else %}
-                                    <form action="{{ url_for('add_to_wishlist', hotel_id=hotel.id) }}" method="POST"><button type="submit" class="btn btn-outline-danger btn-lg" title="Add to Wishlist"><i class="far fa-heart"></i> <span class="d-none d-md-inline">Add to Wishlist</span></button></form>
-                                {% endif %}
-                            </div>
+    <!-- Hotel Info Section -->
+    <div class="card shadow-sm border-0 mb-5">
+        {% if carousel_images and carousel_images|length > 0 %}
+        <div id="hotelImageCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel">
+            {% if carousel_images|length > 1 %}
+            <div class="carousel-indicators">
+                {% for image_info in carousel_images %}
+                <button type="button" data-bs-target="#hotelImageCarousel" data-bs-slide-to="{{ loop.index0 }}" {% if loop.first %}class="active" aria-current="true"{% endif %} aria-label="Slide {{ loop.index }}"></button>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="carousel-inner" style="border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem;">
+                {% for image_info in carousel_images %}
+                <div class="carousel-item {% if loop.first %}active{% endif %}">
+                    <img src="{{ image_info.url }}" class="d-block w-100" alt="{{ image_info.alt }}" style="height: 500px; object-fit: cover;">
+                </div>
+                {% endfor %}
+            </div>
+            {% if carousel_images|length > 1 %}
+            <button class="carousel-control-prev" type="button" data-bs-target="#hotelImageCarousel" data-bs-slide="prev"><span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="visually-hidden">Previous</span></button>
+            <button class="carousel-control-next" type="button" data-bs-target="#hotelImageCarousel" data-bs-slide="next"><span class="carousel-control-next-icon" aria-hidden="true"></span><span class="visually-hidden">Next</span></button>
+            {% endif %}
+        </div>
+        {% else %}
+        <img src="https://via.placeholder.com/800x500.png?text=No+Image+Available" class="card-img-top" alt="No Image Available" style="height: 500px; object-fit: cover; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem;">
+        {% endif %}
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h1 class="card-title display-5 mb-2">{{ hotel.name }}</h1>
+                    <p class="lead text-muted mb-2"><i class="fas fa-map-marker-alt text-secondary me-2"></i>{{ hotel.location }}</p>
+                    {% if hotel.star_rating %}
+                        <p class="mb-3 h5 text-warning">
+                            {% for i in range(hotel.star_rating) %}<i class="fas fa-star"></i>{% endfor %}{% for i in range(5 - hotel.star_rating) %}<i class="far fa-star"></i>{% endfor %}
+                            <span class="ms-2 text-muted small align-middle"> ({{ hotel.star_rating }} Star{{ 's' if hotel.star_rating > 1 }})</span>
+                        </p>
+                    {% endif %}
+                </div>
+                {% if current_user.is_authenticated and current_user.role == 'user' %}
+                    <div class="ms-3">
+                        {% if is_hotel_in_wishlist(hotel.id) %}
+                            <form action="{{ url_for('remove_from_wishlist', hotel_id=hotel.id) }}" method="POST"><button type="submit" class="btn btn-danger btn-lg" title="Remove from Wishlist"><i class="fas fa-heart-broken"></i> <span class="d-none d-md-inline">In Wishlist</span></button></form>
+                        {% else %}
+                            <form action="{{ url_for('add_to_wishlist', hotel_id=hotel.id) }}" method="POST"><button type="submit" class="btn btn-outline-danger btn-lg" title="Add to Wishlist"><i class="far fa-heart"></i> <span class="d-none d-md-inline">Add to Wishlist</span></button></form>
                         {% endif %}
                     </div>
-                    <h4 class="mt-4 mb-3 text-primary">Description</h4><p class="text-secondary preserve-newlines">{{ hotel.description if hotel.description else "No description available." }}</p>
-                    {% if hotel.get_amenities_list() %}<h4 class="mt-4 mb-3 text-primary">Amenities</h4><div class="mb-3">{% for amenity in hotel.get_amenities_list() %}<span class="badge bg-info text-dark rounded-pill me-2 mb-2 p-2 px-3 fs-6">{{ amenity }}</span>{% endfor %}</div>{% endif %}
-                    {% if hotel.latitude and hotel.longitude %}<h4 class="mt-4 mb-3 text-primary">Location on Map</h4><div id="singleHotelMap" style="height: 350px; width: 100%; border-radius: 0.375rem;" class="shadow-sm border"></div>{% endif %}
+                {% endif %}
+            </div>
+            <h4 class="mt-4 mb-3 text-primary">Hotel Description</h4>
+            <p class="text-secondary preserve-newlines">{{ hotel.description if hotel.description else "No description available." }}</p>
+            {% if hotel.get_amenities_list() %}
+                <h4 class="mt-4 mb-3 text-primary">Hotel Amenities</h4>
+                <div class="mb-3">
+                    {% for amenity in hotel.get_amenities_list() %}
+                        <span class="badge bg-info text-dark rounded-pill me-2 mb-2 p-2 px-3 fs-6">{{ amenity }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if hotel.latitude and hotel.longitude %}
+                <h4 class="mt-4 mb-3 text-primary">Location on Map</h4>
+                <div id="singleHotelMap" style="height: 350px; width: 100%; border-radius: 0.375rem;" class="shadow-sm border"></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Room Types Section -->
+    <h2 class="text-center mb-4 text-primary"><i class="fas fa-door-open me-2"></i> Choose Your Room</h2>
+    {% if room_types %}
+        <div class="row row-cols-1 row-cols-lg-2 g-4">
+            {% for room in room_types %}
+            <div class="col d-flex align-items-stretch">
+                <div class="card h-100 shadow-sm border-0">
+                    <img src="{{ room.main_image_url or 'https://via.placeholder.com/800x500.png?text=No+Room+Image' }}" class="card-img-top" alt="{{ room.name }}" style="height: 250px; object-fit: cover;">
+                    <div class="card-body">
+                        <h4 class="card-title">{{ room.name }}</h4>
+                        <p class="card-text text-muted small">{{ room.description or 'No description for this room type.'}}</p>
+                        {% if room.get_amenities_list() %}
+                            <p class="card-text">
+                                {% for amenity in room.get_amenities_list() %}
+                                    <span class="badge bg-light text-dark border me-1 mb-1 p-2">{{ amenity }}</span>
+                                {% endfor %}
+                            </p>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer bg-white border-top-0 p-3">
+                        <h3 class="text-success mb-3">${{ "%.2f"|format(room.price_per_night) }} <small class="text-muted fs-6">/ night</small></h3>
+                        <form method="POST" action="{{ url_for('book_room', room_type_id=room.id) }}">
+                            <div class="row g-2">
+                                <div class="col-sm-6">
+                                    <label for="check_in_date_{{room.id}}" class="form-label small fw-bold">Check-in</label>
+                                    <input type="date" class="form-control" id="check_in_date_{{room.id}}" name="check_in_date" min="{{ today }}" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="check_out_date_{{room.id}}" class="form-label small fw-bold">Check-out</label>
+                                    <input type="date" class="form-control" id="check_out_date_{{room.id}}" name="check_out_date" min="{{ today }}" required>
+                                </div>
+                            </div>
+                            <div class="d-grid mt-3">
+                                {% if current_user.is_authenticated %}
+                                    <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-calendar-check me-2"></i> Book This Room</button>
+                                {% else %}
+                                     <a href="{{ url_for('login', next=request.url) }}" class="btn btn-primary btn-lg">Login to Book</a>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
-        <div class="col-lg-4"><div class="card shadow-sm sticky-top border-0" style="top: 90px;"><div class="card-header bg-primary text-white text-center py-3"><h3 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Book Your Stay</h3></div><div class="card-body p-4"><h2 class="text-center mb-4 text-success">${{ "%.2f"|format(hotel.price_per_night) }} <small class="text-muted fs-5">/ night</small></h2>{% if current_user.is_authenticated %}<form method="POST" action="{{ url_for('hotel_detail', hotel_id=hotel.id) }}"><div class="mb-3"><label for="check_in_date" class="form-label fw-bold">Check-in Date</label><input type="date" class="form-control form-control-lg" id="check_in_date" name="check_in_date" min="{{ today }}" required></div><div class="mb-3"><label for="check_out_date" class="form-label fw-bold">Check-out Date</label><input type="date" class="form-control form-control-lg" id="check_out_date" name="check_out_date" min="{{ today }}" required></div><div class="d-grid mt-4"><button type="submit" class="btn btn-success btn-lg py-3"><i class="fas fa-calendar-check me-2"></i> Book Now</button></div></form>{% else %}<p class="text-center lead">Please <a href="{{ url_for('login', next=request.url) }}">log in</a> or <a href="{{ url_for('register', next=request.url) }}">register</a> to book.</p><div class="d-grid gap-2 mt-4"><a href="{{ url_for('login', next=request.url) }}" class="btn btn-primary btn-lg">Login to Book</a><a href="{{ url_for('register', next=request.url) }}" class="btn btn-outline-secondary btn-lg">Register</a></div>{% endif %}</div></div></div>
-    </div>
-    <div class="mt-4 mb-3 text-center"><a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-lg"><i class="fas fa-arrow-left me-2"></i> Back to All Hotels</a></div>
+    {% else %}
+        <div class="alert alert-warning text-center shadow-sm">This hotel has not listed any rooms yet. Please check back later.</div>
+    {% endif %}
+
+    <div class="mt-5 text-center"><a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-lg"><i class="fas fa-arrow-left me-2"></i> Back to All Hotels</a></div>
 </div>
 {% endblock %}
 {% block scripts %}
 <script>
-    const checkInInput = document.getElementById('check_in_date'); const checkOutInput = document.getElementById('check_out_date'); const todayDate = "{{ today }}";
-    if (checkInInput && checkOutInput) { checkInInput.addEventListener('change', function() { if (this.value) { let nextDay = new Date(this.value); nextDay.setDate(nextDay.getDate() + 1); checkOutInput.min = nextDay.toISOString().split('T')[0]; if (checkOutInput.value && checkOutInput.value <= this.value) { checkOutInput.value = checkOutInput.min; } } else { checkOutInput.min = todayDate; } }); if (checkInInput.value) { let nextDay = new Date(checkInInput.value); nextDay.setDate(nextDay.getDate() + 1); checkOutInput.min = nextDay.toISOString().split('T')[0]; } }
+    // Script for single hotel map
     {% if hotel.latitude and hotel.longitude %} document.addEventListener('DOMContentLoaded', function() { const hotelLat = {{ hotel.latitude }}; const hotelLng = {{ hotel.longitude }}; const hotelName = {{ hotel.name|tojson|safe }}; const mapDetailDiv = document.getElementById('singleHotelMap'); if (mapDetailDiv && typeof L !== 'undefined') { try { const detailMap = L.map('singleHotelMap').setView([hotelLat, hotelLng], 15); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(detailMap); L.marker([hotelLat, hotelLng]).addTo(detailMap).bindPopup(`<b>${hotelName}</b><br>${{ hotel.location|tojson|safe }}`).openPopup(); } catch (e) { console.error("Error initializing single hotel map:", e); mapDetailDiv.innerHTML = "<p class='text-center text-danger p-3'>Map could not be loaded.</p>"; } } }); {% endif %}
+    
+    // Script to sync check-out date minimum
+    document.addEventListener('DOMContentLoaded', function () {
+        const todayDate = "{{ today }}";
+        const roomForms = document.querySelectorAll('form[action^="/book_room/"]');
+        roomForms.forEach(form => {
+            const checkInInput = form.querySelector('input[name="check_in_date"]');
+            const checkOutInput = form.querySelector('input[name="check_out_date"]');
+
+            if (checkInInput && checkOutInput) {
+                checkInInput.addEventListener('change', function() {
+                    if (this.value) {
+                        let nextDay = new Date(this.value);
+                        nextDay.setDate(nextDay.getDate() + 2); // setDate handles month/year rollovers
+                        checkOutInput.min = nextDay.toISOString().split('T')[0];
+                        if (checkOutInput.value && checkOutInput.value <= this.value) {
+                             checkOutInput.value = checkOutInput.min;
+                        }
+                    } else {
+                        checkOutInput.min = todayDate;
+                    }
+                });
+            }
+        });
+    });
 </script>
 {% endblock %}

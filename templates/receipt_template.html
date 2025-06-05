@@ -31,6 +31,7 @@
         <div class="section-title">Hotel & Stay Details</div>
         <table>
             <tr><th>Hotel Name</th><td>{{ hotel.name }}</td></tr>
+            <tr><th>Room Type</th><td>{{ booking.room_type.name }}</td></tr>
             <tr><th>Location</th><td>{{ hotel.location }}</td></tr>
             <tr><th>Check-in Date</th><td>{{ booking.check_in_date.strftime('%A, %B %d, %Y') }}</td></tr>
             <tr><th>Check-out Date</th><td>{{ booking.check_out_date.strftime('%A, %B %d, %Y') }}</td></tr>
@@ -39,7 +40,7 @@
         <div class="section-title">Payment Summary</div>
         <table>
             <thead><tr><th>Description</th><th>Rate per Night</th><th>Nights</th><th>Subtotal</th></tr></thead>
-            <tbody><tr><td>{{ hotel.name }} - Room Charge</td><td>${{ "%.2f"|format(hotel.price_per_night) }}</td><td>{{ num_nights }}</td><td>${{ "%.2f"|format(booking.total_price) }}</td></tr></tbody>
+            <tbody><tr><td>{{ hotel.name }} - {{ booking.room_type.name }}</td><td>${{ "%.2f"|format(booking.room_type.price_per_night) }}</td><td>{{ num_nights }}</td><td>${{ "%.2f"|format(booking.total_price) }}</td></tr></tbody>
         </table>
         <div class="total-price">Total Amount Paid: ${{ "%.2f"|format(booking.total_price) }}</div>
         <div class="footer"><p>Thank you for booking with HotelApp!</p><p>If you have any questions, please contact our support.</p></div>
