@@ -5,25 +5,29 @@
 
 /* --- Global Styles & Variables --- */
 :root {
-    --primary-color: #005A9C;
-    --primary-color_rgb: 0, 90, 156; /* RGB for #005A9C */
-    --secondary-color: #FFA500; 
-    --secondary-color_rgb: 255, 165, 0; /* RGB for #FFA500 */
+    --primary-color: #005A9C; /* Professional blue */
+    --secondary-color: #FFA500; /* Warm orange for accents */
     --light-bg: #f8f9fa;
-    --dark-text: #343a40;
+    --dark-text: #212529; /* Bootstrap's default dark text */
     --medium-text: #6c757d;
     --border-color: #dee2e6;
-    --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    --card-hover-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.075);
+    --card-hover-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
 }
-
 
 body {
     font-family: 'Open Sans', sans-serif;
     color: var(--dark-text);
-    background-color: #fff; /* Cleaner white background */
-    padding-top: 80px; /* Adjusted for slightly taller navbar */
+    background-color: #f4f6f8; /* Slightly off-white background */
+    padding-top: 70px; 
     line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.container, .container-fluid {
+    flex-grow: 1;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -31,308 +35,159 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
     color: var(--primary-color);
 }
-
-h1 { font-size: 2.5rem; margin-bottom: 1rem; }
-h2 { font-size: 2rem; margin-bottom: 0.75rem; }
-h3 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+h1 { font-size: 2.4rem; margin-bottom: 1rem; }
+h2 { font-size: 2rem; margin-bottom: 0.8rem; }
+h3 { font-size: 1.7rem; margin-bottom: 0.6rem; }
 
 a {
     color: var(--primary-color);
     text-decoration: none;
-    transition: color 0.3s ease;
+    transition: color 0.2s ease-in-out;
 }
-
 a:hover {
     color: var(--secondary-color);
-    text-decoration: none;
+    text-decoration: underline;
 }
 
 /* --- Navbar --- */
 .navbar {
-    background-color: #ffffff !important; /* White background for navbar */
+    background-color: #ffffff !important;
     border-bottom: 1px solid var(--border-color);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    padding-top: 0.8rem;
-    padding-bottom: 0.8rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
 }
-
 .navbar-brand {
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 700;
-    font-size: 1.8rem;
-    color: var(--primary-color) !important;
+    font-size: 1.7rem !important;
 }
-
 .navbar-nav .nav-link {
     color: var(--dark-text) !important;
     font-weight: 600;
     padding: 0.5rem 1rem;
-    transition: color 0.3s ease;
 }
-
-.navbar-nav .nav-link:hover,
-.navbar-nav .nav-link.active {
+.navbar-nav .nav-link.active,
+.navbar-nav .nav-link:hover {
     color: var(--secondary-color) !important;
 }
+.navbar-toggler { border: none; }
+.navbar-toggler:focus { box-shadow: none; }
 
-.navbar-text {
-    color: var(--medium-text) !important;
-}
 
 /* --- Buttons --- */
 .btn {
     font-family: 'Montserrat', sans-serif;
     font-weight: 600;
-    padding: 0.6rem 1.2rem;
-    border-radius: 5px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 0.5rem 1.2rem;
+    border-radius: 0.25rem; /* Bootstrap default is .25rem */
+    transition: all 0.2s ease-in-out;
+    letter-spacing: 0.5px;
 }
-
 .btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
-
-.btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-.btn-primary:hover {
-    background-color: darken(var(--primary-color), 10%);
-    border-color: darken(var(--primary-color), 10%);
-}
-
-.btn-success {
-    background-color: #28a745; /* Keep Bootstrap green or use another accent */
-    border-color: #28a745;
-}
-.btn-success:hover {
-    background-color: darken(#28a745, 10%);
-    border-color: darken(#28a745, 10%);
-}
-
-.btn-secondary, .btn-outline-secondary {
-    /* Consider styling secondary buttons more distinctly */
-}
-
-.btn-danger {
-     background-color: #dc3545;
-     border-color: #dc3545;
-}
-.btn-danger:hover {
-    background-color: darken(#dc3545, 10%);
-    border-color: darken(#dc3545, 10%);
-}
-
-.btn-info {
-    background-color: var(--secondary-color);
-    border-color: var(--secondary-color);
-    color: #fff;
-}
-.btn-info:hover {
-    background-color: darken(var(--secondary-color), 10%);
-    border-color: darken(var(--secondary-color), 10%);
-    color: #fff;
-}
+.btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); }
+.btn-primary:hover { background-color: #004a80; border-color: #004170; }
+.btn-success { background-color: #198754; border-color: #198754; }
+.btn-success:hover { background-color: #157347; border-color: #146c43; }
+.btn-info { background-color: var(--secondary-color); border-color: var(--secondary-color); color: #fff; }
+.btn-info:hover { background-color: #e09100; border-color: #d48800; color: #fff;}
 
 
 /* --- Forms --- */
-.form-control {
-    border-radius: 5px;
+.form-control, .form-select {
+    border-radius: 0.25rem;
     border: 1px solid var(--border-color);
-    padding: 0.75rem 1rem;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    padding: 0.6rem 0.9rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-
-.form-control:focus {
+.form-control:focus, .form-select:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(var(--primary-color_rgb), 0.25); /* Use RGB for box-shadow alpha */
+    box-shadow: 0 0 0 0.2rem rgba(0, 90, 156, 0.25); /* primary-color with alpha */
 }
-/* Add this to :root for the above to work if primary-color is hex */
-/* :root { --primary-color_rgb: 0, 90, 156; } */
+.form-label { font-weight: 600; margin-bottom: 0.3rem; }
 
-
-.form-label {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
 
 /* --- Cards (Hotel Listings) --- */
 .card {
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 0.375rem; /* Bootstrap default card radius */
     box-shadow: var(--card-shadow);
-    transition: box-shadow 0.3s ease, transform 0.3s ease;
-    overflow: hidden; /* Ensures image corners are rounded if card is rounded */
+    transition: box-shadow 0.25s ease-in-out, transform 0.25s ease-in-out;
+    background-color: #fff;
 }
-
-.card:hover {
+.card:hover.hotel-card { /* Apply hover only to hotel listing cards */
     box-shadow: var(--card-hover-shadow);
-    transform: translateY(-5px);
+    transform: translateY(-4px);
 }
+.card-header { font-weight: 600; }
+.card-img-top { border-bottom: 1px solid var(--border-color); }
+.card-body { padding: 1.25rem; }
+.card-title { font-size: 1.4rem; color: var(--primary-color); margin-bottom: 0.5rem; }
+.card-text small.text-muted { font-size: 0.88em; }
+.card-text strong { font-size: 1.15rem; color: var(--secondary-color); }
+.card-footer { background-color: #fff; border-top: 1px solid var(--border-color); padding: 1rem 1.25rem; }
 
-.card-img-top {
-    border-bottom: 1px solid var(--border-color);
-    max-height: 220px; /* Control image height */
-    object-fit: cover; /* Ensures image covers area without distortion */
-}
 
-.card-body {
-    padding: 1.5rem;
-}
-
-.card-title {
-    font-size: 1.5rem;
-    color: var(--primary-color);
-    margin-bottom: 0.5rem;
-}
-
-.card-text small.text-muted {
-    font-size: 0.9rem;
-    display: block;
-    margin-bottom: 0.75rem;
-}
-
-.card-text strong { /* Price */
-    font-size: 1.2rem;
-    color: var(--secondary-color);
-}
-
-.card-footer {
-    background-color: #fff; /* Lighter footer */
-    border-top: 1px solid var(--border-color);
-    padding: 1rem 1.5rem;
-}
-
-/* --- Index Page Hero Section --- */
-.hero-section { /* You'll need to add this class to the div in index.html */
-    background: linear-gradient(rgba(0, 90, 156, 0.7), rgba(0, 90, 156, 0.5)), url('https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8aG90ZWx8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=1000&q=80') no-repeat center center;
+/* --- Index Page Hero Section & Search Form --- */
+.hero-section {
+    background: linear-gradient(rgba(0, 90, 156, 0.75), rgba(0, 70, 130, 0.6)), url('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1600&q=70') no-repeat center center;
     background-size: cover;
     color: white;
-    padding: 5rem 1rem; /* More padding */
-    text-align: center;
-    border-radius: 8px;
-    margin-bottom: 2rem;
+    padding: 4rem 1rem;
+    border-radius: 0.5rem;
 }
+.hero-section .display-5 { color: white; font-size: 2.8rem; }
+.hero-section .lead { font-size: 1.2rem; color: rgba(255, 255, 255, 0.9); }
 
-.hero-section .display-5 {
-    font-size: 3rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    color: white;
-}
-
-.hero-section .lead {
-    font-size: 1.25rem;
-    margin-bottom: 2rem;
-    color: rgba(255, 255, 255, 0.9);
-}
+.search-filter-box { background-color: #ffffff; border: 1px solid var(--border-color); }
 
 
 /* --- Hotel Detail Page --- */
-.hotel-detail-img {
-    border-radius: 8px;
-    box-shadow: var(--card-shadow);
-    max-height: 500px;
-    width: 100%;
-    object-fit: cover;
-}
+.hotel-detail-img { border-radius: 0.375rem; } /* Match card radius */
 
-.hotel-detail-info h1 {
-    margin-top: 1rem;
-}
 
 /* --- Tables (Dashboards) --- */
-.table {
-    border: 1px solid var(--border-color);
-    border-radius: 8px; /* Rounded corners for the table wrapper if not using .table-responsive directly */
-    overflow: hidden; /* Clip content to rounded corners */
-}
-
-.table th, .table td {
-    vertical-align: middle;
-    padding: 0.9rem;
-}
-
+.table { border: 1px solid var(--border-color); background-color: #fff;}
+.table th, .table td { vertical-align: middle; padding: 0.8rem; }
 .table thead th {
     background-color: var(--light-bg);
     color: var(--primary-color);
-    font-weight: 700;
+    font-weight: 600;
     border-bottom: 2px solid var(--primary-color);
     text-transform: uppercase;
-    font-size: 0.9em;
-}
-
-.table-striped tbody tr:nth-of-type(odd) {
-    background-color: rgba(0, 90, 156, 0.03); /* Very light primary color tint */
-}
-
-.table-hover tbody tr:hover {
-    background-color: rgba(var(--secondary-color_rgb), 0.1); /* Use RGB for accent color alpha */
-}
-/* Add this to :root for the above to work if secondary-color is hex */
-/* :root { --secondary-color_rgb: 255, 165, 0; } */
-
-
-.badge {
     font-size: 0.85em;
-    padding: 0.5em 0.75em;
-    font-weight: 600;
 }
-.bg-success { background-color: #28a745 !important; }
-.bg-warning { background-color: var(--secondary-color) !important; color: var(--dark-text) !important; }
-.bg-danger { background-color: #dc3545 !important; }
+.table-hover tbody tr:hover { background-color: rgba(0, 90, 156, 0.05); } /* Lighter primary tint */
 
 
-/* --- Alerts / Flash Messages --- */
-.alert {
-    border-radius: 5px;
-    font-weight: 600;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
-
-.alert-success {
-    background-color: #d4edda;
-    border-color: #c3e6cb;
-    color: #155724;
-}
-.alert-danger {
-    background-color: #f8d7da;
-    border-color: #f5c6cb;
-    color: #721c24;
-}
-.alert-warning {
-    background-color: #fff3cd;
-    border-color: #ffeeba;
-    color: #856404;
-}
-.alert-info {
-    background-color: #d1ecf1;
-    border-color: #bee5eb;
-    color: #0c5460;
-}
-
-/* --- Container Adjustments --- */
-.container {
-    max-width: 1200px; /* Or your preferred max width */
-}
+/* --- Badges & Alerts --- */
+.badge { font-size: 0.8em; padding: 0.4em 0.65em; font-weight: 600; }
+.alert { border-radius: 0.25rem; font-weight: 500; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 
 
-/* --- Responsive Adjustments (Example) --- */
-@media (max-width: 768px) {
-    body {
-        padding-top: 70px; /* Adjust if navbar height changes */
-    }
-    h1 { font-size: 2rem; }
-    .hero-section { padding: 3rem 1rem; }
-    .hero-section .display-5 { font-size: 2.2rem; }
-    .card-columns { /* If you were using card-columns */
-        column-count: 1;
-    }
+/* --- Map --- */
+#hotelMap { 
+    height: 450px; 
+    width: 100%; 
+    margin-bottom: 2.5rem; 
+    border-radius: 0.375rem; 
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border-color);
 }
+.leaflet-popup-content-wrapper { border-radius: 6px !important; }
+.leaflet-popup-content h6 { margin-bottom: 4px !important; }
+.leaflet-popup-content p { margin-bottom: 6px !important; font-size: 0.9em; }
 
-@media (max-width: 576px) {
-    .navbar-brand { font-size: 1.5rem; }
-    .btn { padding: 0.5rem 1rem; font-size: 0.9rem; }
+
+/* --- Utilities & Misc --- */
+.preserve-newlines { white-space: pre-wrap; }
+.amenities-list .badge { font-size: 0.8em; padding: 0.4em 0.7em; }
+
+/* Footer */
+footer {
+    background-color: #e9ecef; /* Lighter than light-bg */
+    padding: 1.5rem 0;
+    font-size: 0.9em;
+    color: var(--medium-text);
 }

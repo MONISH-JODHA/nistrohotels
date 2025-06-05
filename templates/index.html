@@ -1,40 +1,199 @@
 {% extends "base.html" %}
 
-{% block title %}Welcome - Hotels{% endblock %}
+{% block title %}Find Your Perfect Stay{% endblock %}
 
 {% block content %}
-<!-- Apply the hero-section class here -->
-<div class="hero-section px-4 py-5 my-5 text-center"> 
-    <h1 class="display-5 fw-bold">Find Your Perfect Stay</h1>
-    <div class="col-lg-8 mx-auto"> <!-- Adjusted col-lg for better text flow -->
-        <p class="lead mb-4">Browse our selection of approved hotels and book your next getaway.</p>
+<div class="hero-section px-4 py-5 mb-5 text-center shadow-sm">
+    <h1 class="display-4 fw-bold">Discover Your Perfect Hotel</h1>
+    <div class="col-lg-9 mx-auto">
+        <p class="lead mb-4">Search, filter, and explore our curated selection of hotels to plan your next memorable getaway.</p>
     </div>
 </div>
 
-<h2 class="mb-4 text-center">Available Hotels</h2> <!-- Centered and added margin -->
+<!-- Search and Filter Form -->
+<div class="container mb-5 p-4 rounded shadow-sm search-filter-box">
+    <form method="GET" action="{{ url_for('index') }}">
+        <h3 class="mb-4 text-center text-primary"><i class="fas fa-sliders-h"></i> Refine Your Search</h3>
+        <div class="row g-3 align-items-center">
+            <div class="col-md-12 col-lg-5 mb-3 mb-lg-0">
+                <label for="search_term" class="form-label visually-hidden">Search Term</label>
+                <input type="text" class="form-control form-control-lg" id="search_term" name="search_term" placeholder="Hotel Name, City, Country..." value="{{ request.args.get('search_term', '') }}">
+            </div>
+            <div class="col-sm-6 col-md-3 col-lg-2">
+                <label for="min_price" class="form-label visually-hidden">Min Price</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" id="min_price" name="min_price" placeholder="Min Price" value="{{ request.args.get('min_price', '') }}" min="0" step="1">
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3 col-lg-2">
+                <label for="max_price" class="form-label visually-hidden">Max Price</label>
+                 <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" id="max_price" name="max_price" placeholder="Max Price" value="{{ request.args.get('max_price', '') }}" min="0" step="1">
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <label for="star_rating" class="form-label visually-hidden">Min Stars</label>
+                <select class="form-select" id="star_rating" name="star_rating">
+                    <option value="" {% if not request.args.get('star_rating') %}selected{% endif %}>Any Rating</option>
+                    {% for i in range(1, 6) %}
+                    <option value="{{ i }}" {% if request.args.get('star_rating') == i|string %}selected{% endif %}>{{ i }} Star{% if i > 1 %}s{% endif %} & Up</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="row g-3 mt-2 align-items-center">
+             <div class="col-lg-10">
+                <label for="amenities_filter" class="form-label visually-hidden">Required Amenities</label>
+                <input type="text" class="form-control" id="amenities_filter" name="amenities_filter" placeholder="Required Amenities (e.g., Wifi, Pool, Parking)" value="{{ request.args.get('amenities_filter', '') }}">
+            </div>
+            <div class="col-lg-2 d-grid">
+                <button type="submit" class="btn btn-primary btn-lg w-100"><i class="fas fa-search"></i> Search</button>
+            </div>
+        </div>
+         {% if request.args %}
+            <div class="row mt-3">
+                <div class="col text-center">
+                    <a href="{{url_for('index')}}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-times"></i> Clear All Filters</a>
+                </div>
+            </div>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Map Display Area -->
+<div class="container my-5">
+    <h3 class="text-center mb-4 text-primary"><i class="fas fa-map-marked-alt"></i> Hotels on Map</h3>
+    <div id="hotelMap" class="shadow-lg">
+        <p class="text-center p-5 text-muted">Loading map, please wait...</p>
+    </div>
+</div>
+
+<hr class="my-5">
+
+<h2 class="mb-4 text-center text-primary"><i class="fas fa-list-ul"></i> Hotel Listings</h2>
 {% if hotels %}
 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
     {% for hotel in hotels %}
-    <div class="col d-flex align-items-stretch"> <!-- d-flex and align-items-stretch for equal height cards -->
-        <div class="card h-100">
-            <img src="{{ hotel.image_url }}" class="card-img-top" alt="{{ hotel.name }}">
-            <div class="card-body d-flex flex-column"> <!-- flex-column to push footer down -->
-                <h5 class="card-title">{{ hotel.name }}</h5>
-                <p class="card-text"><small class="text-muted"><i class="fas fa-map-marker-alt"></i> {{ hotel.location }}</small></p> <!-- Optional: Font Awesome icon -->
-                <p class="card-text">{{ hotel.description[:100] }}{% if hotel.description|length > 100 %}...{% endif %}</p>
-                <p class="card-text mt-auto"><strong>${{ "%.2f"|format(hotel.price_per_night) }} / night</strong></p> <!-- mt-auto for price -->
+    <div class="col d-flex align-items-stretch">
+        <div class="card h-100 shadow-sm hotel-card">
+            <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="text-decoration-none">
+                <img src="{{ hotel.image_url or 'https://via.placeholder.com/800x500.png?text=No+Image' }}" class="card-img-top" alt="{{ hotel.name }}" style="height: 220px; object-fit: cover;">
+            </a>
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title"><a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="text-decoration-none stretched-link">{{ hotel.name }}</a></h5>
+                {% if hotel.star_rating %}
+                    <p class="card-text mb-1">
+                        {% for i in range(hotel.star_rating) %}<i class="fas fa-star text-warning"></i>{% endfor %}{% for i in range(5 - hotel.star_rating) %}<i class="far fa-star text-warning"></i>{% endfor %}
+                        <small class="ms-1 text-muted"> ({{ hotel.star_rating }} Star{{ 's' if hotel.star_rating > 1 }})</small>
+                    </p>
+                {% endif %}
+                <p class="card-text mb-2"><small class="text-muted"><i class="fas fa-map-marker-alt text-secondary"></i> {{ hotel.location }}</small></p>
+                <p class="card-text small text-muted flex-grow-1">{{ hotel.description[:80] }}{% if hotel.description and hotel.description|length > 80 %}...{% endif %}</p>
+                {% if hotel.amenities %}
+                <div class="card-text amenities-list mb-2">
+                    <small>
+                        {% for amenity in hotel.get_amenities_list()[:3] %}
+                            <span class="badge bg-light text-dark border me-1 mb-1 p-2">{{ amenity }}</span>
+                        {% endfor %}
+                        {% if hotel.get_amenities_list()|length > 3 %}<span class="badge bg-light text-dark border mb-1 p-2">...more</span>{% endif %}
+                    </small>
+                </div>
+                {% endif %}
+                <p class="card-text mt-2 fs-5"><strong>${{ "%.2f"|format(hotel.price_per_night) }}</strong> <small class="text-muted">/ night</small></p>
             </div>
-            <div class="card-footer">
-                 <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="btn btn-primary w-100">View Details & Book</a>
-            </div>
+            {# Removed card-footer to make the whole card clickable via stretched-link on title/image #}
         </div>
     </div>
     {% endfor %}
 </div>
 {% else %}
-<div class="text-center py-5">
-    <i class="fas fa-bed fa-3x text-muted mb-3"></i> <!-- Optional: Font Awesome icon -->
-    <p class="lead">No hotels are currently available. Check back later!</p>
+<div class="text-center py-5 my-5">
+    <div class="alert alert-info shadow-sm d-inline-block p-4">
+        <i class="fas fa-search-minus fa-3x text-info mb-3"></i>
+        <p class="lead mb-1">No hotels match your current criteria.</p>
+        <p class="text-muted">Try adjusting your search terms or filters.</p>
+        {% if request.args %}
+            <a href="{{url_for('index')}}" class="btn btn-primary mt-2"><i class="fas fa-times-circle"></i> Clear All Filters</a>
+        {% endif %}
+    </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    let mapDefaultCenter = [20, 0]; // General global view
+    let mapDefaultZoom = 2;
+    const hotelMapDiv = document.getElementById('hotelMap');
+    if (!hotelMapDiv) { console.error("Map DIV 'hotelMap' not found!"); return; }
+    hotelMapDiv.innerHTML = ''; // Clear loading message
+
+    const hotelsDataForMap = [
+        {% for hotel in hotels %}
+            {% if hotel.latitude is not none and hotel.longitude is not none %} {# Ensure coords are not None #}
+            {
+                name: {{ hotel.name|tojson|safe }},
+                lat: {{ hotel.latitude }},
+                lng: {{ hotel.longitude }},
+                url: "{{ url_for('hotel_detail', hotel_id=hotel.id) }}",
+                imageUrl: "{{ hotel.image_url or 'https://via.placeholder.com/200x120.png?text=No+Image' }}",
+                price: "{{ '%.2f'|format(hotel.price_per_night) }}",
+                location: {{ hotel.location|tojson|safe }}
+            },
+            {% endif %}
+        {% endfor %}
+    ];
+
+    if (hotelsDataForMap.length > 0) {
+        mapDefaultCenter = [hotelsDataForMap[0].lat, hotelsDataForMap[0].lng];
+        mapDefaultZoom = 10; 
+    }
+
+    const map = L.map('hotelMap').setView(mapDefaultCenter, mapDefaultZoom);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    const markers = L.featureGroup().addTo(map); 
+
+    function plotHotelsOnMap(hotelData) {
+        markers.clearLayers(); 
+        if (hotelData.length === 0) { return; }
+        
+        hotelData.forEach(function(hotel) {
+            const marker = L.marker([hotel.lat, hotel.lng], {title: hotel.name});
+            const popupContent = `
+                <div style="width: 230px; font-family: 'Open Sans', sans-serif;">
+                    <img src="${hotel.imageUrl}" alt="${hotel.name}" style="width:100%; height:130px; object-fit:cover; border-radius: 5px; margin-bottom: 10px;">
+                    <h6 style="margin: 5px 0; font-family: 'Montserrat', sans-serif; color: var(--primary-color, #005A9C); font-size: 1.1em;">${hotel.name}</h6>
+                    <p style="font-size: 0.85em; margin-bottom: 4px; color: #6c757d;"><i class="fas fa-map-marker-alt fa-xs"></i> ${hotel.location}</p>
+                    <p style="font-size: 1em; margin-bottom: 10px; color: #212529;"><strong>$${hotel.price}</strong> <small>/ night</small></p>
+                    <a href="${hotel.url}" class="btn btn-sm btn-primary w-100 py-2">View Details</a>
+                </div>
+            `;
+            marker.bindPopup(popupContent, {minWidth: 230});
+            markers.addLayer(marker);
+        });
+        
+        if (markers.getLayers().length > 0) {
+             map.fitBounds(markers.getBounds(), { padding: [50, 50], maxZoom: 15 });
+        }
+    }
+
+    plotHotelsOnMap(hotelsDataForMap);
+
+    // Attempt to use geolocation if no hotel data provides a center
+    if (hotelsDataForMap.length === 0 && navigator.geolocation) { 
+        navigator.geolocation.getCurrentPosition(
+            (position) => map.setView([position.coords.latitude, position.coords.longitude], 10),
+            () => console.warn("Geolocation failed or was denied by user.")
+        );
+    }
+});
+</script>
 {% endblock %}
