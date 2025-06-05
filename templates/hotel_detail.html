@@ -4,6 +4,8 @@
 <div class="container mt-4 mb-5">
     <!-- Hotel Info Section -->
     <div class="card shadow-sm border-0 mb-5">
+        <!-- FIX 1: Re-introducing the main hotel image -->
+        <img src="{{ hotel.image_url or 'https://via.placeholder.com/1200x400.png?text=Hotel+Image' }}" class="card-img-top" alt="{{ hotel.name }}" style="max-height: 400px; object-fit: cover;">
         <div class="card-body p-4">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
@@ -28,6 +30,14 @@
             </div>
             <h4 class="mt-4 mb-3 text-primary">Hotel Description</h4>
             <p class="text-secondary preserve-newlines">{{ hotel.description if hotel.description else "No description available." }}</p>
+             {% if hotel.amenities %}
+                <h4 class="mt-4 mb-3 text-primary">Hotel Amenities</h4>
+                <div class="mb-3">
+                    {% for amenity in hotel.amenities %}
+                        <span class="badge bg-info text-dark rounded-pill me-2 mb-2 p-2 px-3 fs-6">{{ amenity.name }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
     </div>
 
@@ -38,10 +48,18 @@
             {% for room in room_types %}
             <div class="col d-flex align-items-stretch">
                 <div class="card h-100 shadow-sm border-0">
+                    <!-- FIX 2: Ensuring the room image source is correct -->
                     <img src="{{ room.main_image_url or 'https://via.placeholder.com/800x500.png?text=No+Room+Image' }}" class="card-img-top" alt="{{ room.name }}" style="height: 250px; object-fit: cover;">
                     <div class="card-body">
                         <h4 class="card-title">{{ room.name }}</h4>
                         <p class="card-text text-muted small">{{ room.description or 'No description for this room type.'}}</p>
+                        {% if room.get_amenities_list() %}
+                            <p class="card-text">
+                                {% for amenity in room.get_amenities_list() %}
+                                    <span class="badge bg-light text-dark border me-1 mb-1 p-2">{{ amenity }}</span>
+                                {% endfor %}
+                            </p>
+                        {% endif %}
                     </div>
                     <div class="card-footer bg-white border-top-0 p-3">
                         <div class="mb-3">
@@ -61,7 +79,7 @@
                             <div class="price-display my-3 p-3 rounded text-center" style="display: none;"></div>
                             <div class="d-grid mt-2">
                                 {% if current_user.is_authenticated %}
-                                    <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-calendar-check me-2"></i> Book This Room</button>
+                                    <button type="submit" class="btn btn-primary btn-lg" disabled><i class="fas fa-calendar-check me-2"></i> Book This Room</button>
                                 {% else %}
                                      <a href="{{ url_for('login', next=request.url) }}" class="btn btn-primary btn-lg">Login to Book</a>
                                 {% endif %}
@@ -94,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 let nextDay = new Date(checkInInput.value);
                 nextDay.setDate(nextDay.getDate() + 1);
                 checkOutInput.min = nextDay.toISOString().split('T')[0];
-                if (checkOutInput.value && checkOutInput.value <= checkInInput.value) {
+                if (checkOutInput.value && new Date(checkOutInput.value) <= new Date(checkInInput.value)) {
                      checkOutInput.value = '';
                 }
             } else {
@@ -109,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (checkIn && checkOut && new Date(checkOut) > new Date(checkIn)) {
                 priceDisplay.style.display = 'block';
                 priceDisplay.innerHTML = `<div class="spinner-border spinner-border-sm" role="status"><span class="visually-hidden">Loading...</span></div>`;
-                priceDisplay.className = 'price-display my-3 p-3 rounded text-center bg-light'; // Reset class
+                priceDisplay.className = 'price-display my-3 p-3 rounded text-center bg-light'; 
                 if(submitButton) submitButton.disabled = true;
 
                 fetch(`/api/room/${roomId}/calculate_price?check_in=${checkIn}&check_out=${checkOut}`)
@@ -136,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
             } else {
                 priceDisplay.style.display = 'none';
-                if(submitButton) submitButton.disabled = false;
+                if(submitButton) submitButton.disabled = true; // Keep disabled until dates are valid
             }
         }
         checkInInput.addEventListener('change', () => {

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Platform Reporting{% endblock %}
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary"><i class="fas fa-chart-bar me-2"></i> Platform Reporting & Analytics</h2>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i> Back to Dashboard</a>
+    </div>
+
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center"><div class="col mr-2"><div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Revenue</div><div class="h5 mb-0 font-weight-bold text-gray-800">${{ "%.2f"|format(total_revenue) }}</div></div><div class="col-auto"><i class="fas fa-dollar-sign fa-2x text-gray-300"></i></div></div></div></div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center"><div class="col mr-2"><div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Bookings</div><div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_bookings }}</div></div><div class="col-auto"><i class="fas fa-calendar-check fa-2x text-gray-300"></i></div></div></div></div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center"><div class="col mr-2"><div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total Users</div><div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_users }}</div></div><div class="col-auto"><i class="fas fa-users fa-2x text-gray-300"></i></div></div></div></div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center"><div class="col mr-2"><div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Hotels</div><div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_hotels }}</div></div><div class="col-auto"><i class="fas fa-hotel fa-2x text-gray-300"></i></div></div></div></div>
+        </div>
+    </div>
+    
+    <!-- Charts and Data Row -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4"><div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">User Growth (Last 30 Days)</h6></div><div class="card-body"><canvas id="userGrowthChart"></canvas></div></div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4"><div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Popular Destinations</h6></div><div class="card-body">
+                {% if popular_destinations %}
+                <ul class="list-group list-group-flush">
+                {% for location, count in popular_destinations %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">{{ location }}<span class="badge bg-primary rounded-pill">{{ count }} bookings</span></li>
+                {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted">No booking data available yet.</p>
+                {% endif %}
+            </div></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const ugc = document.getElementById('userGrowthChart');
+    if (ugc) {
+        new Chart(ugc, {
+            type: 'line',
+            data: { labels: {{ user_growth_labels|tojson|safe }}, datasets: [{ label: 'Total Users', data: {{ user_growth_data|tojson|safe }}, fill: false, borderColor: 'rgb(75, 192, 192)', tension: 0.1 }] },
+            options: { responsive: true, scales: { y: { beginAtZero: false } } }
+        });
+    }
+});
+</script>
+{% endblock %}

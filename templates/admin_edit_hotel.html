@@ -1,44 +1,36 @@
---- START OF FILE admin_edit_hotel.html ---
 {% extends "base.html" %}
 {% block title %}Edit Hotel: {{ hotel.name }}{% endblock %}
 {% block content %}
 <div class="row justify-content-center my-5">
     <div class="col-md-9 col-lg-8">
         <div class="card shadow-lg border-0">
-            <div class="card-header bg-info text-white text-center py-3">
-                <h2 class="mb-0"><i class="fas fa-edit me-2"></i> Edit Hotel: {{ hotel.name }}</h2>
-            </div>
+            <div class="card-header bg-info text-white text-center py-3"><h2 class="mb-0"><i class="fas fa-edit me-2"></i> Edit Hotel: {{ hotel.name }}</h2></div>
             <div class="card-body p-4 p-md-5">
                 <form method="POST" action="{{ url_for('edit_hotel_by_admin', hotel_id=hotel.id) }}">
-                    <div class="mb-3">
-                        <label for="name" class="form-label">Hotel Name</label>
-                        <input type="text" class="form-control" id="name" name="name" value="{{ hotel.name }}" required>
+                    <div class="mb-3"><label for="name" class="form-label">Hotel Name</label><input type="text" class="form-control" id="name" name="name" value="{{ hotel.name }}" required></div>
+                    <div class="mb-3"><label for="location" class="form-label">Location</label><input type="text" class="form-control" id="location" name="location" value="{{ hotel.location }}" required></div>
+                    <div class="mb-3"><label for="description" class="form-label">Description</label><textarea class="form-control" id="description" name="description" rows="5">{{ hotel.description }}</textarea></div>
+                    <div class="mb-3"><label for="star_rating" class="form-label">Star Rating</label><select class="form-select" id="star_rating" name="star_rating"><option value="">(No Rating)</option>{% for i in range(1, 6) %}<option value="{{ i }}" {% if hotel.star_rating == i %}selected{% endif %}>{{ i }} Star{% if i > 1 %}s{% endif %}</option>{% endfor %}</select></div>
+                    
+                    <h5 class="mt-4 mb-3 text-primary">Hotel Amenities</h5>
+                    <div class="row">
+                        {% set selected_amenity_ids = hotel.amenities|map(attribute='id')|list %}
+                        {% for amenity in all_amenities %}
+                        <div class="col-md-4 col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="amenities" value="{{ amenity.id }}" id="amenity_{{ amenity.id }}" {% if amenity.id in selected_amenity_ids %}checked{% endif %}>
+                                <label class="form-check-label" for="amenity_{{ amenity.id }}">{{ amenity.name }}</label>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
-                    <div class="mb-3">
-                        <label for="location" class="form-label">Location</label>
-                        <input type="text" class="form-control" id="location" name="location" value="{{ hotel.location }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" rows="5">{{ hotel.description }}</textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="star_rating" class="form-label">Star Rating</label>
-                        <select class="form-select" id="star_rating" name="star_rating">
-                            <option value="">(No Rating)</option>
-                            {% for i in range(1, 6) %}
-                                <option value="{{ i }}" {% if hotel.star_rating == i %}selected{% endif %}>{{ i }} Star{% if i > 1 %}s{% endif %}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="amenities" class="form-label">Amenities (comma-separated)</label>
-                        <input type="text" class="form-control" id="amenities" name="amenities" value="{{ hotel.amenities }}">
-                    </div>
+
+                    <hr class="my-4">
                     <div class="form-check form-switch mb-4">
                         <input class="form-check-input" type="checkbox" role="switch" id="is_approved" name="is_approved" {% if hotel.is_approved %}checked{% endif %}>
                         <label class="form-check-label" for="is_approved">Is Approved</label>
                     </div>
+
                     <div class="d-grid gap-2 mt-4">
                         <button type="submit" class="btn btn-primary btn-lg py-3"><i class="fas fa-save me-2"></i> Save Hotel Changes</button>
                         <a href="{{ url_for('manage_hotels') }}" class="btn btn-secondary">Cancel</a>

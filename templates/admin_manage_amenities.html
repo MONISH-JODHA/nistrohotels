@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Manage Amenities{% endblock %}
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary"><i class="fas fa-list-check me-2"></i> Manage Amenities</h2>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i> Back to Dashboard</a>
+    </div>
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead><tr><th class="ps-3">Amenity Name</th><th>Actions</th></tr></thead>
+                            <tbody>
+                                {% for amenity in amenities %}
+                                <tr>
+                                    <td class="ps-3">{{ amenity.name }}</td>
+                                    <td>
+                                        <form action="{{ url_for('delete_amenity', amenity_id=amenity.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this amenity? It will be removed from all hotels.');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt"></i> Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Add New Amenity</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('manage_amenities') }}">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Amenity Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">Add Amenity</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -26,21 +26,22 @@
         <dl class="details-grid">
             <dt>Booking ID:</dt><dd>#{{ booking.id }}</dd>
             <dt>Booked By:</dt><dd>{{ user.username }} ({{ user.email }})</dd>
-            <dt>Booking Date:</dt><dd>{{ booking_date.strftime('%B %d, %Y %I:%M %p UTC') }}</dd>
+            <!-- FIX IS HERE: Changed 'booking_date' to 'booking.created_at' -->
+            <dt>Booking Date:</dt><dd>{{ booking.created_at.strftime('%B %d, %Y %I:%M %p UTC') }}</dd>
         </dl>
         <div class="section-title">Hotel & Stay Details</div>
         <table>
-            <tr><th>Hotel Name</th><td>{{ hotel.name }}</td></tr>
+            <tr><th>Hotel Name</th><td>{{ booking.hotel.name }}</td></tr>
             <tr><th>Room Type</th><td>{{ booking.room_type.name }}</td></tr>
-            <tr><th>Location</th><td>{{ hotel.location }}</td></tr>
+            <tr><th>Location</th><td>{{ booking.hotel.location }}</td></tr>
             <tr><th>Check-in Date</th><td>{{ booking.check_in_date.strftime('%A, %B %d, %Y') }}</td></tr>
             <tr><th>Check-out Date</th><td>{{ booking.check_out_date.strftime('%A, %B %d, %Y') }}</td></tr>
-            <tr><th>Number of Nights</th><td>{{ num_nights }}</td></tr>
+            <tr><th>Number of Nights</th><td>{{ (booking.check_out_date - booking.check_in_date).days }}</td></tr>
         </table>
         <div class="section-title">Payment Summary</div>
         <table>
             <thead><tr><th>Description</th><th>Rate per Night</th><th>Nights</th><th>Subtotal</th></tr></thead>
-            <tbody><tr><td>{{ hotel.name }} - {{ booking.room_type.name }}</td><td>${{ "%.2f"|format(booking.room_type.price_per_night) }}</td><td>{{ num_nights }}</td><td>${{ "%.2f"|format(booking.total_price) }}</td></tr></tbody>
+            <tbody><tr><td>{{ booking.hotel.name }} - {{ booking.room_type.name }}</td><td>${{ "%.2f"|format(booking.total_price / (booking.check_out_date - booking.check_in_date).days) }}</td><td>{{ (booking.check_out_date - booking.check_in_date).days }}</td><td>${{ "%.2f"|format(booking.total_price) }}</td></tr></tbody>
         </table>
         <div class="total-price">Total Amount Paid: ${{ "%.2f"|format(booking.total_price) }}</div>
         <div class="footer"><p>Thank you for booking with HotelApp!</p><p>If you have any questions, please contact our support.</p></div>
