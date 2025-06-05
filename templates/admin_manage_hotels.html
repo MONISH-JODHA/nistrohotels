@@ -1,0 +1,52 @@
+--- START OF FILE admin_manage_hotels.html ---
+{% extends "base.html" %}
+{% block title %}Manage Hotels{% endblock %}
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary"><i class="fas fa-hotel me-2"></i> Manage Hotels</h2>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i> Back to Dashboard</a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Hotel Name</th>
+                            <th>Owner</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hotel in hotels %}
+                        <tr>
+                            <td>{{ hotel.id }}</td>
+                            <td>{{ hotel.name }}</td>
+                            <td>{{ hotel.owner_user.username if hotel.owner_user else 'N/A' }}</td>
+                            <td>
+                                {% if hotel.is_approved %}
+                                    <span class="badge bg-success">Approved</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('edit_hotel_by_admin', hotel_id=hotel.id) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i> Edit</a>
+                                <!-- FIX IS HERE: Changed 'reject_hotel' to 'delete_hotel_by_admin' -->
+                                <form action="{{ url_for('delete_hotel_by_admin', hotel_id=hotel.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this hotel and all its data?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt"></i> Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

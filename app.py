@@ -1,3 +1,4 @@
+
 from flask import Flask, render_template, request, redirect, url_for, flash, session, make_response, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
@@ -46,7 +47,10 @@ login_manager.login_message_category = 'info'
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    user = User.query.get(int(user_id))
+    if user and user.is_active:
+        return user
+    return None
 
 # --- Database Models ---
 class User(UserMixin, db.Model):
@@ -55,8 +59,9 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='user')
-    hotels_owned = db.relationship('Hotel', backref='owner_user', lazy=True, foreign_keys='Hotel.owner_id')
-    bookings = db.relationship('Booking', backref='booker', lazy=True, foreign_keys='Booking.user_id')
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    hotels_owned = db.relationship('Hotel', backref='owner_user', lazy=True, foreign_keys='Hotel.owner_id', cascade="all, delete-orphan")
+    bookings = db.relationship('Booking', backref='booker', lazy=True, foreign_keys='Booking.user_id', cascade="all, delete-orphan")
     wishlist_items = db.relationship('Wishlist', backref='user', lazy='dynamic', cascade='all, delete-orphan')
 
     def set_password(self, password): self.password_hash = generate_password_hash(password)
@@ -85,16 +90,14 @@ class RoomType(db.Model):
     hotel_id = db.Column(db.Integer, db.ForeignKey('hotel.id', ondelete='CASCADE'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
-    price_per_night = db.Column(db.Float, nullable=False) # Default price
-    number_of_rooms = db.Column(db.Integer, nullable=False, default=1) # Default availability
+    price_per_night = db.Column(db.Float, nullable=False)
+    number_of_rooms = db.Column(db.Integer, nullable=False, default=1)
     amenities = db.Column(db.String(300), nullable=True)
     main_image_url = db.Column(db.String(255), nullable=True, default='https://via.placeholder.com/800x500.png?text=Room+Image')
     gallery_images = db.relationship('RoomImage', backref='room_type_ref', lazy='dynamic', cascade="all, delete-orphan")
-    bookings = db.relationship('Booking', backref='room_type', lazy='dynamic')
-    availabilities = db.relationship('Availability', backref='room_type', lazy='dynamic', cascade="all, delete-orphan")
-
-    def get_amenities_list(self):
-        return [a.strip() for a in self.amenities.split(',') if a.strip()] if self.amenities else []
+    bookings = db.relationship('Booking', backref='room_type', lazy='dynamic', cascade="all, delete-orphan")
+    availabilities = db.relationship('Availability', backref='room_type_ref', lazy='dynamic', cascade="all, delete-orphan")
+    def get_amenities_list(self): return [a.strip() for a in self.amenities.split(',') if a.strip()] if self.amenities else []
 
 class Hotel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -113,25 +116,12 @@ class Hotel(db.Model):
     bookings = db.relationship('Booking', backref='hotel', lazy=True, foreign_keys='Booking.hotel_id', cascade="all, delete-orphan")
     wishlisted_by_users = db.relationship('Wishlist', backref='hotel', lazy='dynamic', cascade='all, delete-orphan')
     room_types = db.relationship('RoomType', backref='hotel', lazy='dynamic', cascade="all, delete-orphan")
-
-    def get_amenities_list(self):
-        return [a.strip() for a in self.amenities.split(',') if a.strip()] if self.amenities else []
-    
-    def get_min_price(self):
-        return db.session.query(func.min(RoomType.price_per_night)).filter(RoomType.hotel_id == self.id).scalar()
-
-    def update_min_price(self):
-        min_price = self.get_min_price()
-        self.price_per_night = min_price
-        db.session.add(self)
-
+    def get_amenities_list(self): return [a.strip() for a in self.amenities.split(',') if a.strip()] if self.amenities else []
+    def get_min_price(self): return db.session.query(func.min(RoomType.price_per_night)).filter(RoomType.hotel_id == self.id).scalar()
+    def update_min_price(self): self.price_per_night = self.get_min_price(); db.session.add(self)
     def to_dict_for_map(self):
         min_price = self.get_min_price()
-        return {
-            'name': self.name, 'lat': self.latitude, 'lng': self.longitude, 
-            'url': url_for('hotel_detail', hotel_id=self.id), 'imageUrl': self.image_url, 
-            'price': "{:.2f}".format(min_price) if min_price else "N/A", 'location': self.location
-        }
+        return {'name': self.name, 'lat': self.latitude, 'lng': self.longitude, 'url': url_for('hotel_detail', hotel_id=self.id), 'imageUrl': self.image_url, 'price': "{:.2f}".format(min_price) if min_price else "N/A", 'location': self.location}
 
 class Booking(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -157,8 +147,9 @@ def role_required(role_name):
         @wraps(f)
         @login_required
         def decorated_function(*args, **kwargs):
-            if current_user.role != role_name:
-                flash(f"Access Denied: '{role_name}' privileges required.", "danger")
+            roles = role_name if isinstance(role_name, list) else [role_name]
+            if current_user.role not in roles:
+                flash(f"Access Denied: You need one of the following roles: {', '.join(roles)}.", "danger")
                 return redirect(url_for('index'))
             return f(*args, **kwargs)
         return decorated_function
@@ -166,10 +157,10 @@ def role_required(role_name):
 
 def verify_hotel_owner(f):
     @wraps(f)
-    @role_required('owner')
+    @role_required(['owner', 'admin'])
     def decorated_function(hotel_id, *args, **kwargs):
         hotel = Hotel.query.get_or_404(hotel_id)
-        if hotel.owner_id != current_user.id:
+        if current_user.role == 'owner' and hotel.owner_id != current_user.id:
             flash("You are not authorized to manage this hotel.", "danger")
             return redirect(url_for('owner_dashboard'))
         return f(hotel, *args, **kwargs)
@@ -198,16 +189,11 @@ def check_availability_and_calculate_price(room_type_id, check_in_date, check_ou
         daily_info = get_daily_details(room_type, current_date)
         if daily_info['available'] <= 0:
              return {'available': False, 'message': f"No rooms available on {current_date.strftime('%Y-%m-%d')}.", 'price': 0}
-
         booked_on_date = Booking.query.filter(
-            Booking.room_type_id == room_type_id,
-            Booking.check_in_date <= current_date,
-            Booking.check_out_date > current_date
+            Booking.room_type_id == room_type_id, Booking.check_in_date <= current_date, Booking.check_out_date > current_date
         ).count()
-        
         if booked_on_date >= daily_info['available']:
             return {'available': False, 'message': f"Fully booked on {current_date.strftime('%Y-%m-%d')}.", 'price': 0}
-        
         total_price += daily_info['price']
         current_date += timedelta(days=1)
     return {'available': True, 'message': 'Available', 'price': total_price}
@@ -253,7 +239,7 @@ def register():
             flash('Username already exists.', 'danger'); return redirect(url_for('register'))
         if User.query.filter_by(email=email).first():
             flash('Email already registered.', 'danger'); return redirect(url_for('register'))
-        new_user = User(username=username, email=email, role=role)
+        new_user = User(username=username, email=email, role=role, is_active=True)
         new_user.set_password(password)
         db.session.add(new_user); db.session.commit()
         flash('Registration successful! Please log in.', 'success')
@@ -268,6 +254,9 @@ def login():
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
+            if not user.is_active:
+                flash('Your account has been suspended. Please contact an administrator.', 'danger')
+                return redirect(url_for('login'))
             login_user(user, remember=request.form.get('remember_me'))
             flash('Logged in successfully!', 'success')
             next_page = request.args.get('next')
@@ -400,31 +389,22 @@ def owner_dashboard():
     hotel_ids = [h.id for h in hotels]
     
     analytics = {
-        'total_revenue': 0,
-        'occupancy_rate': 0,
-        'total_bookings': 0,
-        'popular_room_types': [],
-        'chart_labels': [],
-        'chart_data': []
+        'total_revenue': 0, 'occupancy_rate': 0, 'total_bookings': 0,
+        'popular_room_types': [], 'chart_labels': [], 'chart_data': []
     }
 
     if hotel_ids:
-        # --- Basic Stats ---
         all_bookings = Booking.query.filter(Booking.hotel_id.in_(hotel_ids)).all()
         analytics['total_bookings'] = len(all_bookings)
         analytics['total_revenue'] = sum(b.total_price for b in all_bookings)
-
-        # --- Popular Room Types ---
         if all_bookings:
             room_type_counts = Counter(b.room_type.name for b in all_bookings)
             analytics['popular_room_types'] = room_type_counts.most_common(3)
-
-        # --- Occupancy Rate (Last 30 Days) ---
+        
         today = date.today()
         start_period = today - timedelta(days=30)
         total_possible_room_nights = 0
         total_booked_room_nights = 0
-        
         owner_room_types = RoomType.query.filter(RoomType.hotel_id.in_(hotel_ids)).all()
 
         for i in range(30):
@@ -434,9 +414,7 @@ def owner_dashboard():
                 total_possible_room_nights += daily_details['available']
         
         bookings_in_period = Booking.query.filter(
-            Booking.hotel_id.in_(hotel_ids),
-            Booking.check_in_date < today,
-            Booking.check_out_date > start_period
+            Booking.hotel_id.in_(hotel_ids), Booking.check_in_date < today, Booking.check_out_date > start_period
         ).all()
         
         for booking in bookings_in_period:
@@ -449,20 +427,15 @@ def owner_dashboard():
         if total_possible_room_nights > 0:
             analytics['occupancy_rate'] = (total_booked_room_nights / total_possible_room_nights) * 100
 
-        # --- Booking Trends Chart (Last 30 Days) ---
         bookings_by_day = { (start_period + timedelta(days=i)).strftime("%b %d"): 0 for i in range(30) }
         recent_bookings = [b for b in all_bookings if b.created_at.date() >= start_period]
-        
         for booking in recent_bookings:
             day_str = booking.created_at.strftime("%b %d")
-            if day_str in bookings_by_day:
-                bookings_by_day[day_str] += 1
-        
+            if day_str in bookings_by_day: bookings_by_day[day_str] += 1
         analytics['chart_labels'] = list(bookings_by_day.keys())
         analytics['chart_data'] = list(bookings_by_day.values())
 
     return render_template('owner_dashboard.html', hotels=hotels, analytics=analytics)
-
 
 @app.route('/hotel/<int:hotel_id>/manage_rooms', methods=['GET', 'POST'])
 @verify_hotel_owner
@@ -484,9 +457,7 @@ def manage_rooms(hotel):
             hotel_id=hotel.id, name=name, price_per_night=price, number_of_rooms=num_rooms,
             description=request.form.get('description'), amenities=request.form.get('amenities')
         )
-        db.session.add(new_room)
-        hotel.update_min_price()
-        db.session.commit()
+        db.session.add(new_room); hotel.update_min_price(); db.session.commit()
         flash(f"Room type '{name}' added.", "success")
         return redirect(url_for('manage_rooms', hotel_id=hotel.id))
     room_types = hotel.room_types.order_by(RoomType.name.asc()).all()
@@ -527,12 +498,102 @@ def manage_availability(hotel, room_type_id):
     room = RoomType.query.filter_by(id=room_type_id, hotel_id=hotel.id).first_or_404()
     return render_template('manage_availability.html', hotel=hotel, room=room)
 
-# --- API Endpoints for Calendar ---
+# --- Admin Routes ---
+@app.route('/admin_dashboard')
+@role_required('admin')
+def admin_dashboard():
+    return render_template('admin_dashboard.html')
+
+@app.route('/admin/users')
+@role_required('admin')
+def manage_users():
+    users = User.query.order_by(User.id).all()
+    return render_template('admin_manage_users.html', users=users)
+
+@app.route('/admin/user/edit/<int:user_id>', methods=['GET', 'POST'])
+@role_required('admin')
+def edit_user(user_id):
+    user_to_edit = User.query.get_or_404(user_id)
+    if user_to_edit.id == current_user.id:
+        flash("You cannot edit your own account from this panel.", "warning")
+        return redirect(url_for('manage_users'))
+    if request.method == 'POST':
+        user_to_edit.username = request.form.get('username')
+        user_to_edit.email = request.form.get('email')
+        new_role = request.form.get('role')
+        if new_role in ['user', 'owner', 'admin']:
+            user_to_edit.role = new_role
+        new_password = request.form.get('new_password')
+        if new_password:
+            user_to_edit.set_password(new_password)
+            flash(f"User '{user_to_edit.username}'s password has been updated.", "info")
+        db.session.commit()
+        flash(f"User '{user_to_edit.username}' updated successfully.", 'success')
+        return redirect(url_for('manage_users'))
+    return render_template('admin_edit_user.html', user=user_to_edit)
+
+@app.route('/admin/user/toggle_active/<int:user_id>', methods=['POST'])
+@role_required('admin')
+def toggle_user_active(user_id):
+    user_to_toggle = User.query.get_or_404(user_id)
+    if user_to_toggle.id == current_user.id:
+        flash("You cannot change your own active status.", "danger")
+        return redirect(url_for('manage_users'))
+    user_to_toggle.is_active = not user_to_toggle.is_active
+    db.session.commit()
+    status = "activated" if user_to_toggle.is_active else "suspended"
+    flash(f"User '{user_to_toggle.username}' has been {status}.", 'success')
+    return redirect(url_for('manage_users'))
+
+@app.route('/admin/user/delete/<int:user_id>', methods=['POST'])
+@role_required('admin')
+def delete_user(user_id):
+    user_to_delete = User.query.get_or_404(user_id)
+    if user_to_delete.id == current_user.id:
+        flash("You cannot delete your own account.", "danger")
+        return redirect(url_for('manage_users'))
+    db.session.delete(user_to_delete)
+    db.session.commit()
+    flash(f"User '{user_to_delete.username}' and all their associated data have been permanently deleted.", 'warning')
+    return redirect(url_for('manage_users'))
+
+@app.route('/admin/hotels')
+@role_required('admin')
+def manage_hotels():
+    hotels = Hotel.query.order_by(Hotel.is_approved.asc(), Hotel.name.asc()).all()
+    return render_template('admin_manage_hotels.html', hotels=hotels)
+
+@app.route('/admin/hotel/edit/<int:hotel_id>', methods=['GET', 'POST'])
+@role_required('admin')
+def edit_hotel_by_admin(hotel_id):
+    hotel = Hotel.query.get_or_404(hotel_id)
+    if request.method == 'POST':
+        hotel.name = request.form.get('name')
+        hotel.location = request.form.get('location')
+        hotel.description = request.form.get('description')
+        hotel.star_rating = int(request.form.get('star_rating')) if request.form.get('star_rating') else None
+        hotel.amenities = request.form.get('amenities', '').strip()
+        hotel.is_approved = 'is_approved' in request.form
+        db.session.commit()
+        flash(f"Hotel '{hotel.name}' has been updated successfully.", "success")
+        return redirect(url_for('manage_hotels'))
+    return render_template('admin_edit_hotel.html', hotel=hotel)
+
+@app.route('/admin/hotel/delete/<int:hotel_id>', methods=['POST'])
+@role_required('admin')
+def delete_hotel_by_admin(hotel_id):
+    hotel = Hotel.query.get_or_404(hotel_id)
+    db.session.delete(hotel)
+    db.session.commit()
+    flash(f"Hotel '{hotel.name}' and all its data have been permanently deleted.", 'warning')
+    return redirect(url_for('manage_hotels'))
+
+# --- API Endpoints ---
 @app.route('/api/room/<int:room_type_id>/availability')
 @login_required
 def get_availability_data(room_type_id):
     room_type = RoomType.query.get_or_404(room_type_id)
-    if room_type.hotel.owner_id != current_user.id:
+    if current_user.role != 'admin' and room_type.hotel.owner_id != current_user.id:
         return jsonify({'error': 'Unauthorized'}), 403
     start_str = request.args.get('start'); end_str = request.args.get('end')
     try:
@@ -545,20 +606,14 @@ def get_availability_data(room_type_id):
     ).all()}
     
     bookings_in_range = Booking.query.filter(
-        Booking.room_type_id == room_type_id,
-        Booking.check_in_date < end_date,
-        Booking.check_out_date > start_date
+        Booking.room_type_id == room_type_id, Booking.check_in_date < end_date, Booking.check_out_date > start_date
     ).all()
     
     events = []
     current_date = start_date
     while current_date < end_date:
         details = get_daily_details(room_type, current_date)
-        booked_count = 0
-        for booking in bookings_in_range:
-            if booking.check_in_date <= current_date < booking.check_out_date:
-                booked_count += 1
-
+        booked_count = sum(1 for b in bookings_in_range if b.check_in_date <= current_date < b.check_out_date)
         remaining = details['available'] - booked_count
         events.append({
             'start': current_date.isoformat(),
@@ -574,7 +629,7 @@ def get_availability_data(room_type_id):
 @login_required
 def update_availability(room_type_id):
     room_type = RoomType.query.get_or_404(room_type_id)
-    if room_type.hotel.owner_id != current_user.id:
+    if current_user.role != 'admin' and room_type.hotel.owner_id != current_user.id:
         return jsonify({'error': 'Unauthorized'}), 403
     data = request.json
     try:
@@ -596,7 +651,6 @@ def update_availability(room_type_id):
             db.session.add(override)
         override.price = price
         override.available_rooms = available_rooms
-    
     db.session.commit()
     return jsonify({'success': True})
 
@@ -611,31 +665,7 @@ def api_calculate_price(room_type_id):
     result = check_availability_and_calculate_price(room_type_id, check_in, check_out)
     return jsonify(result)
 
-# --- Admin & Wishlist Routes ---
-@app.route('/admin_dashboard')
-@role_required('admin')
-def admin_dashboard():
-    all_users = User.query.order_by(User.username).all()
-    all_hotels = Hotel.query.order_by(Hotel.is_approved.asc(), Hotel.name.asc()).all()
-    all_bookings = Booking.query.order_by(Booking.created_at.desc()).all()
-    return render_template('admin_dashboard.html', users=all_users, hotels=all_hotels, bookings=all_bookings)
-
-@app.route('/admin/approve_hotel/<int:hotel_id>', methods=['POST'])
-@role_required('admin')
-def approve_hotel(hotel_id):
-    hotel = Hotel.query.get_or_404(hotel_id)
-    hotel.is_approved = True; db.session.commit()
-    flash(f'Hotel "{hotel.name}" approved.', 'success')
-    return redirect(url_for('admin_dashboard'))
-
-@app.route('/admin/reject_hotel/<int:hotel_id>', methods=['POST'])
-@role_required('admin')
-def reject_hotel(hotel_id):
-    hotel = Hotel.query.get_or_404(hotel_id)
-    db.session.delete(hotel); db.session.commit()
-    flash(f'Hotel "{hotel.name}" and all its data removed.', 'warning')
-    return redirect(url_for('admin_dashboard'))
-
+# --- Wishlist Routes ---
 @app.route('/wishlist/add/<int:hotel_id>', methods=['POST'])
 @login_required
 def add_to_wishlist(hotel_id):
@@ -666,9 +696,10 @@ def my_wishlist():
 def create_admin_user_if_not_exists():
     with app.app_context():
         if not User.query.filter_by(username='admin').first():
-            admin_user = User(username='admin', email='admin@hotelapp.com', role='admin')
+            admin_user = User(username='admin', email='admin@hotelapp.com', role='admin', is_active=True)
             admin_user.set_password('StrongAdminP@ssw0rd!')
-            db.session.add(admin_user); db.session.commit()
+            db.session.add(admin_user)
+            db.session.commit()
             print("Admin user created: admin / StrongAdminP@ssw0rd!")
 
 if __name__ == '__main__':
