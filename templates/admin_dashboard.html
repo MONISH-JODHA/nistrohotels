@@ -1,166 +1,137 @@
 {% extends "base.html" %}
-
-{% block title %}Admin Dashboard{% endblock %}
-
+{% block title %}Admin Dashboard - HotelApp{% endblock %}
 {% block content %}
-<h2 class="mb-4">Admin Dashboard</h2>
+<div class="container mt-4">
+    <h2 class="mb-4 text-primary"><i class="fas fa-user-shield me-2"></i>Admin Dashboard</h2>
 
-<section class="my-4">
-    <h3>Pending Hotel Approvals</h3>
-    {% set pending_hotels = hotels|selectattr("is_approved", "equalto", false)|list %}
-    {% if pending_hotels %}
-    <div class="table-responsive">
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Owner</th>
-                    <th>Location</th>
-                    <th>Price</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for hotel in pending_hotels %}
-                <tr>
-                    <td>{{ hotel.name }}</td>
-                    <td>{{ hotel.owner_user.username if hotel.owner_user else 'N/A' }}</td>
-                    <td>{{ hotel.location }}</td>
-                    <td>${{ "%.2f"|format(hotel.price_per_night) }}</td>
-                    <td>
-                        <form action="{{ url_for('approve_hotel', hotel_id=hotel.id) }}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-success">Approve</button>
-                        </form>
-                        <form action="{{ url_for('reject_hotel', hotel_id=hotel.id) }}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to reject and remove this hotel?');">Reject</button>
-                        </form>
-                        <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="btn btn-sm btn-info">View</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="accordion shadow-sm" id="adminAccordion">
+        <!-- Pending Hotel Approvals -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingHotels">
+                <button class="accordion-button fs-5" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHotels" aria-expanded="true" aria-controls="collapseHotels">
+                    <i class="fas fa-hourglass-half me-2"></i> Pending Hotel Approvals 
+                    {% set pending_hotels = hotels|selectattr("is_approved", "equalto", false)|list %}
+                    <span class="badge bg-warning text-dark ms-2">{{ pending_hotels|length }}</span>
+                </button>
+            </h2>
+            <div id="collapseHotels" class="accordion-collapse collapse show" aria-labelledby="headingHotels" data-bs-parent="#adminAccordion">
+                <div class="accordion-body">
+                    {% if pending_hotels %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead><tr><th>Name</th><th>Owner</th><th>Location</th><th>Price</th><th>Actions</th></tr></thead>
+                            <tbody>
+                                {% for hotel in pending_hotels %}
+                                <tr>
+                                    <td><a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}">{{ hotel.name }}</a></td>
+                                    <td>{% if hotel.owner_user %}{{ hotel.owner_user.username }} ({{hotel.owner_user.email}}){% else %}N/A{% endif %}</td>
+                                    <td>{{ hotel.location }}</td>
+                                    <td>${{ "%.2f"|format(hotel.price_per_night) }}</td>
+                                    <td>
+                                        <form action="{{ url_for('approve_hotel', hotel_id=hotel.id) }}" method="POST" class="d-inline"><button type="submit" class="btn btn-sm btn-success"><i class="fas fa-check"></i> Approve</button></form>
+                                        <form action="{{ url_for('reject_hotel', hotel_id=hotel.id) }}" method="POST" class="d-inline"><button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Reject and remove this hotel?');"><i class="fas fa-times"></i> Reject</button></form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}<p class="text-muted">No hotels pending approval.</p>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- All Hotels -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingAllHotels">
+                <button class="accordion-button collapsed fs-5" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAllHotels" aria-expanded="false" aria-controls="collapseAllHotels">
+                    <i class="fas fa-hotel me-2"></i> All Registered Hotels <span class="badge bg-secondary ms-2">{{ hotels|length }}</span>
+                </button>
+            </h2>
+            <div id="collapseAllHotels" class="accordion-collapse collapse" aria-labelledby="headingAllHotels" data-bs-parent="#adminAccordion">
+                <div class="accordion-body">
+                    {% if hotels %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover align-middle">
+                            <thead><tr><th>ID</th><th>Name</th><th>Owner</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody>
+                                {% for hotel in hotels %}
+                                <tr>
+                                    <td>{{ hotel.id }}</td>
+                                    <td><a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}">{{ hotel.name }}</a></td>
+                                    <td>{% if hotel.owner_user %}{{ hotel.owner_user.username }}{% else %}N/A{% endif %}</td>
+                                    <td>{% if hotel.is_approved %}<span class="badge bg-success">Approved</span>{% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}</td>
+                                    <td>
+                                        {% if not hotel.is_approved %}<form action="{{ url_for('approve_hotel', hotel_id=hotel.id) }}" method="POST" class="d-inline"><button type="submit" class="btn btn-sm btn-success"><i class="fas fa-check"></i> Approve</button></form>{% endif %}
+                                        <form action="{{ url_for('reject_hotel', hotel_id=hotel.id) }}" method="POST" class="d-inline"><button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove this hotel permanently?');"><i class="fas fa-trash-alt"></i> Remove</button></form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}<p class="text-muted">No hotels registered.</p>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- All Bookings -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingBookings">
+                <button class="accordion-button collapsed fs-5" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBookings" aria-expanded="false" aria-controls="collapseBookings">
+                    <i class="fas fa-calendar-check me-2"></i> All Bookings <span class="badge bg-info text-dark ms-2">{{ bookings|length }}</span>
+                </button>
+            </h2>
+            <div id="collapseBookings" class="accordion-collapse collapse" aria-labelledby="headingBookings" data-bs-parent="#adminAccordion">
+                <div class="accordion-body">
+                    {% if bookings %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover align-middle">
+                            <thead><tr><th>ID</th><th>User</th><th>Hotel</th><th>Check-in</th><th>Check-out</th><th>Price</th><th>Booked On</th></tr></thead>
+                            <tbody>
+                                {% for booking in bookings %}
+                                <tr>
+                                    <td>#{{ booking.id }}</td>
+                                    <td>{% if booking.booker %}{{ booking.booker.username }}{% else %}N/A{% endif %}</td>
+                                    <td>{% if booking.hotel %}{{ booking.hotel.name }}{% else %}N/A{% endif %}</td>
+                                    <td>{{ booking.check_in_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ booking.check_out_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>${{ "%.2f"|format(booking.total_price) }}</td>
+                                    <td>{{ booking.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}<p class="text-muted">No bookings in the system.</p>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- All Users -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingUsers">
+                <button class="accordion-button collapsed fs-5" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUsers" aria-expanded="false" aria-controls="collapseUsers">
+                     <i class="fas fa-users me-2"></i> All Users <span class="badge bg-dark ms-2">{{ users|length }}</span>
+                </button>
+            </h2>
+            <div id="collapseUsers" class="accordion-collapse collapse" aria-labelledby="headingUsers" data-bs-parent="#adminAccordion">
+                <div class="accordion-body">
+                    {% if users %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover align-middle">
+                            <thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th></tr></thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr><td>{{ user.id }}</td><td>{{ user.username }}</td><td>{{ user.email }}</td><td><span class="badge bg-secondary">{{ user.role|capitalize }}</span></td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}<p class="text-muted">No users registered.</p>{% endif %}
+                </div>
+            </div>
+        </div>
     </div>
-    {% else %}
-    <p>No hotels pending approval.</p>
-    {% endif %}
-</section>
-
-<hr>
-
-<section class="my-4">
-    <h3>All Hotels</h3>
-    {% if hotels %}
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Owner</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for hotel in hotels %}
-                <tr>
-                    <td>{{ hotel.id }}</td>
-                    <td>{{ hotel.name }}</td>
-                    <td>{{ hotel.owner_user.username if hotel.owner_user else 'N/A' }}</td>
-                    <td>
-                        {% if hotel.is_approved %}
-                        <span class="badge bg-success">Approved</span>
-                        {% else %}
-                        <span class="badge bg-warning text-dark">Pending</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="btn btn-sm btn-info">View</a>
-                        {% if not hotel.is_approved %}
-                        <form action="{{ url_for('approve_hotel', hotel_id=hotel.id) }}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-success">Approve</button>
-                        </form>
-                        {% endif %}
-                        <form action="{{ url_for('reject_hotel', hotel_id=hotel.id) }}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to remove this hotel?');">Remove</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <p>No hotels registered in the system.</p>
-    {% endif %}
-</section>
-
-<hr>
-
-<section class="my-4">
-    <h3>All Bookings</h3>
-    {% if bookings %}
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>User</th>
-                    <th>Hotel</th>
-                    <th>Check-in</th>
-                    <th>Check-out</th>
-                    <th>Total Price</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for booking in bookings %}
-                <tr>
-                    <td>{{ booking.id }}</td>
-                    <td>{{ booking.booker.username if booking.booker else 'N/A' }}</td>
-                    <td>{{ booking.hotel.name if booking.hotel else 'N/A' }}</td>
-                    <td>{{ booking.check_in_date.strftime('%Y-%m-%d') }}</td>
-                    <td>{{ booking.check_out_date.strftime('%Y-%m-%d') }}</td>
-                    <td>${{ "%.2f"|format(booking.total_price) }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <p>No bookings in the system.</p>
-    {% endif %}
-</section>
-
-<hr>
-
-<section class="my-4">
-    <h3>All Users</h3>
-    {% if users %}
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Username</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in users %}
-                <tr>
-                    <td>{{ user.id }}</td>
-                    <td>{{ user.username }}</td>
-                    <td>{{ user.email }}</td>
-                    <td>{{ user.role }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <p>No users registered in the system.</p>
-    {% endif %}
-</section>
+</div>
 {% endblock %}

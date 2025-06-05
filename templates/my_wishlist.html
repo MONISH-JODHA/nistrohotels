@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}My Wishlist - HotelApp{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary"><i class="fas fa-heart me-2"></i> My Wishlist</h2>
+        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary"><i class="fas fa-search me-2"></i> Find More Hotels</a>
+    </div>
+    {% if hotels %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for hotel in hotels %}
+            <div class="col d-flex align-items-stretch">
+                <div class="card h-100 shadow-sm hotel-card">
+                    <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="text-decoration-none"><img src="{{ hotel.image_url or 'https://via.placeholder.com/800x500.png?text=No+Image' }}" class="card-img-top" alt="{{ hotel.name }}" style="height: 200px; object-fit: cover;"></a>
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title"><a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="text-decoration-none stretched-link">{{ hotel.name }}</a></h5>
+                        {% if hotel.star_rating %}<p class="card-text mb-1">{% for i in range(hotel.star_rating) %}<i class="fas fa-star text-warning"></i>{% endfor %}{% for i in range(5 - hotel.star_rating) %}<i class="far fa-star text-warning"></i>{% endfor %}<small class="ms-1 text-muted">({{ hotel.star_rating }} Star{{ 's' if hotel.star_rating > 1 }})</small></p>{% endif %}
+                        <p class="card-text mb-2"><small class="text-muted"><i class="fas fa-map-marker-alt text-secondary"></i> {{ hotel.location }}</small></p>
+                        <p class="card-text small text-muted flex-grow-1">{{ hotel.description[:70] }}{% if hotel.description and hotel.description|length > 70 %}...{% endif %}</p>
+                        <div class="d-flex justify-content-between align-items-center mt-auto">
+                            <p class="fs-5 mb-0"><strong>${{ "%.2f"|format(hotel.price_per_night) }}</strong> <small class="text-muted">/ night</small></p>
+                            <form action="{{ url_for('remove_from_wishlist', hotel_id=hotel.id) }}" method="POST" class="d-inline"><button type="submit" class="btn btn-sm btn-danger" title="Remove from Wishlist"><i class="fas fa-trash-alt"></i> Remove</button></form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5 my-5"><div class="alert alert-light shadow-sm d-inline-block p-4 border"><i class="far fa-heart fa-3x text-muted mb-3"></i><p class="lead mb-1">Your wishlist is empty.</p><p class="text-muted">Start adding hotels you love!</p><a href="{{ url_for('index') }}" class="btn btn-primary mt-2"><i class="fas fa-plus-circle me-2"></i> Browse Hotels</a></div></div>
+    {% endif %}
+</div>
+{% endblock %}

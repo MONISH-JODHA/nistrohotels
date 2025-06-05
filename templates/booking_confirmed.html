@@ -1,51 +1,36 @@
 {% extends "base.html" %}
-
 {% block title %}Booking Confirmed - #{{ booking.id }}{% endblock %}
-
 {% block content %}
-<div class="container mt-5">
+<div class="container my-5">
     <div class="row justify-content-center">
-        <div class="col-md-8 text-center">
-            <div class="card shadow-lg">
-                <div class="card-header bg-success text-white">
-                    <h4 class="mb-0">Booking Confirmed!</h4>
+        <div class="col-md-9 col-lg-8 text-center">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-success text-white py-3">
+                    <h2 class="mb-0"><i class="fas fa-check-circle me-2"></i> Booking Confirmed!</h2>
                 </div>
-                <div class="card-body p-4">
-                    <i class="fas fa-check-circle fa-5x text-success mb-4"></i> <!-- Font Awesome Icon -->
+                <div class="card-body p-4 p-md-5">
                     <h3 class="card-title">Thank You, {{ current_user.username }}!</h3>
                     <p class="lead">Your booking for <strong>{{ booking.hotel.name }}</strong> has been successfully processed.</p>
-                    <hr>
-                    <div class="row mb-3">
-                        <div class="col-sm-6 text-start"><strong>Booking ID:</strong></div>
-                        <div class="col-sm-6 text-start">#{{ booking.id }}</div>
+                    <hr class="my-4">
+                    <div class="text-start mb-4">
+                        <p><strong>Booking ID:</strong> #{{ booking.id }}</p>
+                        <p><strong>Hotel:</strong> {{ booking.hotel.name }}</p>
+                        <p><strong>Location:</strong> {{ booking.hotel.location }}</p>
+                        <p><strong>Check-in:</strong> {{ booking.check_in_date.strftime('%A, %B %d, %Y') }}</p>
+                        <p><strong>Check-out:</strong> {{ booking.check_out_date.strftime('%A, %B %d, %Y') }}</p>
+                        <p><strong>Total Price:</strong> <strong class="text-success fs-5">${{ "%.2f"|format(booking.total_price) }}</strong></p>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-6 text-start"><strong>Hotel:</strong></div>
-                        <div class="col-sm-6 text-start">{{ booking.hotel.name }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-6 text-start"><strong>Check-in:</strong></div>
-                        <div class="col-sm-6 text-start">{{ booking.check_in_date.strftime('%A, %B %d, %Y') }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-6 text-start"><strong>Check-out:</strong></div>
-                        <div class="col-sm-6 text-start">{{ booking.check_out_date.strftime('%A, %B %d, %Y') }}</div>
-                    </div>
-                     <div class="row mb-3">
-                        <div class="col-sm-6 text-start"><strong>Total Price:</strong></div>
-                        <div class="col-sm-6 text-start"><strong>${{ "%.2f"|format(booking.total_price) }}</strong></div>
-                    </div>
-                    <hr>
-                    <p>A receipt for your booking is available for download.</p>
-                    <a href="{{ url_for('download_receipt', booking_id=booking.id) }}" class="btn btn-primary btn-lg mt-2">
-                        <i class="fas fa-download"></i> Download Receipt (PDF)
+                    <hr class="my-4">
+                    <p class="lead">A receipt for your booking is available for download.</p>
+                    <a href="{{ url_for('download_receipt', booking_id=booking.id) }}" class="btn btn-primary btn-lg mt-2 py-3 px-5">
+                        <i class="fas fa-download me-2"></i> Download Receipt (PDF)
                     </a>
-                    <div class="mt-4">
-                        <a href="{{ url_for('my_bookings') }}" class="btn btn-outline-secondary">View All My Bookings</a>
-                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Browse More Hotels</a>
+                    <div class="mt-5">
+                        <a href="{{ url_for('my_bookings') }}" class="btn btn-outline-secondary me-2"><i class="fas fa-list-alt me-2"></i>View All My Bookings</a>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-info"><i class="fas fa-search me-2"></i>Browse More Hotels</a>
                     </div>
                 </div>
-                <div class="card-footer text-muted">
+                <div class="card-footer text-muted py-3">
                     Booking made on: {{ booking.created_at.strftime('%B %d, %Y at %I:%M %p UTC') }}
                 </div>
             </div>

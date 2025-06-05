@@ -4,33 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}HotelApp - Your Perfect Stay{% endblock %}</title>
-    
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-    
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
-
-    <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-     crossorigin=""/>
-
-    <!-- Custom Styles -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    
-    <style>
-        /* Inline styles can be here for quick overrides or things not in style.css yet */
-        body { padding-top: 75px; /* Adjusted for potentially taller navbar */ }
-    </style>
-    {% block head_extra %}{% endblock %} {# For page-specific head elements #}
+    <style> body { padding-top: 75px; } </style>
+    {% block head_extra %}{% endblock %}
 </head>
-<body class="d-flex flex-column min-vh-100"> {# Ensure footer sticks to bottom #}
+<body class="d-flex flex-column min-vh-100">
     <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top border-bottom shadow-sm py-3">
         <div class="container-fluid">
             <a class="navbar-brand" href="{{ url_for('index') }}" style="font-family: 'Montserrat', sans-serif; font-weight: 700; color: var(--primary-color, #005A9C); font-size: 1.6rem;">
@@ -46,20 +30,15 @@
                     </li>
                     {% if current_user.is_authenticated %}
                         {% if current_user.role == 'admin' %}
-                            <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active fw-bold{% endif %}" href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
-                            </li>
+                            <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active fw-bold{% endif %}" href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a></li>
                         {% elif current_user.role == 'owner' %}
-                            <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'owner_dashboard' %}active fw-bold{% endif %}" href="{{ url_for('owner_dashboard') }}">Owner Dashboard</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'register_hotel' %}active fw-bold{% endif %}" href="{{ url_for('register_hotel') }}">Register Hotel</a>
-                            </li>
+                            <li class="nav-item"><a class="nav-link {% if request.endpoint == 'owner_dashboard' %}active fw-bold{% endif %}" href="{{ url_for('owner_dashboard') }}">Owner Dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link {% if request.endpoint == 'register_hotel' %}active fw-bold{% endif %}" href="{{ url_for('register_hotel') }}">Register Hotel</a></li>
                         {% endif %}
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'my_bookings' %}active fw-bold{% endif %}" href="{{ url_for('my_bookings') }}">My Bookings</a>
-                        </li>
+                        <li class="nav-item"><a class="nav-link {% if request.endpoint == 'my_bookings' %}active fw-bold{% endif %}" href="{{ url_for('my_bookings') }}">My Bookings</a></li>
+                        {% if current_user.role == 'user' %}
+                        <li class="nav-item"><a class="nav-link {% if request.endpoint == 'my_wishlist' %}active fw-bold{% endif %}" href="{{ url_for('my_wishlist') }}"><i class="fas fa-heart"></i> My Wishlist</a></li>
+                        {% endif %}
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
@@ -70,64 +49,33 @@
                                 <span class="badge rounded-pill bg-secondary ms-1">{{ current_user.role|capitalize }}</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" aria-labelledby="navbarUserDropdown">
-                                <!-- <li><a class="dropdown-item" href="#"><i class="fas fa-user-edit me-2"></i> Edit Profile</a></li> -->
-                                <!-- <li><hr class="dropdown-divider"></li> -->
+                                <li><a class="dropdown-item {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}"><i class="fas fa-user-edit me-2"></i> My Profile</a></li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
                             </ul>
                         </li>
                     {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'login' %}active fw-bold{% endif %}" href="{{ url_for('login') }}">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="btn btn-primary btn-sm ms-2" href="{{ url_for('register') }}">Register</a>
-                        </li>
+                        <li class="nav-item"><a class="nav-link {% if request.endpoint == 'login' %}active fw-bold{% endif %}" href="{{ url_for('login') }}">Login</a></li>
+                        <li class="nav-item"><a class="btn btn-primary btn-sm ms-2" href="{{ url_for('register') }}">Register</a></li>
                     {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
-
-    <main class="container-fluid mt-4 flex-grow-1"> {# Changed to container-fluid for wider content if needed #}
-        <div class="container"> {# Inner container for standard width content #}
+    <main class="container-fluid mt-4 flex-grow-1">
+        <div class="container">
             {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
+                {% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}
             {% endwith %}
-            
             {% block content %}{% endblock %}
         </div>
     </main>
-
     <footer class="py-4 mt-auto bg-light text-center text-muted border-top">
-        <div class="container">
-            <small>© <span id="currentYear"></span> HotelApp. All Rights Reserved.</small>
-        </div>
+        <div class="container"><small>© <span id="currentYear"></span> HotelApp. All Rights Reserved.</small></div>
     </footer>
-
-    <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-    
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-     crossorigin=""></script>
-    
-    <script>
-        // Simple script to get current year for footer
-        document.addEventListener('DOMContentLoaded', (event) => {
-            const yearSpan = document.getElementById('currentYear');
-            if (yearSpan) {
-                yearSpan.textContent = new Date().getFullYear();
-            }
-        });
-    </script>
-    {% block scripts %}{% endblock %} {# For page-specific JavaScript #}
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>document.addEventListener('DOMContentLoaded', (event) => { const yearSpan = document.getElementById('currentYear'); if (yearSpan) { yearSpan.textContent = new Date().getFullYear(); } });</script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

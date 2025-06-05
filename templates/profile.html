@@ -1,0 +1,94 @@
+
+{% extends "base.html" %}
+{% block title %}My Profile - HotelApp{% endblock %}
+{% block content %}
+<div class="container my-5">
+    <h2 class="mb-4 text-primary"><i class="fas fa-user-cog me-2"></i> My Profile</h2>
+    <div class="row">
+        <!-- Profile Update Form Column -->
+        <div class="col-lg-7 mb-4 mb-lg-0">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0">Account Details</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('profile') }}">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" id="username" class="form-control" value="{{ user.username }}" readonly disabled>
+                            <small class="form-text text-muted">Username cannot be changed.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                        </div>
+                        <hr class="my-4">
+                        <h5 class="mb-3">Change Password</h5>
+                        <p class="text-muted small">Leave these fields blank to keep your current password.</p>
+                        <div class="mb-3">
+                            <label for="current_password" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="current_password" name="current_password" placeholder="Required to set a new password">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="new_password" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="new_password" name="new_password">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                            </div>
+                        </div>
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg py-3"><i class="fas fa-save me-2"></i> Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- Booking History Column -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i> Recent Bookings</h5>
+                    <a href="{{ url_for('my_bookings') }}" class="btn btn-sm btn-outline-secondary">View All <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="card-body p-0">
+                    {% if bookings %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-3">Hotel</th>
+                                    <th>Check-in</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in bookings %}
+                                <tr>
+                                    <td class="ps-3">
+                                        <a href="{{ url_for('hotel_detail', hotel_id=booking.hotel.id) }}" class="text-dark text-decoration-none fw-bold">{{ booking.hotel.name }}</a>
+                                        <small class="d-block text-muted">ID: #{{ booking.id }}</small>
+                                    </td>
+                                    <td>{{ booking.check_in_date.strftime('%b %d, %y') }}</td>
+                                    <td><a href="{{ url_for('download_receipt', booking_id=booking.id) }}" class="btn btn-sm btn-outline-info" title="Download Receipt"><i class="fas fa-download"></i></a></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-muted d-flex align-items-center justify-content-center h-100">
+                        <div>
+                            <i class="fas fa-calendar-times fa-2x mb-2"></i>
+                            <p class="mb-0">You have no booking history.</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

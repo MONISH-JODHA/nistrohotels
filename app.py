@@ -1,19 +1,20 @@
+
 from flask import Flask, render_template, request, redirect, url_for, flash, session, make_response, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, date
-from functools import wraps # <<< CRITICAL IMPORT FOR @wraps
+from functools import wraps
 import os
-import traceback # For more detailed error logging
+import traceback
 from io import BytesIO
 from weasyprint import HTML
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, and_, select # Added select for subquery
 
 # --- App Configuration ---
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key_must_be_very_strong_and_unique_v5' # CHANGE THIS!
+app.config['SECRET_KEY'] = 'a_super_duper_secret_key_for_wishlist_v6' # CHANGE THIS!
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hotel_booking.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -26,7 +27,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 if not os.path.exists(UPLOAD_FOLDER):
     try:
-        os.makedirs(UPLOAD_FOLDER, exist_ok=True) 
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
         app.logger.info(f"Upload folder checked/created: {UPLOAD_FOLDER}")
     except OSError as e:
         app.logger.error(f"Error creating upload folder {UPLOAD_FOLDER}: {e}")
@@ -56,6 +57,9 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), nullable=False, default='user')
     hotels_owned = db.relationship('Hotel', backref='owner_user', lazy=True, foreign_keys='Hotel.owner_id')
     bookings = db.relationship('Booking', backref='booker', lazy=True, foreign_keys='Booking.user_id')
+    # Relationship for wishlist items initiated by this user
+    wishlist_items = db.relationship('Wishlist', backref='user', lazy='dynamic', cascade='all, delete-orphan')
+
     def set_password(self, password): self.password_hash = generate_password_hash(password)
     def check_password(self, password): return check_password_hash(self.password_hash, password)
 
@@ -79,6 +83,9 @@ class Hotel(db.Model):
     longitude = db.Column(db.Float, nullable=True)
     gallery_images = db.relationship('HotelImage', backref='hotel_ref', lazy='dynamic', cascade="all, delete-orphan")
     bookings = db.relationship('Booking', backref='hotel_booking_ref', lazy=True, foreign_keys='Booking.hotel_id', cascade="all, delete-orphan")
+    # Relationship for users who have wishlisted this hotel
+    wishlisted_by_users = db.relationship('Wishlist', backref='hotel', lazy='dynamic', cascade='all, delete-orphan')
+
     def get_amenities_list(self):
         return [a.strip() for a in self.amenities.split(',') if a.strip()] if self.amenities else []
     def to_dict_for_map(self):
@@ -95,21 +102,39 @@ class Booking(db.Model):
     status = db.Column(db.String(50), default='Confirmed')
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
+class Wishlist(db.Model): # New Model
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    hotel_id = db.Column(db.Integer, db.ForeignKey('hotel.id', ondelete='CASCADE'), nullable=False)
+    added_on = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    __table_args__ = (db.UniqueConstraint('user_id', 'hotel_id', name='_user_hotel_wishlist_uc'),)
+
 # --- Helper Functions ---
 def role_required(role_name):
     def decorator(f):
-        @wraps(f)  # <<< ENSURE @wraps IS PRESENT
+        @wraps(f)
         @login_required
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated: return login_manager.unauthorized()
             if current_user.role != role_name:
-                flash(f"Access Denied: '{role_name}' privileges required for this page.", "danger")
-                return redirect(url_for('index'))
+                flash(f"Access Denied: '{role_name}' privileges required.", "danger"); return redirect(url_for('index'))
             return f(*args, **kwargs)
         return decorated_function
     return decorator
 
+@app.context_processor # Makes function available in all templates
+def utility_processor():
+    def is_hotel_in_wishlist(hotel_id):
+        if current_user.is_authenticated:
+            return Wishlist.query.filter_by(user_id=current_user.id, hotel_id=hotel_id).first() is not None
+        return False
+    return dict(is_hotel_in_wishlist=is_hotel_in_wishlist)
+
 # --- Routes ---
+# (index, register, login, logout, hotel_detail, booking_confirmed, download_receipt, 
+#  register_hotel, owner_dashboard, admin_dashboard, approve_hotel, reject_hotel are largely the same as the very last app.py,
+#  but I will include them all for completeness)
+
 @app.route('/')
 def index():
     query = Hotel.query.filter_by(is_approved=True)
@@ -141,7 +166,6 @@ def index():
 def register():
     if current_user.is_authenticated: return redirect(url_for('index'))
     if request.method == 'POST':
-        # ... (same registration logic as before) ...
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
@@ -165,7 +189,7 @@ def login():
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
-            login_user(user, remember=request.form.get('remember_me')) # Added remember_me
+            login_user(user, remember=request.form.get('remember_me'))
             flash('Logged in successfully!', 'success')
             next_page = request.args.get('next')
             if user.role == 'admin': return redirect(next_page or url_for('admin_dashboard'))
@@ -181,13 +205,54 @@ def logout():
     flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
 
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    user = User.query.get_or_404(current_user.id)
+    if request.method == 'POST':
+        # --- Handle Email Update ---
+        new_email = request.form.get('email', '').strip()
+        if new_email and new_email != user.email:
+            existing_user = User.query.filter(and_(User.email == new_email, User.id != user.id)).first()
+            if existing_user:
+                flash('That email address is already in use. Please choose another.', 'danger')
+            else:
+                user.email = new_email
+                flash('Your email has been updated successfully.', 'success')
+
+        # --- Handle Password Update ---
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+
+        if new_password: # User wants to change password
+            if not current_password or not confirm_password:
+                flash('To change your password, please provide your current password and confirm the new one.', 'warning')
+            elif not user.check_password(current_password):
+                flash('Your current password is not correct.', 'danger')
+            elif new_password != confirm_password:
+                flash('The new passwords do not match.', 'danger')
+            elif len(new_password) < 8:
+                 flash('New password must be at least 8 characters long.', 'danger')
+            else:
+                user.set_password(new_password)
+                flash('Your password has been updated successfully.', 'success')
+        
+        db.session.commit()
+        return redirect(url_for('profile'))
+
+    # --- Handle GET request ---
+    # Fetch recent bookings to display on the profile page
+    recent_bookings = Booking.query.filter_by(user_id=user.id).order_by(Booking.created_at.desc()).limit(5).all()
+    return render_template('profile.html', user=user, bookings=recent_bookings)
+
+
 @app.route('/hotel/<int:hotel_id>', methods=['GET', 'POST'])
 def hotel_detail(hotel_id):
     hotel = Hotel.query.get_or_404(hotel_id)
     if not hotel.is_approved and (not current_user.is_authenticated or current_user.role != 'admin'):
         flash("This hotel is not yet approved or does not exist.", "warning"); return redirect(url_for('index'))
     if request.method == 'POST':
-        # ... (same booking logic as before) ...
         if not current_user.is_authenticated:
             flash("Please log in to book a hotel.", "warning"); return redirect(url_for('login', next=request.url))
         check_in_str = request.form.get('check_in_date')
@@ -213,21 +278,17 @@ def hotel_detail(hotel_id):
     all_images_for_carousel = []
     gallery_items = hotel.gallery_images.order_by(HotelImage.id).all()
     gallery_filenames_in_db = [img.filename for img in gallery_items]
-    main_image_added_to_carousel = False # Flag
-
+    main_image_added_to_carousel = False
     if hotel.image_url and not hotel.image_url.startswith('https://via.placeholder.com'):
         all_images_for_carousel.append({'url': hotel.image_url, 'alt': f"{hotel.name} - Main View"})
         main_image_added_to_carousel = True
         main_img_filename_component = hotel.image_url.split('/')[-1]
         if main_img_filename_component in gallery_filenames_in_db:
              gallery_filenames_in_db.remove(main_img_filename_component) 
-
     for image_db_entry_filename in gallery_filenames_in_db:
         all_images_for_carousel.append({'url': url_for('static', filename=f'uploads/hotel_images/{image_db_entry_filename}'), 'alt': f"{hotel.name} - View"})
-    
     if not all_images_for_carousel:
         all_images_for_carousel.append({'url': 'https://via.placeholder.com/800x500.png?text=No+Images+Available', 'alt': 'No Images Available'})
-
     return render_template('hotel_detail.html', hotel=hotel, today=date.today().isoformat(), carousel_images=all_images_for_carousel)
 
 @app.route('/booking_confirmed/<int:booking_id>')
@@ -257,7 +318,7 @@ def download_receipt(booking_id):
         flash("Error generating PDF. Contact support.", "danger")
         return redirect(request.referrer or url_for('my_bookings'))
 
-@app.route('/my_bookings') # <<< ENSURE THIS ROUTE IS CORRECTLY DEFINED
+@app.route('/my_bookings')
 @login_required
 def my_bookings():
     bookings = Booking.query.filter_by(user_id=current_user.id).order_by(Booking.created_at.desc()).all()
@@ -266,7 +327,6 @@ def my_bookings():
 @app.route('/register_hotel', methods=['GET', 'POST'])
 @role_required('owner')
 def register_hotel():
-    # ... (same hotel registration logic with file uploads as before) ...
     form_data = request.form if request.method == 'POST' else {}
     if request.method == 'POST':
         name = request.form.get('name')
@@ -337,7 +397,7 @@ def register_hotel():
         return redirect(url_for('owner_dashboard'))
     return render_template('register_hotel.html', form_data={})
 
-@app.route('/owner_dashboard') # <<< ENSURE THIS ROUTE IS CORRECTLY DEFINED
+@app.route('/owner_dashboard')
 @role_required('owner')
 def owner_dashboard():
     hotels_owned = Hotel.query.filter_by(owner_id=current_user.id).order_by(Hotel.name).all()
@@ -370,10 +430,57 @@ def reject_hotel(hotel_id):
     for img in hotel.gallery_images.all():
         try: os.remove(os.path.join(app.config['UPLOAD_FOLDER'], img.filename))
         except OSError as e: app.logger.error(f"Error deleting file {img.filename}: {e}")
-    Booking.query.filter_by(hotel_id=hotel.id).delete()
+    Booking.query.filter_by(hotel_id=hotel.id).delete() # Also deletes bookings for this hotel
     db.session.delete(hotel); db.session.commit()
     flash(f'Hotel "{hotel.name}", its images, and bookings removed.', 'warning')
     return redirect(url_for('admin_dashboard'))
+
+# --- Wishlist Routes ---
+@app.route('/wishlist/add/<int:hotel_id>', methods=['POST'])
+@login_required
+def add_to_wishlist(hotel_id):
+    hotel = Hotel.query.get_or_404(hotel_id)
+    if current_user.role != 'user': # Only regular users can have wishlists
+        flash("Only users can add to wishlist.", "warning")
+        return redirect(request.referrer or url_for('index'))
+        
+    existing_item = Wishlist.query.filter_by(user_id=current_user.id, hotel_id=hotel.id).first()
+    if existing_item:
+        flash(f'{hotel.name} is already in your wishlist.', 'info')
+    else:
+        wishlist_item = Wishlist(user_id=current_user.id, hotel_id=hotel.id)
+        db.session.add(wishlist_item)
+        db.session.commit()
+        flash(f'{hotel.name} added to your wishlist!', 'success')
+    return redirect(request.referrer or url_for('index'))
+
+@app.route('/wishlist/remove/<int:hotel_id>', methods=['POST'])
+@login_required
+def remove_from_wishlist(hotel_id):
+    hotel = Hotel.query.get_or_404(hotel_id)
+    wishlist_item = Wishlist.query.filter_by(user_id=current_user.id, hotel_id=hotel.id).first()
+    if wishlist_item:
+        db.session.delete(wishlist_item)
+        db.session.commit()
+        flash(f'{hotel.name} removed from your wishlist.', 'success')
+    else:
+        flash(f'{hotel.name} was not found in your wishlist.', 'warning')
+    return redirect(request.referrer or url_for('my_wishlist'))
+
+@app.route('/my_wishlist')
+@login_required
+def my_wishlist():
+    if current_user.role != 'user':
+        flash("This page is for users.", "info")
+        return redirect(url_for('index'))
+
+    # Using a subquery to get hotel_ids from the user's wishlist
+    wishlisted_hotel_ids_stmt = select(Wishlist.hotel_id).filter_by(user_id=current_user.id)
+    # Fetch the actual Hotel objects based on these IDs
+    wishlisted_hotels = Hotel.query.filter(Hotel.id.in_(wishlisted_hotel_ids_stmt)).order_by(Hotel.name).all()
+    
+    return render_template('my_wishlist.html', hotels=wishlisted_hotels)
+# --- End Wishlist Routes ---
 
 def create_admin_user_if_not_exists():
     with app.app_context():
@@ -388,4 +495,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     create_admin_user_if_not_exists()
-    app.run(debug=True, port=5001) # Running on port 5001
+    app.run(debug=True, port=5001)
