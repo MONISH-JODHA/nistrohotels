@@ -1,12 +1,93 @@
 {% extends "base.html" %}
 {% block title %}Owner Dashboard - HotelApp{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="text-primary"><i class="fas fa-tachometer-alt me-2"></i> Owner Dashboard</h2>
         <a href="{{ url_for('register_hotel') }}" class="btn btn-primary"><i class="fas fa-plus-circle me-2"></i> Register New Hotel</a>
     </div>
-    <div class="card shadow-sm mb-4 border-0">
+
+    <!-- Analytics Section -->
+    <div class="row mb-4">
+        <!-- Total Revenue Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Revenue</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">${{ "%.2f"|format(analytics.total_revenue) }}</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-dollar-sign fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Occupancy Rate Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Occupancy (Last 30d)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "%.1f"|format(analytics.occupancy_rate) }}%</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-chart-pie fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Total Bookings Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total Bookings</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ analytics.total_bookings }}</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-calendar-check fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Popular Rooms Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Popular Rooms</div>
+                            {% if analytics.popular_room_types %}
+                                <ol class="mb-0 ps-4">
+                                {% for room, count in analytics.popular_room_types %}
+                                    <li><small>{{ room }} ({{count}})</small></li>
+                                {% endfor %}
+                                </ol>
+                            {% else %}
+                                <div class="small text-gray-800">No bookings yet.</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-auto"><i class="fas fa-star fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Booking Trends Chart -->
+    <div class="card shadow-sm mb-5 border-0">
+        <div class="card-header bg-light py-3">
+            <h4 class="mb-0"><i class="fas fa-chart-line me-2"></i> Booking Trends (Last 30 Days)</h4>
+        </div>
+        <div class="card-body p-4">
+            <canvas id="bookingChart"></canvas>
+        </div>
+    </div>
+
+    <!-- My Hotels Table -->
+    <div class="card shadow-sm border-0">
         <div class="card-header bg-info text-white py-3"><h4 class="mb-0"><i class="fas fa-hotel me-2"></i> My Registered Hotels</h4></div>
         <div class="card-body p-0">
             {% if hotels %}
@@ -29,40 +110,56 @@
                 </table>
             </div>
             {% else %}
-            <div class="card-body p-4">
-                <p class="text-muted text-center">You have not registered any hotels yet. <a href="{{ url_for('register_hotel') }}">Register your first hotel now!</a></p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-secondary text-white py-3"><h4 class="mb-0"><i class="fas fa-calendar-check me-2"></i> Bookings for My Hotels</h4></div>
-        <div class="card-body p-0">
-            {% if bookings %}
-            <div class="table-responsive">
-                <table class="table table-striped table-hover align-middle mb-0">
-                    <thead><tr><th class="ps-3">Booking ID</th><th>Hotel Name</th><th>Room</th><th>Booked By</th><th>Check-in</th><th>Check-out</th><th>Price</th></tr></thead>
-                    <tbody>
-                        {% for booking in bookings %}
-                        <tr>
-                            <td class="ps-3">#{{ booking.id }}</td>
-                            <td>{{ booking.hotel.name }}</td>
-                            <td>{{ booking.room_type.name }}</td>
-                            <td>{{ booking.booker.username }}</td>
-                            <td>{{ booking.check_in_date.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ booking.check_out_date.strftime('%Y-%m-%d') }}</td>
-                            <td>${{ "%.2f"|format(booking.total_price) }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="card-body p-4">
-                <p class="text-muted text-center">No bookings have been made for your hotels yet.</p>
-            </div>
+            <div class="card-body p-4"><p class="text-muted text-center">You have not registered any hotels yet.</p></div>
             {% endif %}
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const ctx = document.getElementById('bookingChart');
+    if (ctx) {
+        const chartLabels = {{ analytics.chart_labels|tojson|safe }};
+        const chartData = {{ analytics.chart_data|tojson|safe }};
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: 'Bookings per Day',
+                    data: chartData,
+                    fill: true,
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointBackgroundColor: 'rgb(75, 192, 192)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1 // Ensure y-axis shows whole numbers for bookings
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

@@ -4,30 +4,6 @@
 <div class="container mt-4 mb-5">
     <!-- Hotel Info Section -->
     <div class="card shadow-sm border-0 mb-5">
-        {% if carousel_images and carousel_images|length > 0 %}
-        <div id="hotelImageCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel">
-            {% if carousel_images|length > 1 %}
-            <div class="carousel-indicators">
-                {% for image_info in carousel_images %}
-                <button type="button" data-bs-target="#hotelImageCarousel" data-bs-slide-to="{{ loop.index0 }}" {% if loop.first %}class="active" aria-current="true"{% endif %} aria-label="Slide {{ loop.index }}"></button>
-                {% endfor %}
-            </div>
-            {% endif %}
-            <div class="carousel-inner" style="border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem;">
-                {% for image_info in carousel_images %}
-                <div class="carousel-item {% if loop.first %}active{% endif %}">
-                    <img src="{{ image_info.url }}" class="d-block w-100" alt="{{ image_info.alt }}" style="height: 500px; object-fit: cover;">
-                </div>
-                {% endfor %}
-            </div>
-            {% if carousel_images|length > 1 %}
-            <button class="carousel-control-prev" type="button" data-bs-target="#hotelImageCarousel" data-bs-slide="prev"><span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="visually-hidden">Previous</span></button>
-            <button class="carousel-control-next" type="button" data-bs-target="#hotelImageCarousel" data-bs-slide="next"><span class="carousel-control-next-icon" aria-hidden="true"></span><span class="visually-hidden">Next</span></button>
-            {% endif %}
-        </div>
-        {% else %}
-        <img src="https://via.placeholder.com/800x500.png?text=No+Image+Available" class="card-img-top" alt="No Image Available" style="height: 500px; object-fit: cover; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem;">
-        {% endif %}
         <div class="card-body p-4">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
@@ -52,18 +28,6 @@
             </div>
             <h4 class="mt-4 mb-3 text-primary">Hotel Description</h4>
             <p class="text-secondary preserve-newlines">{{ hotel.description if hotel.description else "No description available." }}</p>
-            {% if hotel.get_amenities_list() %}
-                <h4 class="mt-4 mb-3 text-primary">Hotel Amenities</h4>
-                <div class="mb-3">
-                    {% for amenity in hotel.get_amenities_list() %}
-                        <span class="badge bg-info text-dark rounded-pill me-2 mb-2 p-2 px-3 fs-6">{{ amenity }}</span>
-                    {% endfor %}
-                </div>
-            {% endif %}
-            {% if hotel.latitude and hotel.longitude %}
-                <h4 class="mt-4 mb-3 text-primary">Location on Map</h4>
-                <div id="singleHotelMap" style="height: 350px; width: 100%; border-radius: 0.375rem;" class="shadow-sm border"></div>
-            {% endif %}
         </div>
     </div>
 
@@ -78,28 +42,24 @@
                     <div class="card-body">
                         <h4 class="card-title">{{ room.name }}</h4>
                         <p class="card-text text-muted small">{{ room.description or 'No description for this room type.'}}</p>
-                        {% if room.get_amenities_list() %}
-                            <p class="card-text">
-                                {% for amenity in room.get_amenities_list() %}
-                                    <span class="badge bg-light text-dark border me-1 mb-1 p-2">{{ amenity }}</span>
-                                {% endfor %}
-                            </p>
-                        {% endif %}
                     </div>
                     <div class="card-footer bg-white border-top-0 p-3">
-                        <h3 class="text-success mb-3">${{ "%.2f"|format(room.price_per_night) }} <small class="text-muted fs-6">/ night</small></h3>
-                        <form method="POST" action="{{ url_for('book_room', room_type_id=room.id) }}">
+                        <div class="mb-3">
+                            <h3 class="text-success d-inline-block">${{ "%.2f"|format(room.price_per_night) }}</h3> <small class="text-muted fs-6">/ default night price</small>
+                        </div>
+                        <form method="POST" action="{{ url_for('book_room', room_type_id=room.id) }}" class="booking-form" data-room-id="{{ room.id }}">
                             <div class="row g-2">
                                 <div class="col-sm-6">
                                     <label for="check_in_date_{{room.id}}" class="form-label small fw-bold">Check-in</label>
-                                    <input type="date" class="form-control" id="check_in_date_{{room.id}}" name="check_in_date" min="{{ today }}" required>
+                                    <input type="date" class="form-control check-in-date" id="check_in_date_{{room.id}}" name="check_in_date" min="{{ today }}" required>
                                 </div>
                                 <div class="col-sm-6">
                                     <label for="check_out_date_{{room.id}}" class="form-label small fw-bold">Check-out</label>
-                                    <input type="date" class="form-control" id="check_out_date_{{room.id}}" name="check_out_date" min="{{ today }}" required>
+                                    <input type="date" class="form-control check-out-date" id="check_out_date_{{room.id}}" name="check_out_date" min="{{ today }}" required>
                                 </div>
                             </div>
-                            <div class="d-grid mt-3">
+                            <div class="price-display my-3 p-3 rounded text-center" style="display: none;"></div>
+                            <div class="d-grid mt-2">
                                 {% if current_user.is_authenticated %}
                                     <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-calendar-check me-2"></i> Book This Room</button>
                                 {% else %}
@@ -115,38 +75,76 @@
     {% else %}
         <div class="alert alert-warning text-center shadow-sm">This hotel has not listed any rooms yet. Please check back later.</div>
     {% endif %}
-
     <div class="mt-5 text-center"><a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-lg"><i class="fas fa-arrow-left me-2"></i> Back to All Hotels</a></div>
 </div>
 {% endblock %}
 {% block scripts %}
 <script>
-    // Script for single hotel map
-    {% if hotel.latitude and hotel.longitude %} document.addEventListener('DOMContentLoaded', function() { const hotelLat = {{ hotel.latitude }}; const hotelLng = {{ hotel.longitude }}; const hotelName = {{ hotel.name|tojson|safe }}; const mapDetailDiv = document.getElementById('singleHotelMap'); if (mapDetailDiv && typeof L !== 'undefined') { try { const detailMap = L.map('singleHotelMap').setView([hotelLat, hotelLng], 15); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(detailMap); L.marker([hotelLat, hotelLng]).addTo(detailMap).bindPopup(`<b>${hotelName}</b><br>${{ hotel.location|tojson|safe }}`).openPopup(); } catch (e) { console.error("Error initializing single hotel map:", e); mapDetailDiv.innerHTML = "<p class='text-center text-danger p-3'>Map could not be loaded.</p>"; } } }); {% endif %}
-    
-    // Script to sync check-out date minimum
-    document.addEventListener('DOMContentLoaded', function () {
-        const todayDate = "{{ today }}";
-        const roomForms = document.querySelectorAll('form[action^="/book_room/"]');
-        roomForms.forEach(form => {
-            const checkInInput = form.querySelector('input[name="check_in_date"]');
-            const checkOutInput = form.querySelector('input[name="check_out_date"]');
+document.addEventListener('DOMContentLoaded', function () {
+    const todayDate = "{{ today }}";
+    document.querySelectorAll('.booking-form').forEach(form => {
+        const checkInInput = form.querySelector('.check-in-date');
+        const checkOutInput = form.querySelector('.check-out-date');
+        const priceDisplay = form.querySelector('.price-display');
+        const submitButton = form.querySelector('button[type="submit"]');
+        const roomId = form.dataset.roomId;
 
-            if (checkInInput && checkOutInput) {
-                checkInInput.addEventListener('change', function() {
-                    if (this.value) {
-                        let nextDay = new Date(this.value);
-                        nextDay.setDate(nextDay.getDate() + 2); // setDate handles month/year rollovers
-                        checkOutInput.min = nextDay.toISOString().split('T')[0];
-                        if (checkOutInput.value && checkOutInput.value <= this.value) {
-                             checkOutInput.value = checkOutInput.min;
-                        }
-                    } else {
-                        checkOutInput.min = todayDate;
-                    }
-                });
+        function updateMinCheckoutDate() {
+            if (checkInInput.value) {
+                let nextDay = new Date(checkInInput.value);
+                nextDay.setDate(nextDay.getDate() + 1);
+                checkOutInput.min = nextDay.toISOString().split('T')[0];
+                if (checkOutInput.value && checkOutInput.value <= checkInInput.value) {
+                     checkOutInput.value = '';
+                }
+            } else {
+                checkOutInput.min = todayDate;
             }
+        }
+
+        function calculatePrice() {
+            const checkIn = checkInInput.value;
+            const checkOut = checkOutInput.value;
+
+            if (checkIn && checkOut && new Date(checkOut) > new Date(checkIn)) {
+                priceDisplay.style.display = 'block';
+                priceDisplay.innerHTML = `<div class="spinner-border spinner-border-sm" role="status"><span class="visually-hidden">Loading...</span></div>`;
+                priceDisplay.className = 'price-display my-3 p-3 rounded text-center bg-light'; // Reset class
+                if(submitButton) submitButton.disabled = true;
+
+                fetch(`/api/room/${roomId}/calculate_price?check_in=${checkIn}&check_out=${checkOut}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.available) {
+                            const nights = (new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24);
+                            priceDisplay.innerHTML = `<strong>Total for ${nights} night(s): $${data.price.toFixed(2)}</strong>`;
+                            priceDisplay.classList.remove('alert', 'alert-danger');
+                            priceDisplay.classList.add('bg-light');
+                            if(submitButton) submitButton.disabled = false;
+                        } else {
+                            priceDisplay.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i> ${data.message}`;
+                            priceDisplay.classList.remove('bg-light');
+                            priceDisplay.classList.add('alert', 'alert-danger');
+                            if(submitButton) submitButton.disabled = true;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        priceDisplay.innerHTML = 'Error calculating price.';
+                        priceDisplay.classList.add('alert', 'alert-danger');
+                        if(submitButton) submitButton.disabled = true;
+                    });
+            } else {
+                priceDisplay.style.display = 'none';
+                if(submitButton) submitButton.disabled = false;
+            }
+        }
+        checkInInput.addEventListener('change', () => {
+            updateMinCheckoutDate();
+            calculatePrice();
         });
+        checkOutInput.addEventListener('change', calculatePrice);
     });
+});
 </script>
 {% endblock %}

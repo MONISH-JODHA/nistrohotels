@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Manage Availability for {{ room.name }}{% endblock %}
+
+{% block head_extra %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+<style>
+    #calendar { max-width: 1100px; margin: 40px auto; }
+    .fc-daygrid-day-number { font-weight: bold; }
+    .fc-event { padding: 4px; cursor: pointer; font-size: 0.85em; }
+    .fc-event-title { white-space: normal; }
+    .fc-day-today { background: #fcf8e3 !important; }
+    .fc-event-main { color: white; }
+    .fc-event[style*="border-color: transparent"] {
+      border: 1px dashed #ccc; /* Give a subtle border to default days */
+    }
+    .fc-event[style*="border-color: rgb(0, 123, 255)"] {
+        border-width: 3px !important;
+        border-style: solid;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-primary mb-0">Dynamic Availability & Pricing</h2>
+            <p class="lead text-muted">Hotel: <strong>{{ hotel.name }}</strong> | Room: <strong>{{ room.name }}</strong></p>
+        </div>
+        <a href="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i> Back to Room List</a>
+    </div>
+
+    <div class="alert alert-info shadow-sm">
+        <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i> How to Use This Calendar</h5>
+        <ul>
+            <li>Click on any date to set a custom price or number of available rooms for that day.</li>
+            <li>To revert a date to its default settings, open its edit modal and clear both input fields, then save.</li>
+            <li>A <strong class="text-primary">thick blue border</strong> indicates a day has custom overrides.</li>
+            <li>The event color shows availability: <i class="fas fa-circle text-success me-1"></i><strong>Green</strong> = Available | <i class="fas fa-circle text-danger me-1"></i><strong>Red</strong> = Fully Booked.</li>
+        </ul>
+    </div>
+    
+    <div id="calendar-container" class="card shadow-sm border-0">
+        <div id="calendar" class="p-4"></div>
+    </div>
+</div>
+
+<!-- Modal for editing availability -->
+<div class="modal fade" id="availabilityModal" tabindex="-1" aria-labelledby="availabilityModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="availabilityModalLabel">Set Overrides for Date</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="availabilityForm">
+                    <input type="hidden" id="modalDate" name="date">
+                    <div class="mb-3">
+                        <label for="modalPrice" class="form-label">Custom Price ($)</label>
+                        <input type="number" class="form-control" id="modalPrice" name="price" step="0.01" min="0" placeholder="e.g., 150.00">
+                        <small class="form-text text-muted">Default: ${{ "%.2f"|format(room.price_per_night) }}. Leave blank to use default.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modalAvailableRooms" class="form-label">Custom Available Rooms</label>
+                        <input type="number" class="form-control" id="modalAvailableRooms" name="available_rooms" step="1" min="0" placeholder="e.g., 5">
+                        <small class="form-text text-muted">Default: {{ room.number_of_rooms }}. Leave blank to use default. Set to 0 to block the date.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveChangesBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    const availabilityModal = new bootstrap.Modal(document.getElementById('availabilityModal'));
+    const modalForm = document.getElementById('availabilityForm');
+    const modalDateField = document.getElementById('modalDate');
+    const modalPriceField = document.getElementById('modalPrice');
+    const modalAvailableRoomsField = document.getElementById('modalAvailableRooms');
+    const modalTitle = document.getElementById('availabilityModalLabel');
+    const saveChangesBtn = document.getElementById('saveChangesBtn');
+    
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth'
+        },
+        events: `/api/room/{{ room.id }}/availability`,
+        dateClick: function(info) {
+            modalTitle.textContent = `Set Overrides for ${info.dateStr}`;
+            modalDateField.value = info.dateStr;
+            modalForm.reset();
+            availabilityModal.show();
+        },
+        eventClick: function(info) {
+            const dateStr = info.event.start.toISOString().split('T')[0];
+            modalTitle.textContent = `Set Overrides for ${dateStr}`;
+            modalDateField.value = dateStr;
+            modalForm.reset();
+            availabilityModal.show();
+        }
+    });
+    
+    calendar.render();
+
+    saveChangesBtn.addEventListener('click', function() {
+        const formData = {
+            date: modalDateField.value,
+            price: modalPriceField.value,
+            available_rooms: modalAvailableRoomsField.value,
+        };
+
+        fetch(`/api/room/{{ room.id }}/availability/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                availabilityModal.hide();
+                calendar.refetchEvents();
+            } else {
+                alert('Error: ' + (data.message || data.error));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error)
+            alert('An unexpected error occurred.');
+        });
+    });
+});
+</script>
+{% endblock %}

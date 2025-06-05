@@ -1,17 +1,16 @@
-
-
 from flask import Flask, render_template, request, redirect, url_for, flash, session, make_response, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from functools import wraps
 import os
 import traceback
 from io import BytesIO
 from weasyprint import HTML
 from sqlalchemy import or_, and_, select, func
+from collections import Counter
 
 # --- App Configuration ---
 app = Flask(__name__)
@@ -73,44 +72,36 @@ class RoomImage(db.Model):
     room_type_id = db.Column(db.Integer, db.ForeignKey('room_type.id', ondelete='CASCADE'), nullable=False)
     filename = db.Column(db.String(255), nullable=False)
 
+class Availability(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False)
+    room_type_id = db.Column(db.Integer, db.ForeignKey('room_type.id', ondelete='CASCADE'), nullable=False)
+    price = db.Column(db.Float, nullable=True)
+    available_rooms = db.Column(db.Integer, nullable=True)
+    __table_args__ = (db.UniqueConstraint('date', 'room_type_id', name='_date_room_uc'),)
+
 class RoomType(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     hotel_id = db.Column(db.Integer, db.ForeignKey('hotel.id', ondelete='CASCADE'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
-    price_per_night = db.Column(db.Float, nullable=False)
-    number_of_rooms = db.Column(db.Integer, nullable=False, default=1)
+    price_per_night = db.Column(db.Float, nullable=False) # Default price
+    number_of_rooms = db.Column(db.Integer, nullable=False, default=1) # Default availability
     amenities = db.Column(db.String(300), nullable=True)
     main_image_url = db.Column(db.String(255), nullable=True, default='https://via.placeholder.com/800x500.png?text=Room+Image')
     gallery_images = db.relationship('RoomImage', backref='room_type_ref', lazy='dynamic', cascade="all, delete-orphan")
     bookings = db.relationship('Booking', backref='room_type', lazy='dynamic')
+    availabilities = db.relationship('Availability', backref='room_type', lazy='dynamic', cascade="all, delete-orphan")
 
     def get_amenities_list(self):
         return [a.strip() for a in self.amenities.split(',') if a.strip()] if self.amenities else []
-        
-    def get_carousel_images(self):
-        all_images = []
-        gallery_items = self.gallery_images.order_by(RoomImage.id).all()
-        is_main_real = self.main_image_url and not self.main_image_url.startswith('https://via.placeholder.com')
-        if is_main_real:
-            all_images.append({'url': self.main_image_url, 'alt': f"{self.name} - Main View"})
-        
-        for img in gallery_items:
-            img_url = url_for('static', filename=f'uploads/hotel_images/{img.filename}')
-            if is_main_real and img_url in self.main_image_url:
-                continue
-            all_images.append({'url': img_url, 'alt': f"{self.name} - View"})
-        
-        if not all_images:
-            all_images.append({'url': 'https://via.placeholder.com/800x500.png?text=No+Images+Available', 'alt': 'No Images Available'})
-        return all_images
 
 class Hotel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     location = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
-    price_per_night = db.Column(db.Float, nullable=True) # "Starting From" price
+    price_per_night = db.Column(db.Float, nullable=True)
     image_url = db.Column(db.String(255), nullable=True, default='https://via.placeholder.com/800x500.png?text=Main+Hotel+Image')
     owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     is_approved = db.Column(db.Boolean, default=False, nullable=False)
@@ -119,10 +110,9 @@ class Hotel(db.Model):
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
     gallery_images = db.relationship('HotelImage', backref='hotel_ref', lazy='dynamic', cascade="all, delete-orphan")
-    # FIX IS HERE: Changed backref from 'hotel_booking_ref' to 'hotel'
     bookings = db.relationship('Booking', backref='hotel', lazy=True, foreign_keys='Booking.hotel_id', cascade="all, delete-orphan")
     wishlisted_by_users = db.relationship('Wishlist', backref='hotel', lazy='dynamic', cascade='all, delete-orphan')
-    room_types = db.relationship('RoomType', backref='hotel_ref', lazy='dynamic', cascade="all, delete-orphan") # changed backref to hotel_ref to avoid conflict
+    room_types = db.relationship('RoomType', backref='hotel', lazy='dynamic', cascade="all, delete-orphan")
 
     def get_amenities_list(self):
         return [a.strip() for a in self.amenities.split(',') if a.strip()] if self.amenities else []
@@ -167,9 +157,9 @@ def role_required(role_name):
         @wraps(f)
         @login_required
         def decorated_function(*args, **kwargs):
-            if not current_user.is_authenticated: return login_manager.unauthorized()
             if current_user.role != role_name:
-                flash(f"Access Denied: '{role_name}' privileges required.", "danger"); return redirect(url_for('index'))
+                flash(f"Access Denied: '{role_name}' privileges required.", "danger")
+                return redirect(url_for('index'))
             return f(*args, **kwargs)
         return decorated_function
     return decorator
@@ -193,6 +183,35 @@ def utility_processor():
         return False
     return dict(is_hotel_in_wishlist=is_hotel_in_wishlist)
 
+# --- Core Logic for Availability ---
+def get_daily_details(room_type, target_date):
+    override = Availability.query.filter_by(room_type_id=room_type.id, date=target_date).first()
+    price = override.price if override and override.price is not None else room_type.price_per_night
+    available = override.available_rooms if override and override.available_rooms is not None else room_type.number_of_rooms
+    return {'price': price, 'available': available}
+
+def check_availability_and_calculate_price(room_type_id, check_in_date, check_out_date):
+    room_type = RoomType.query.get_or_404(room_type_id)
+    total_price = 0
+    current_date = check_in_date
+    while current_date < check_out_date:
+        daily_info = get_daily_details(room_type, current_date)
+        if daily_info['available'] <= 0:
+             return {'available': False, 'message': f"No rooms available on {current_date.strftime('%Y-%m-%d')}.", 'price': 0}
+
+        booked_on_date = Booking.query.filter(
+            Booking.room_type_id == room_type_id,
+            Booking.check_in_date <= current_date,
+            Booking.check_out_date > current_date
+        ).count()
+        
+        if booked_on_date >= daily_info['available']:
+            return {'available': False, 'message': f"Fully booked on {current_date.strftime('%Y-%m-%d')}.", 'price': 0}
+        
+        total_price += daily_info['price']
+        current_date += timedelta(days=1)
+    return {'available': True, 'message': 'Available', 'price': total_price}
+
 # --- Main Routes ---
 @app.route('/')
 def index():
@@ -205,15 +224,15 @@ def index():
     if search_term: query = query.filter(or_(Hotel.name.ilike(f"%{search_term}%"), Hotel.location.ilike(f"%{search_term}%")))
     if min_price_str:
         try: query = query.filter(Hotel.price_per_night >= float(min_price_str))
-        except ValueError: pass
+        except (ValueError, TypeError): pass
     if max_price_str:
         try: query = query.filter(Hotel.price_per_night <= float(max_price_str))
-        except ValueError: pass
+        except (ValueError, TypeError): pass
     if star_rating_str:
         try:
             sr = int(star_rating_str)
             if 1 <= sr <= 5: query = query.filter(Hotel.star_rating >= sr)
-        except ValueError: pass
+        except (ValueError, TypeError): pass
     if amenities_filter_str:
         req_amenities = [a.strip().lower() for a in amenities_filter_str.split(',') if a.strip()]
         if req_amenities:
@@ -273,32 +292,17 @@ def profile():
         new_email = request.form.get('email', '').strip()
         if new_email and new_email != user.email:
             existing_user = User.query.filter(and_(User.email == new_email, User.id != user.id)).first()
-            if existing_user:
-                flash('That email address is already in use. Please choose another.', 'danger')
-            else:
-                user.email = new_email
-                flash('Your email has been updated successfully.', 'success')
-
+            if existing_user: flash('That email address is already in use.', 'danger')
+            else: user.email = new_email; flash('Your email has been updated.', 'success')
         current_password = request.form.get('current_password')
         new_password = request.form.get('new_password')
         confirm_password = request.form.get('confirm_password')
-
         if new_password:
-            if not current_password or not confirm_password:
-                flash('To change your password, please provide your current password and confirm the new one.', 'warning')
-            elif not user.check_password(current_password):
-                flash('Your current password is not correct.', 'danger')
-            elif new_password != confirm_password:
-                flash('The new passwords do not match.', 'danger')
-            elif len(new_password) < 8:
-                 flash('New password must be at least 8 characters long.', 'danger')
-            else:
-                user.set_password(new_password)
-                flash('Your password has been updated successfully.', 'success')
-        
+            if not user.check_password(current_password): flash('Your current password is not correct.', 'danger')
+            elif new_password != confirm_password: flash('The new passwords do not match.', 'danger')
+            else: user.set_password(new_password); flash('Your password has been updated.', 'success')
         db.session.commit()
         return redirect(url_for('profile'))
-
     recent_bookings = Booking.query.filter_by(user_id=user.id).order_by(Booking.created_at.desc()).limit(5).all()
     return render_template('profile.html', user=user, bookings=recent_bookings)
 
@@ -307,69 +311,36 @@ def profile():
 def hotel_detail(hotel_id):
     hotel = Hotel.query.get_or_404(hotel_id)
     if not hotel.is_approved and (not current_user.is_authenticated or (current_user.role != 'admin' and current_user.id != hotel.owner_id)):
-        flash("This hotel is not yet approved or does not exist.", "warning"); return redirect(url_for('index'))
-    
+        flash("This hotel is not yet approved or does not exist.", "warning")
+        return redirect(url_for('index'))
     room_types = hotel.room_types.order_by(RoomType.price_per_night.asc()).all()
-    
-    all_images_for_carousel = []
-    gallery_items = hotel.gallery_images.order_by(HotelImage.id).all()
-    gallery_filenames_in_db = [img.filename for img in gallery_items]
-    if hotel.image_url and not hotel.image_url.startswith('https://via.placeholder.com'):
-        all_images_for_carousel.append({'url': hotel.image_url, 'alt': f"{hotel.name} - Main View"})
-        main_img_filename_component = hotel.image_url.split('/')[-1]
-        if main_img_filename_component in gallery_filenames_in_db:
-             gallery_filenames_in_db.remove(main_img_filename_component) 
-    for image_db_entry_filename in gallery_filenames_in_db:
-        all_images_for_carousel.append({'url': url_for('static', filename=f'uploads/hotel_images/{image_db_entry_filename}'), 'alt': f"{hotel.name} - View"})
-    if not all_images_for_carousel:
-        all_images_for_carousel.append({'url': 'https://via.placeholder.com/800x500.png?text=No+Images+Available', 'alt': 'No Images Available'})
-        
-    return render_template('hotel_detail.html', hotel=hotel, room_types=room_types, today=date.today().isoformat(), carousel_images=all_images_for_carousel)
+    return render_template('hotel_detail.html', hotel=hotel, room_types=room_types, today=date.today().isoformat())
 
 @app.route('/book_room/<int:room_type_id>', methods=['POST'])
 @login_required
 def book_room(room_type_id):
     room_type = RoomType.query.get_or_404(room_type_id)
-    hotel = room_type.hotel_ref # Use the correct backref name
+    hotel = room_type.hotel
     check_in_str = request.form.get('check_in_date')
     check_out_str = request.form.get('check_out_date')
-    
-    if not check_in_str or not check_out_str:
-        flash("Please select check-in and check-out dates.", "danger"); return redirect(url_for('hotel_detail', hotel_id=hotel.id))
     try:
         check_in_date_obj = datetime.strptime(check_in_str, '%Y-%m-%d').date()
         check_out_date_obj = datetime.strptime(check_out_str, '%Y-%m-%d').date()
-    except ValueError:
-        flash("Invalid date format.", "danger"); return redirect(url_for('hotel_detail', hotel_id=hotel.id))
-    
-    if check_in_date_obj < date.today():
-        flash("Check-in date cannot be in the past.", "danger"); return redirect(url_for('hotel_detail', hotel_id=hotel.id))
-    if check_out_date_obj <= check_in_date_obj:
-        flash("Check-out date must be after check-in date.", "danger"); return redirect(url_for('hotel_detail', hotel_id=hotel.id))
-    
-    overlapping_bookings = Booking.query.filter(
-        Booking.room_type_id == room_type_id,
-        Booking.check_in_date < check_out_date_obj,
-        Booking.check_out_date > check_in_date_obj
-    ).count()
-
-    if overlapping_bookings >= room_type.number_of_rooms:
-        flash(f"Sorry, the '{room_type.name}' is fully booked for the selected dates. Please choose different dates or another room.", "danger")
+        if check_out_date_obj <= check_in_date_obj: raise ValueError
+    except (ValueError, TypeError):
+        flash("Invalid date format or range.", "danger")
         return redirect(url_for('hotel_detail', hotel_id=hotel.id))
-    
-    num_nights = (check_out_date_obj - check_in_date_obj).days
-    total_price = num_nights * room_type.price_per_night
+    result = check_availability_and_calculate_price(room_type_id, check_in_date_obj, check_out_date_obj)
+    if not result['available']:
+        flash(result['message'], 'danger')
+        return redirect(url_for('hotel_detail', hotel_id=hotel.id))
     booking = Booking(
-        user_id=current_user.id, 
-        hotel_id=hotel.id, 
-        room_type_id=room_type.id, 
-        check_in_date=check_in_date_obj, 
-        check_out_date=check_out_date_obj, 
-        total_price=total_price
+        user_id=current_user.id, hotel_id=hotel.id, room_type_id=room_type_id,
+        check_in_date=check_in_date_obj, check_out_date=check_out_date_obj, total_price=result['price']
     )
     db.session.add(booking)
     db.session.commit()
-    flash(f'Successfully booked the {room_type.name} at {hotel.name}! Your booking is confirmed.', 'success')
+    flash(f'Successfully booked the {room_type.name}! Your booking is confirmed.', 'success')
     return redirect(url_for('booking_confirmed', booking_id=booking.id))
 
 @app.route('/booking_confirmed/<int:booking_id>')
@@ -386,19 +357,12 @@ def download_receipt(booking_id):
     booking = Booking.query.get_or_404(booking_id)
     if booking.user_id != current_user.id and current_user.role != 'admin':
         flash("Unauthorized.", "danger"); return redirect(url_for('my_bookings'))
-    try:
-        # Pass booking.hotel which now works because of the backref fix
-        html_string = render_template('receipt_template.html', booking=booking, hotel=booking.hotel, user=booking.booker, 
-                                      num_nights=(booking.check_out_date - booking.check_in_date).days, booking_date=booking.created_at)
-        pdf_bytes = HTML(string=html_string).write_pdf()
-        response = make_response(pdf_bytes)
-        response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = f'attachment; filename=receipt_booking_{booking.id}.pdf'
-        return response
-    except Exception as e:
-        app.logger.error(f"PDF Error (Booking {booking.id}): {e}\n{traceback.format_exc()}")
-        flash("Error generating PDF. Contact support.", "danger")
-        return redirect(request.referrer or url_for('my_bookings'))
+    html_string = render_template('receipt_template.html', booking=booking, user=booking.booker)
+    pdf_bytes = HTML(string=html_string).write_pdf()
+    response = make_response(pdf_bytes)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=receipt_booking_{booking.id}.pdf'
+    return response
 
 @app.route('/my_bookings')
 @login_required
@@ -413,28 +377,18 @@ def register_hotel():
     if request.method == 'POST':
         name = request.form.get('name')
         location = request.form.get('location')
-        description = request.form.get('description')
-        main_image_url = request.form.get('main_image_url', '').strip()
-        star_rating_str = request.form.get('star_rating')
-        amenities = request.form.get('amenities', '').strip()
-        latitude_str = request.form.get('latitude')
-        longitude_str = request.form.get('longitude')
-
         if not name or not location:
             flash("Hotel Name and Location are required.", "danger")
             return render_template('register_hotel.html', form_data=request.form)
-        
-        new_hotel = Hotel(name=name, location=location, description=description, 
-                          star_rating=int(star_rating_str) if star_rating_str else None,
-                          amenities=amenities, 
-                          latitude=float(latitude_str) if latitude_str and latitude_str.strip() else None, 
-                          longitude=float(longitude_str) if longitude_str and longitude_str.strip() else None,
-                          image_url=main_image_url or None, 
-                          owner_id=current_user.id, is_approved=False)
-        db.session.add(new_hotel)
-        db.session.flush()
-        # Image upload logic...
-        db.session.commit()
+        new_hotel = Hotel(
+            name=name, location=location, owner_id=current_user.id, is_approved=False,
+            description=request.form.get('description'),
+            star_rating=int(request.form.get('star_rating')) if request.form.get('star_rating') else None,
+            amenities=request.form.get('amenities', '').strip(),
+            latitude=float(request.form.get('latitude')) if request.form.get('latitude') else None,
+            longitude=float(request.form.get('longitude')) if request.form.get('longitude') else None
+        )
+        db.session.add(new_hotel); db.session.commit()
         flash('Hotel registration submitted! Now, please add room types to your new hotel.', 'success')
         return redirect(url_for('manage_rooms', hotel_id=new_hotel.id))
     return render_template('register_hotel.html', form_data={})
@@ -442,40 +396,99 @@ def register_hotel():
 @app.route('/owner_dashboard')
 @role_required('owner')
 def owner_dashboard():
-    hotels_owned = Hotel.query.filter_by(owner_id=current_user.id).order_by(Hotel.name).all()
-    hotel_ids = [h.id for h in hotels_owned]
-    bookings_for_my_hotels = []
+    hotels = Hotel.query.filter_by(owner_id=current_user.id).all()
+    hotel_ids = [h.id for h in hotels]
+    
+    analytics = {
+        'total_revenue': 0,
+        'occupancy_rate': 0,
+        'total_bookings': 0,
+        'popular_room_types': [],
+        'chart_labels': [],
+        'chart_data': []
+    }
+
     if hotel_ids:
-        bookings_for_my_hotels = Booking.query.filter(Booking.hotel_id.in_(hotel_ids)).order_by(Booking.created_at.desc()).all()
-    return render_template('owner_dashboard.html', hotels=hotels_owned, bookings=bookings_for_my_hotels)
+        # --- Basic Stats ---
+        all_bookings = Booking.query.filter(Booking.hotel_id.in_(hotel_ids)).all()
+        analytics['total_bookings'] = len(all_bookings)
+        analytics['total_revenue'] = sum(b.total_price for b in all_bookings)
+
+        # --- Popular Room Types ---
+        if all_bookings:
+            room_type_counts = Counter(b.room_type.name for b in all_bookings)
+            analytics['popular_room_types'] = room_type_counts.most_common(3)
+
+        # --- Occupancy Rate (Last 30 Days) ---
+        today = date.today()
+        start_period = today - timedelta(days=30)
+        total_possible_room_nights = 0
+        total_booked_room_nights = 0
+        
+        owner_room_types = RoomType.query.filter(RoomType.hotel_id.in_(hotel_ids)).all()
+
+        for i in range(30):
+            current_day = start_period + timedelta(days=i)
+            for room_type in owner_room_types:
+                daily_details = get_daily_details(room_type, current_day)
+                total_possible_room_nights += daily_details['available']
+        
+        bookings_in_period = Booking.query.filter(
+            Booking.hotel_id.in_(hotel_ids),
+            Booking.check_in_date < today,
+            Booking.check_out_date > start_period
+        ).all()
+        
+        for booking in bookings_in_period:
+            overlap_start = max(booking.check_in_date, start_period)
+            overlap_end = min(booking.check_out_date, today)
+            booked_nights_in_period = (overlap_end - overlap_start).days
+            if booked_nights_in_period > 0:
+                total_booked_room_nights += booked_nights_in_period
+
+        if total_possible_room_nights > 0:
+            analytics['occupancy_rate'] = (total_booked_room_nights / total_possible_room_nights) * 100
+
+        # --- Booking Trends Chart (Last 30 Days) ---
+        bookings_by_day = { (start_period + timedelta(days=i)).strftime("%b %d"): 0 for i in range(30) }
+        recent_bookings = [b for b in all_bookings if b.created_at.date() >= start_period]
+        
+        for booking in recent_bookings:
+            day_str = booking.created_at.strftime("%b %d")
+            if day_str in bookings_by_day:
+                bookings_by_day[day_str] += 1
+        
+        analytics['chart_labels'] = list(bookings_by_day.keys())
+        analytics['chart_data'] = list(bookings_by_day.values())
+
+    return render_template('owner_dashboard.html', hotels=hotels, analytics=analytics)
+
 
 @app.route('/hotel/<int:hotel_id>/manage_rooms', methods=['GET', 'POST'])
 @verify_hotel_owner
-def manage_rooms(hotel): # hotel object is passed by the decorator
+def manage_rooms(hotel):
     if request.method == 'POST':
         name = request.form.get('name')
         price_str = request.form.get('price_per_night')
         num_rooms_str = request.form.get('number_of_rooms')
         if not all([name, price_str, num_rooms_str]):
-            flash("Room Name, Price, and Number of Available Rooms are required.", "danger")
+            flash("All fields are required.", "danger")
             return redirect(url_for('manage_rooms', hotel_id=hotel.id))
         try:
-            price = float(price_str)
-            num_rooms = int(num_rooms_str)
-            if price <= 0 or num_rooms <= 0:
-                raise ValueError("Price and number of rooms must be positive.")
+            price = float(price_str); num_rooms = int(num_rooms_str)
+            if price <= 0 or num_rooms <= 0: raise ValueError
         except (ValueError, TypeError):
-            flash("Invalid format for price or number of rooms.", "danger")
+            flash("Invalid price or number of rooms.", "danger")
             return redirect(url_for('manage_rooms', hotel_id=hotel.id))
-        
-        new_room = RoomType(hotel_id=hotel.id, name=name, description=request.form.get('description'), 
-                            price_per_night=price, number_of_rooms=num_rooms, amenities=request.form.get('amenities'))
+        new_room = RoomType(
+            hotel_id=hotel.id, name=name, price_per_night=price, number_of_rooms=num_rooms,
+            description=request.form.get('description'), amenities=request.form.get('amenities')
+        )
         db.session.add(new_room)
         hotel.update_min_price()
         db.session.commit()
-        flash(f"Room type '{name}' has been added.", "success")
+        flash(f"Room type '{name}' added.", "success")
         return redirect(url_for('manage_rooms', hotel_id=hotel.id))
-    
     room_types = hotel.room_types.order_by(RoomType.name.asc()).all()
     return render_template('manage_rooms.html', hotel=hotel, room_types=room_types)
 
@@ -485,19 +498,10 @@ def edit_room(hotel, room_type_id):
     room = RoomType.query.filter_by(id=room_type_id, hotel_id=hotel.id).first_or_404()
     if request.method == 'POST':
         room.name = request.form.get('name')
+        room.price_per_night = float(request.form.get('price_per_night'))
+        room.number_of_rooms = int(request.form.get('number_of_rooms'))
         room.description = request.form.get('description')
         room.amenities = request.form.get('amenities')
-        room.main_image_url = request.form.get('main_image_url', '').strip() or room.main_image_url
-        try:
-            room.price_per_night = float(request.form.get('price_per_night'))
-            room.number_of_rooms = int(request.form.get('number_of_rooms'))
-        except (ValueError, TypeError):
-            flash("Invalid price or number of rooms.", "danger")
-            return render_template('edit_room.html', hotel=hotel, room=room)
-        
-        # Room image upload logic...
-        
-        db.session.add(room)
         hotel.update_min_price()
         db.session.commit()
         flash(f"Room '{room.name}' updated.", "success")
@@ -509,16 +513,105 @@ def edit_room(hotel, room_type_id):
 def delete_room(hotel, room_type_id):
     room = RoomType.query.filter_by(id=room_type_id, hotel_id=hotel.id).first_or_404()
     if room.bookings.first():
-        flash(f"Cannot delete '{room.name}' as it has existing bookings. Consider setting its 'Number of Rooms' to 0 to make it unavailable.", "danger")
+        flash(f"Cannot delete '{room.name}' as it has existing bookings.", "danger")
         return redirect(url_for('manage_rooms', hotel_id=hotel.id))
-    # ... logic to delete image files ...
     db.session.delete(room)
     hotel.update_min_price()
     db.session.commit()
-    flash(f"Room type '{room.name}' has been deleted.", "success")
+    flash(f"Room '{room.name}' deleted.", "success")
     return redirect(url_for('manage_rooms', hotel_id=hotel.id))
 
-# --- Admin Routes ---
+@app.route('/hotel/<int:hotel_id>/room/<int:room_type_id>/availability')
+@verify_hotel_owner
+def manage_availability(hotel, room_type_id):
+    room = RoomType.query.filter_by(id=room_type_id, hotel_id=hotel.id).first_or_404()
+    return render_template('manage_availability.html', hotel=hotel, room=room)
+
+# --- API Endpoints for Calendar ---
+@app.route('/api/room/<int:room_type_id>/availability')
+@login_required
+def get_availability_data(room_type_id):
+    room_type = RoomType.query.get_or_404(room_type_id)
+    if room_type.hotel.owner_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    start_str = request.args.get('start'); end_str = request.args.get('end')
+    try:
+        start_date = datetime.fromisoformat(start_str.split('T')[0]).date()
+        end_date = datetime.fromisoformat(end_str.split('T')[0]).date()
+    except: return jsonify({'error': 'Invalid date format'}), 400
+    
+    overrides = {o.date: o for o in Availability.query.filter(
+        Availability.room_type_id == room_type_id, Availability.date.between(start_date, end_date)
+    ).all()}
+    
+    bookings_in_range = Booking.query.filter(
+        Booking.room_type_id == room_type_id,
+        Booking.check_in_date < end_date,
+        Booking.check_out_date > start_date
+    ).all()
+    
+    events = []
+    current_date = start_date
+    while current_date < end_date:
+        details = get_daily_details(room_type, current_date)
+        booked_count = 0
+        for booking in bookings_in_range:
+            if booking.check_in_date <= current_date < booking.check_out_date:
+                booked_count += 1
+
+        remaining = details['available'] - booked_count
+        events.append({
+            'start': current_date.isoformat(),
+            'title': f"Avail: {remaining} | ${details['price']:.2f}",
+            'allDay': True,
+            'color': '#28a745' if remaining > 0 else '#dc3545',
+            'borderColor': '#007bff' if current_date in overrides else 'transparent'
+        })
+        current_date += timedelta(days=1)
+    return jsonify(events)
+
+@app.route('/api/room/<int:room_type_id>/availability/update', methods=['POST'])
+@login_required
+def update_availability(room_type_id):
+    room_type = RoomType.query.get_or_404(room_type_id)
+    if room_type.hotel.owner_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    data = request.json
+    try:
+        target_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+        price_str = data.get('price'); avail_str = data.get('available_rooms')
+        price = float(price_str) if price_str and price_str.strip() else None
+        available_rooms = int(avail_str) if avail_str and avail_str.strip() else None
+    except (ValueError, TypeError, KeyError): return jsonify({'error': 'Invalid data'}), 400
+    
+    override = Availability.query.filter_by(room_type_id=room_type_id, date=target_date).first()
+    is_default_price = price is None
+    is_default_avail = available_rooms is None
+    
+    if is_default_price and is_default_avail:
+        if override: db.session.delete(override)
+    else:
+        if not override:
+            override = Availability(room_type_id=room_type_id, date=target_date)
+            db.session.add(override)
+        override.price = price
+        override.available_rooms = available_rooms
+    
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/room/<int:room_type_id>/calculate_price')
+def api_calculate_price(room_type_id):
+    check_in_str = request.args.get('check_in'); check_out_str = request.args.get('check_out')
+    try:
+        check_in = datetime.strptime(check_in_str, '%Y-%m-%d').date()
+        check_out = datetime.strptime(check_out_str, '%Y-%m-%d').date()
+        if check_out <= check_in: raise ValueError()
+    except: return jsonify({'error': 'Invalid dates'}), 400
+    result = check_availability_and_calculate_price(room_type_id, check_in, check_out)
+    return jsonify(result)
+
+# --- Admin & Wishlist Routes ---
 @app.route('/admin_dashboard')
 @role_required('admin')
 def admin_dashboard():
@@ -539,52 +632,34 @@ def approve_hotel(hotel_id):
 @role_required('admin')
 def reject_hotel(hotel_id):
     hotel = Hotel.query.get_or_404(hotel_id)
-    for img in hotel.gallery_images.all():
-        try: os.remove(os.path.join(app.config['UPLOAD_FOLDER'], img.filename))
-        except OSError as e: app.logger.error(f"Error deleting file {img.filename}: {e}")
     db.session.delete(hotel); db.session.commit()
-    flash(f'Hotel "{hotel.name}", its images, rooms, and bookings removed.', 'warning')
+    flash(f'Hotel "{hotel.name}" and all its data removed.', 'warning')
     return redirect(url_for('admin_dashboard'))
 
-# --- Wishlist Routes ---
 @app.route('/wishlist/add/<int:hotel_id>', methods=['POST'])
 @login_required
 def add_to_wishlist(hotel_id):
     hotel = Hotel.query.get_or_404(hotel_id)
-    if current_user.role != 'user':
-        flash("Only users can add to wishlist.", "warning")
-        return redirect(request.referrer or url_for('index'))
     existing_item = Wishlist.query.filter_by(user_id=current_user.id, hotel_id=hotel.id).first()
-    if existing_item:
-        flash(f'{hotel.name} is already in your wishlist.', 'info')
-    else:
+    if not existing_item:
         wishlist_item = Wishlist(user_id=current_user.id, hotel_id=hotel.id)
-        db.session.add(wishlist_item)
-        db.session.commit()
+        db.session.add(wishlist_item); db.session.commit()
         flash(f'{hotel.name} added to your wishlist!', 'success')
     return redirect(request.referrer or url_for('index'))
 
 @app.route('/wishlist/remove/<int:hotel_id>', methods=['POST'])
 @login_required
 def remove_from_wishlist(hotel_id):
-    hotel = Hotel.query.get_or_404(hotel_id)
-    wishlist_item = Wishlist.query.filter_by(user_id=current_user.id, hotel_id=hotel.id).first()
+    wishlist_item = Wishlist.query.filter_by(user_id=current_user.id, hotel_id=hotel_id).first()
     if wishlist_item:
-        db.session.delete(wishlist_item)
-        db.session.commit()
-        flash(f'{hotel.name} removed from your wishlist.', 'success')
-    else:
-        flash(f'{hotel.name} was not found in your wishlist.', 'warning')
+        db.session.delete(wishlist_item); db.session.commit()
+        flash('Hotel removed from your wishlist.', 'success')
     return redirect(request.referrer or url_for('my_wishlist'))
 
 @app.route('/my_wishlist')
 @login_required
 def my_wishlist():
-    if current_user.role != 'user':
-        flash("This page is for users.", "info")
-        return redirect(url_for('index'))
-    wishlisted_hotel_ids_stmt = select(Wishlist.hotel_id).filter_by(user_id=current_user.id)
-    wishlisted_hotels = Hotel.query.filter(Hotel.id.in_(wishlisted_hotel_ids_stmt)).order_by(Hotel.name).all()
+    wishlisted_hotels = Hotel.query.join(Wishlist).filter(Wishlist.user_id == current_user.id).all()
     return render_template('my_wishlist.html', hotels=wishlisted_hotels)
 
 # --- App Runner ---
@@ -595,7 +670,6 @@ def create_admin_user_if_not_exists():
             admin_user.set_password('StrongAdminP@ssw0rd!')
             db.session.add(admin_user); db.session.commit()
             print("Admin user created: admin / StrongAdminP@ssw0rd!")
-        else: print("Admin user 'admin' already exists.")
 
 if __name__ == '__main__':
     with app.app_context():
