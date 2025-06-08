@@ -1,44 +1,209 @@
 {% extends "base.html" %}
 {% block title %}Edit User: {{ user.username }}{% endblock %}
+
+{% block head_extra %}
+{# Google Fonts for a professional dashboard typography #}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    /* --- [ 1. Theming & General Styles ] --- */
+    :root {
+        --primary-color: #005f73;
+        --success-color: #2a9d8f;
+        --bg-body: #f4f7f9;
+        --bg-card: #ffffff;
+        --text-dark: #212529;
+        --text-light: #6c757d;
+        --border-color: #e9ecef;
+        --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    body {
+        background-color: var(--bg-body);
+        font-family: 'Poppins', sans-serif;
+    }
+
+    /* --- [ 2. Main Edit Card ] --- */
+    .edit-user-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+    }
+
+    /* --- [ 3. User Identity Header ] --- */
+    .user-identity-header {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        padding: 1.5rem 2rem;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .user-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1.75rem;
+        color: white;
+        flex-shrink: 0;
+    }
+    .user-name {
+        font-weight: 600;
+        font-size: 1.25rem;
+        color: var(--text-dark);
+    }
+    .user-email {
+        font-size: 0.9rem;
+        color: var(--text-light);
+    }
+
+    /* --- [ 4. Form Styling ] --- */
+    .form-section {
+        padding: 1.5rem 2rem;
+    }
+    .form-section-title {
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 1.25rem;
+    }
+    .form-label {
+        font-weight: 500;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+    }
+    .form-control, .form-select {
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(0, 95, 115, 0.2);
+    }
+
+    /* --- [ 5. Custom Role Selector ] --- */
+    .role-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+    .role-option input[type="radio"] {
+        display: none; /* Hide the actual radio button */
+    }
+    .role-option label {
+        display: block;
+        padding: 1rem;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+    .role-option label:hover {
+        border-color: var(--primary-color);
+        background-color: #f8f9fa;
+    }
+    .role-option input[type="radio"]:checked + label {
+        border-color: var(--primary-color);
+        background-color: rgba(0, 95, 115, 0.05);
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+    .role-option label .role-icon {
+        font-size: 1.5rem;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    /* --- [ 6. Form Footer & Actions ] --- */
+    .form-actions {
+        padding: 1.5rem 2rem;
+        background-color: #f8f9fa;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center my-5">
-    <div class="col-md-8 col-lg-7">
-        <div class="card shadow-lg border-0">
-            <div class="card-header bg-primary text-white text-center py-3">
-                <h2 class="mb-0"><i class="fas fa-user-edit me-2"></i> Edit User: {{ user.username }}</h2>
-            </div>
-            <div class="card-body p-4 p-md-5">
-                <form method="POST" action="{{ url_for('edit_user', user_id=user.id) }}">
+    <div class="col-md-9 col-lg-7">
+        <form method="POST" action="{{ url_for('edit_user', user_id=user.id) }}">
+            <div class="edit-user-card">
+                
+                <!-- User Identity Header -->
+                <div class="user-identity-header">
+                    <div class="user-avatar" style="background-color: hsl({{ user.id * 37 % 360 }}, 40%, 50%);">
+                        <span>{{ user.username[0]|upper }}</span>
+                    </div>
+                    <div>
+                        <div class="user-name">{{ user.username }}</div>
+                        <div class="user-email">{{ user.email }}</div>
+                    </div>
+                </div>
+
+                <!-- Account Details Section -->
+                <div class="form-section">
+                    <h5 class="form-section-title">Account Details</h5>
                     <div class="mb-3">
                         <label for="username" class="form-label">Username</label>
                         <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
                     </div>
-                    <div class="mb-3">
+                    <div>
                         <label for="email" class="form-label">Email</label>
                         <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
                     </div>
-                    <div class="mb-3">
-                        <label for="role" class="form-label">Role</label>
-                        <select class="form-select" id="role" name="role">
-                            <option value="user" {% if user.role == 'user' %}selected{% endif %}>User</option>
-                            <option value="owner" {% if user.role == 'owner' %}selected{% endif %}>Hotel Owner</option>
-                            <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
-                        </select>
+                </div>
+
+                <hr class="m-0">
+                
+                <!-- Role Selection Section -->
+                <div class="form-section">
+                    <h5 class="form-section-title">User Role</h5>
+                    <div class="role-selector">
+                        <div class="role-option">
+                            <input type="radio" id="role_user" name="role" value="user" {% if user.role == 'user' %}checked{% endif %}>
+                            <label for="role_user"><i class="fas fa-user role-icon"></i>User</label>
+                        </div>
+                        <div class="role-option">
+                            <input type="radio" id="role_owner" name="role" value="owner" {% if user.role == 'owner' %}checked{% endif %}>
+                            <label for="role_owner"><i class="fas fa-user-tie role-icon"></i>Hotel Owner</label>
+                        </div>
+                        <div class="role-option">
+                            <input type="radio" id="role_admin" name="role" value="admin" {% if user.role == 'admin' %}checked{% endif %}>
+                            <label for="role_admin"><i class="fas fa-user-shield role-icon"></i>Admin</label>
+                        </div>
                     </div>
-                    <hr class="my-4">
-                    <h5 class="mb-3">Reset Password</h5>
-                    <p class="text-muted small">Enter a new password below to reset it. Leave blank to keep the current password.</p>
-                    <div class="mb-3">
+                </div>
+
+                <hr class="m-0">
+
+                <!-- Security / Password Section -->
+                <div class="form-section">
+                    <h5 class="form-section-title">Security</h5>
+                    <p class="text-muted small mb-3">Enter a new password below to reset it. Leave blank to keep the current password.</p>
+                    <div>
                         <label for="new_password" class="form-label">New Password</label>
-                        <input type="password" class="form-control" id="new_password" name="new_password">
+                        <input type="password" class="form-control" id="new_password" name="new_password" placeholder="••••••••">
                     </div>
-                    <div class="d-grid gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg py-3"><i class="fas fa-save me-2"></i> Save Changes</button>
-                        <a href="{{ url_for('manage_users') }}" class="btn btn-secondary">Cancel</a>
-                    </div>
-                </form>
+                </div>
+                
+                <!-- Form Actions Footer -->
+                <div class="form-actions">
+                    <a href="{{ url_for('manage_users') }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary px-4"><i class="fas fa-save me-2"></i> Save Changes</button>
+                </div>
+
             </div>
-        </div>
+        </form>
     </div>
 </div>
 {% endblock %}

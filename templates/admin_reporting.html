@@ -1,59 +1,283 @@
 {% extends "base.html" %}
 {% block title %}Platform Reporting{% endblock %}
+
+{% block head_extra %}
+{# Google Fonts for a professional dashboard typography #}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    /* --- [ 1. Theming & General Styles ] --- */
+    :root {
+        --primary-color: #005f73;
+        --success-color: #2a9d8f;
+        --info-color: #0a9396;
+        --warning-color: #ee9b00;
+        --bg-body: #f4f7f9;
+        --bg-card: #ffffff;
+        --text-dark: #212529;
+        --text-light: #6c757d;
+        --border-color: #e9ecef;
+        --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+        --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    body {
+        background-color: var(--bg-body);
+        font-family: 'Poppins', sans-serif;
+    }
+
+    /* --- [ 2. Page Header ] --- */
+    .page-header h2 {
+        color: var(--primary-color);
+        font-weight: 700;
+    }
+
+    /* --- [ 3. KPI Card Styling (Replaces border-left) ] --- */
+    .kpi-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .kpi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+    }
+    .kpi-card .icon-wrapper {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .kpi-card .icon-wrapper i {
+        font-size: 1.5rem;
+    }
+    .kpi-card .card-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+    }
+    .kpi-card .card-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+
+    /* KPI Icon Colors */
+    .icon-primary { background-color: rgba(0, 95, 115, 0.1); color: var(--primary-color); }
+    .icon-success { background-color: rgba(42, 157, 143, 0.1); color: var(--success-color); }
+    .icon-info { background-color: rgba(10, 147, 150, 0.1); color: var(--info-color); }
+    .icon-warning { background-color: rgba(238, 155, 0, 0.1); color: var(--warning-color); }
+
+    /* --- [ 4. Chart & Data Card Styling ] --- */
+    .chart-card, .data-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+    }
+    .chart-card-header, .data-card-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .chart-card-header h6, .data-card-header h6 {
+        font-weight: 600;
+        color: var(--primary-color);
+        margin: 0;
+    }
+    .chart-card-body, .data-card-body {
+        padding: 1.5rem;
+    }
+
+    /* --- [ 5. Popular Destinations List (Visualized) ] --- */
+    .destination-list { list-style: none; padding: 0; margin: 0; }
+    .destination-item { margin-bottom: 1.25rem; }
+    .destination-item:last-child { margin-bottom: 0; }
+    .destination-info { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500; }
+    .destination-name { color: var(--text-dark); }
+    .destination-count { color: var(--text-light); }
+    .progress-bar-wrapper {
+        height: 8px;
+        background-color: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .progress-bar-fill {
+        height: 100%;
+        background-color: var(--info-color);
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container my-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary"><i class="fas fa-chart-bar me-2"></i> Platform Reporting & Analytics</h2>
-        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i> Back to Dashboard</a>
+    <div class="d-flex justify-content-between align-items-center mb-4 page-header">
+        <h2 class="mb-0"><i class="fas fa-chart-line me-2"></i> Platform Analytics</h2>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary rounded-pill"><i class="fas fa-arrow-left me-2"></i> Back to Dashboard</a>
     </div>
 
     <!-- Key Metrics Row -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center"><div class="col mr-2"><div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Revenue</div><div class="h5 mb-0 font-weight-bold text-gray-800">${{ "%.2f"|format(total_revenue) }}</div></div><div class="col-auto"><i class="fas fa-dollar-sign fa-2x text-gray-300"></i></div></div></div></div>
+            <div class="kpi-card">
+                <div class="icon-wrapper icon-primary"><i class="fas fa-dollar-sign"></i></div>
+                <div>
+                    <div class="card-title" style="color:var(--primary-color);">Total Revenue</div>
+                    <div class="card-value">${{ "%.2f"|format(total_revenue) }}</div>
+                </div>
+            </div>
         </div>
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center"><div class="col mr-2"><div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Bookings</div><div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_bookings }}</div></div><div class="col-auto"><i class="fas fa-calendar-check fa-2x text-gray-300"></i></div></div></div></div>
+            <div class="kpi-card">
+                <div class="icon-wrapper icon-success"><i class="fas fa-calendar-check"></i></div>
+                <div>
+                    <div class="card-title" style="color:var(--success-color);">Total Bookings</div>
+                    <div class="card-value">{{ total_bookings }}</div>
+                </div>
+            </div>
         </div>
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center"><div class="col mr-2"><div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total Users</div><div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_users }}</div></div><div class="col-auto"><i class="fas fa-users fa-2x text-gray-300"></i></div></div></div></div>
+            <div class="kpi-card">
+                <div class="icon-wrapper icon-info"><i class="fas fa-users"></i></div>
+                <div>
+                    <div class="card-title" style="color:var(--info-color);">Total Users</div>
+                    <div class="card-value">{{ total_users }}</div>
+                </div>
+            </div>
         </div>
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center"><div class="col mr-2"><div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Hotels</div><div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_hotels }}</div></div><div class="col-auto"><i class="fas fa-hotel fa-2x text-gray-300"></i></div></div></div></div>
+            <div class="kpi-card">
+                <div class="icon-wrapper icon-warning"><i class="fas fa-hotel"></i></div>
+                <div>
+                    <div class="card-title" style="color:var(--warning-color);">Total Hotels</div>
+                    <div class="card-value">{{ total_hotels }}</div>
+                </div>
+            </div>
         </div>
     </div>
     
     <!-- Charts and Data Row -->
     <div class="row">
-        <div class="col-lg-8">
-            <div class="card shadow-sm mb-4"><div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">User Growth (Last 30 Days)</h6></div><div class="card-body"><canvas id="userGrowthChart"></canvas></div></div>
+        <div class="col-lg-8 mb-4">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h6>User Growth (Last 30 Days)</h6>
+                </div>
+                <div class="chart-card-body">
+                    <canvas id="userGrowthChart" height="150"></canvas>
+                </div>
+            </div>
         </div>
-        <div class="col-lg-4">
-            <div class="card shadow-sm mb-4"><div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Popular Destinations</h6></div><div class="card-body">
-                {% if popular_destinations %}
-                <ul class="list-group list-group-flush">
-                {% for location, count in popular_destinations %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">{{ location }}<span class="badge bg-primary rounded-pill">{{ count }} bookings</span></li>
-                {% endfor %}
-                </ul>
-                {% else %}
-                <p class="text-muted">No booking data available yet.</p>
-                {% endif %}
-            </div></div>
+        <div class="col-lg-4 mb-4">
+            <div class="data-card">
+                <div class="data-card-header">
+                    <h6>Popular Destinations</h6>
+                </div>
+                <div class="data-card-body">
+                    {% if popular_destinations and popular_destinations[0][1] > 0 %}
+                    <ul class="destination-list">
+                        {% set max_bookings = popular_destinations[0][1] %}
+                        {% for location, count in popular_destinations %}
+                        <li class="destination-item">
+                            <div class="destination-info">
+                                <span class="destination-name">{{ location }}</span>
+                                <span class="destination-count">{{ count }} bookings</span>
+                            </div>
+                            <div class="progress-bar-wrapper">
+                                <div class="progress-bar-fill" style="width: {{ (count / max_bookings) * 100 }}%;"></div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted text-center py-3">No booking data available yet.</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
 {% endblock %}
+
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const ugc = document.getElementById('userGrowthChart');
-    if (ugc) {
-        new Chart(ugc, {
+    const ctx = document.getElementById('userGrowthChart');
+    if (ctx) {
+        // --- Create Gradient for Chart Fill ---
+        const chartCtx = ctx.getContext('2d');
+        const gradient = chartCtx.createLinearGradient(0, 0, 0, ctx.offsetHeight * 1.5);
+        gradient.addColorStop(0, 'rgba(10, 147, 150, 0.5)');
+        gradient.addColorStop(1, 'rgba(10, 147, 150, 0)');
+
+        new Chart(ctx, {
             type: 'line',
-            data: { labels: {{ user_growth_labels|tojson|safe }}, datasets: [{ label: 'Total Users', data: {{ user_growth_data|tojson|safe }}, fill: false, borderColor: 'rgb(75, 192, 192)', tension: 0.1 }] },
-            options: { responsive: true, scales: { y: { beginAtZero: false } } }
+            data: {
+                labels: {{ user_growth_labels|tojson|safe }},
+                datasets: [{
+                    label: 'Total Users',
+                    data: {{ user_growth_data|tojson|safe }},
+                    fill: true,
+                    backgroundColor: gradient,
+                    borderColor: 'rgb(10, 147, 150)',
+                    tension: 0.4,
+                    pointBackgroundColor: 'rgb(10, 147, 150)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgb(10, 147, 150)',
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            drawBorder: false,
+                        },
+                        ticks: {
+                            padding: 10,
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false, // Cleaner look
+                        },
+                        ticks: {
+                            padding: 10,
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false // Cleaner look, as there's only one dataset
+                    },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: '#212529',
+                        titleFont: { weight: 'bold' },
+                        bodyFont: { size: 14 },
+                        padding: 12,
+                        cornerRadius: 8,
+                        displayColors: false,
+                    }
+                }
+            }
         });
     }
 });

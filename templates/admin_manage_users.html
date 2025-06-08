@@ -1,58 +1,227 @@
 {% extends "base.html" %}
 {% block title %}Manage Users{% endblock %}
+
+{% block head_extra %}
+{# Google Fonts for a professional dashboard typography #}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    /* --- [ 1. Theming & General Styles ] --- */
+    :root {
+        --primary-color: #005f73;
+        --success-color: #2a9d8f;
+        --warning-color: #fca311;
+        --danger-color: #ae2012;
+        --bg-body: #f4f7f9;
+        --bg-card: #ffffff;
+        --text-dark: #212529;
+        --text-light: #6c757d;
+        --border-color: #e9ecef;
+        --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+        --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    body {
+        background-color: var(--bg-body);
+        font-family: 'Poppins', sans-serif;
+    }
+
+    /* --- [ 2. Page Header & Controls ] --- */
+    .page-header h2 {
+        color: var(--primary-color);
+        font-weight: 700;
+    }
+    .search-control .form-control {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    .search-control .input-group-text {
+        background-color: var(--bg-card);
+        border-left: 0;
+    }
+
+    /* --- [ 3. Main Users List Card ] --- */
+    .users-list-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+
+    /* --- [ 4. User List Item Styling (Replaces <tr>) ] --- */
+    .user-list-item {
+        display: grid;
+        grid-template-columns: auto 1fr auto auto auto; /* Avatar, Info, Role, Status, Actions */
+        gap: 1.5rem;
+        align-items: center;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        transition: background-color 0.2s;
+    }
+    .users-list-card .list-group-item:last-child {
+        border-bottom: none;
+    }
+    .user-list-item:hover {
+        background-color: #fcfdfe;
+    }
+    
+    /* --- [ 5. User Item Components ] --- */
+    .user-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: white;
+        background-color: var(--primary-color); /* Fallback */
+    }
+    .user-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+    .user-info .user-name {
+        font-weight: 600;
+        color: var(--text-dark);
+        display: block;
+    }
+    .user-info .user-email {
+        font-size: 0.9rem;
+        color: var(--text-light);
+    }
+
+    .role-badge {
+        background-color: #e9ecef;
+        color: var(--text-light);
+        font-weight: 600;
+        padding: 0.3rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+    }
+
+    .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 500;
+    }
+    .status-indicator .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+    .status-active .status-dot { background-color: var(--success-color); }
+    .status-active { color: var(--success-color); }
+    .status-suspended .status-dot { background-color: var(--danger-color); }
+    .status-suspended { color: var(--danger-color); }
+
+    /* Suspended user row style */
+    .user-list-item.is-suspended {
+        opacity: 0.7;
+        background-color: #fafafa;
+    }
+
+    /* --- [ 6. Actions Dropdown (Kebab Menu) ] --- */
+    .btn-actions {
+        background: transparent;
+        border: none;
+        color: var(--text-light);
+    }
+    .dropdown-item i {
+        width: 20px;
+        margin-right: 0.5rem;
+        text-align: center;
+    }
+    .dropdown-item.text-success:hover { background-color: rgba(42, 157, 143, 0.1); }
+    .dropdown-item.text-warning:hover { background-color: rgba(252, 163, 17, 0.1); }
+    .dropdown-item.text-danger:hover { background-color: rgba(174, 32, 18, 0.1); }
+
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container my-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary"><i class="fas fa-users-cog me-2"></i> Manage Users</h2>
-        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i> Back to Dashboard</a>
+    <div class="d-flex justify-content-between align-items-center mb-4 page-header">
+        <h2 class="mb-0"><i class="fas fa-users-cog me-2"></i> Manage Users</h2>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary rounded-pill"><i class="fas fa-arrow-left me-2"></i> Back to Dashboard</a>
     </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Username</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for user in users %}
-                        <tr class="{% if not user.is_active %}table-danger{% endif %}">
-                            <td>{{ user.id }}</td>
-                            <td>{{ user.username }}</td>
-                            <td>{{ user.email }}</td>
-                            <td><span class="badge bg-secondary">{{ user.role|capitalize }}</span></td>
-                            <td>
-                                {% if user.is_active %}
-                                    <span class="badge bg-success">Active</span>
-                                {% else %}
-                                    <span class="badge bg-danger">Suspended</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i> Edit</a>
-                                {% if user.id != current_user.id %}
+    <!-- Search and Filter Controls -->
+    <div class="card card-body mb-4 shadow-sm border-0">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="input-group search-control">
+                    <input type="text" class="form-control" placeholder="Search by username or email...">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="users-list-card">
+        <div class="list-group list-group-flush">
+            {% for user in users %}
+            <div class="list-group-item user-list-item {% if not user.is_active %}is-suspended{% endif %}">
+                
+                <!-- Avatar -->
+                <div class="user-avatar" style="background-color: hsl({{ user.id * 37 % 360 }}, 40%, 50%);">
+                    {# In a real app, you would check for a profile picture URL #}
+                    {# {% if user.profile_pic %} <img src="{{ user.profile_pic }}"> {% else %} ... {% endif %} #}
+                    <span>{{ user.username[0]|upper }}</span>
+                </div>
+
+                <!-- User Info -->
+                <div class="user-info">
+                    <span class="user-name">{{ user.username }}</span>
+                    <span class="user-email">{{ user.email }}</span>
+                </div>
+
+                <!-- Role -->
+                <div><span class="role-badge">{{ user.role|capitalize }}</span></div>
+
+                <!-- Status -->
+                <div>
+                    {% if user.is_active %}
+                        <div class="status-indicator status-active"><span class="status-dot"></span> Active</div>
+                    {% else %}
+                        <div class="status-indicator status-suspended"><span class="status-dot"></span> Suspended</div>
+                    {% endif %}
+                </div>
+
+                <!-- Actions -->
+                <div class="text-end">
+                    <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-sm btn-outline-primary me-2">Edit</a>
+                    {% if user.id != current_user.id %}
+                    <div class="dropdown d-inline-block">
+                        <button class="btn btn-sm btn-actions" type="button" id="dropdownMenuButton-{{user.id}}" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton-{{user.id}}">
+                            <li>
                                 <form action="{{ url_for('toggle_user_active', user_id=user.id) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-sm {% if user.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+                                    <button type="submit" class="dropdown-item {% if user.is_active %}text-warning{% else %}text-success{% endif %}">
                                         {% if user.is_active %}<i class="fas fa-user-slash"></i> Suspend{% else %}<i class="fas fa-user-check"></i> Activate{% endif %}
                                     </button>
                                 </form>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
                                 <form action="{{ url_for('delete_user', user_id=user.id) }}" method="POST" class="d-inline" onsubmit="return confirm('WARNING: Are you sure you want to permanently delete this user and all their data? This cannot be undone.');">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt"></i> Delete</button>
+                                    <button type="submit" class="dropdown-item text-danger"><i class="fas fa-trash-alt"></i> Delete User</button>
                                 </form>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                            </li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
+            {% endfor %}
         </div>
     </div>
 </div>

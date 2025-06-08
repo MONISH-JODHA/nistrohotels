@@ -1,33 +1,109 @@
 {% extends "base.html" %}
-{% block title %}My Wishlist - HotelApp{% endblock %}
+
+{% block title %}My Wishlist - DreamStays{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary"><i class="fas fa-heart me-2"></i> My Wishlist</h2>
-        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary"><i class="fas fa-search me-2"></i> Find More Hotels</a>
-    </div>
-    {% if hotels %}
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-            {% for hotel in hotels %}
-            <div class="col d-flex align-items-stretch">
-                <div class="card h-100 shadow-sm hotel-card">
-                    <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="text-decoration-none"><img src="{{ hotel.image_url or 'https://via.placeholder.com/800x500.png?text=No+Image' }}" class="card-img-top" alt="{{ hotel.name }}" style="height: 200px; object-fit: cover;"></a>
-                    <div class="card-body d-flex flex-column">
-                        <h5 class="card-title"><a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="text-decoration-none stretched-link">{{ hotel.name }}</a></h5>
-                        {% if hotel.star_rating %}<p class="card-text mb-1">{% for i in range(hotel.star_rating) %}<i class="fas fa-star text-warning"></i>{% endfor %}{% for i in range(5 - hotel.star_rating) %}<i class="far fa-star text-warning"></i>{% endfor %}<small class="ms-1 text-muted">({{ hotel.star_rating }} Star{{ 's' if hotel.star_rating > 1 }})</small></p>{% endif %}
-                        <p class="card-text mb-2"><small class="text-muted"><i class="fas fa-map-marker-alt text-secondary"></i> {{ hotel.location }}</small></p>
-                        <p class="card-text small text-muted flex-grow-1">{{ hotel.description[:70] }}{% if hotel.description and hotel.description|length > 70 %}...{% endif %}</p>
-                        <div class="d-flex justify-content-between align-items-center mt-auto">
-                            <p class="fs-5 mb-0"><strong>${{ "%.2f"|format(hotel.price_per_night) }}</strong> <small class="text-muted">/ night</small></p>
-                            <form action="{{ url_for('remove_from_wishlist', hotel_id=hotel.id) }}" method="POST" class="d-inline"><button type="submit" class="btn btn-sm btn-danger" title="Remove from Wishlist"><i class="fas fa-trash-alt"></i> Remove</button></form>
-                        </div>
+<style>
+    /* Page-specific styles */
+    body {
+        background-color: #f7f7f9 !important; 
+    }
+</style>
+
+<!-- The content starts directly, inheriting the container from base.html -->
+
+<!-- === HEADER === -->
+<div class="text-center mb-5 pb-3 pt-5">
+    <h1 class="display-4 fw-bold" style="color: #2c3e50;">My Wishlist</h1>
+    <p class="lead text-muted" style="font-size: 1.25rem;">Your hand-picked collection of future adventures.</p>
+    <!-- Decorative underline -->
+    <div class="mx-auto" style="width: 80px; height: 3px; background-color: #1abc9c; border-radius: 3px; margin-top: 1rem;"></div>
+</div>
+
+{% if hotels %}
+    <!-- === HOTEL GRID === -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 g-lg-5">
+        {% for hotel in hotels %}
+        <div class="col">
+            <div class="card h-100" 
+                 style="border: none; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.07); transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);"
+                 onmouseover="this.style.transform='translateY(-10px)'; this.style.boxShadow='0 14px 45px rgba(0,0,0,0.15)';"
+                 onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 30px rgba(0,0,0,0.07)';">
+                
+                <!-- Card Image with Overlay Buttons -->
+                <div style="position: relative; overflow: hidden;">
+                    <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}">
+                       <!-- *** FIX IS HERE: Using the |default() filter for the image source *** -->
+                       <img src="{{ hotel.image_url|default('https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80', true) }}" 
+                             class="card-img-top" 
+                             alt="{{ hotel.name }}" 
+                             style="height: 240px; object-fit: cover; transition: transform 0.35s ease, filter 0.35s ease;"
+                             onmouseover="this.style.transform='scale(1.05)'; this.style.filter='brightness(1.0)';"
+                             onmouseout="this.style.transform='scale(1)'; this.style.filter='brightness(0.95)';">
+                    </a>
+                    <!-- Remove from Wishlist Button -->
+                    <form action="{{ url_for('remove_from_wishlist', hotel_id=hotel.id) }}" method="POST" style="position: absolute; top: 15px; right: 15px;">
+                        <button type="submit" class="btn" 
+                                title="Remove from Wishlist"
+                                style="background-color: rgba(0, 0, 0, 0.5); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); border: none;">
+                            <i class="fas fa-times" style="color: white; font-size: 1rem;"></i>
+                        </button>
+                    </form>
+                    <!-- Example Tag (e.g., for bestsellers or special offers) -->
+                    {% if loop.first %}
+                    <div style="position: absolute; top: 15px; left: 15px; background-color: #ffc107; color: #333; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">
+                       <i class="fas fa-fire me-1"></i> High Demand
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Card Body -->
+                <div class="card-body p-4 d-flex flex-column">
+                    <p class="card-text mb-2" style="font-size: 0.9rem;">
+                        <i class="fas fa-map-marker-alt me-1" style="color: #7f8c8d;"></i>
+                        <span class="text-muted">{{ hotel.location }}</span>
+                    </p>
+                    <h5 class="card-title mb-2">
+                        <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="text-decoration-none stretched-link" style="color: #2c3e50; font-weight: 600; line-height: 1.3;">{{ hotel.name }}</a>
+                    </h5>
+                    
+                    <!-- Star Rating -->
+                    {% if hotel.star_rating %}
+                    <div class="mb-3" style="font-size: 1rem; color: #f39c12;">
+                        {% for i in range(hotel.star_rating) %}<i class="fas fa-star"></i>{% endfor %}{% for i in range(5 - hotel.star_rating) %}<i class="far fa-star" style="opacity: 0.5;"></i>{% endfor %}
+                        <small class="ms-2 text-muted" style="font-size: 0.85rem; vertical-align: middle;">({{ hotel.star_rating }}.0)</small>
+                    </div>
+                    {% endif %}
+
+                    <!-- Price section pushed to the bottom -->
+                    <div class="mt-auto pt-3">
+                        <span style="font-size: 0.9rem; color: #8492a6;">Price from</span>
+                        <p class="mb-0">
+                            <span class="fs-3 fw-bold" style="color: #16a085;">${{ "%.0f"|format(hotel.price_per_night) }}</span>
+                            <span class="text-muted fw-normal">/ night</span>
+                        </p>
                     </div>
                 </div>
             </div>
-            {% endfor %}
         </div>
-    {% else %}
-        <div class="text-center py-5 my-5"><div class="alert alert-light shadow-sm d-inline-block p-4 border"><i class="far fa-heart fa-3x text-muted mb-3"></i><p class="lead mb-1">Your wishlist is empty.</p><p class="text-muted">Start adding hotels you love!</p><a href="{{ url_for('index') }}" class="btn btn-primary mt-2"><i class="fas fa-plus-circle me-2"></i> Browse Hotels</a></div></div>
-    {% endif %}
-</div>
+        {% endfor %}
+    </div>
+    <div class="text-center mt-5 pt-3">
+         <!-- *** FIX IS HERE: Matching the button color to the site theme *** -->
+         <a href="{{ url_for('index') }}" class="btn" style="background-color: #1abc9c; color: white; border-radius: 30px; padding: 12px 30px; font-weight: 500; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(26, 188, 156, 0.3);"><i class="fas fa-search me-2"></i> Find More Stays</a>
+    </div>
+{% else %}
+    <!-- === INSPIRATIONAL EMPTY WISHLIST STATE === -->
+    <div class="text-center py-5 my-4">
+        <div style="background-color: #ffffff; border-radius: 20px; padding: 4rem; box-shadow: 0 10px 50px rgba(0,0,0,0.08);">
+            <i class="fas fa-suitcase-rolling fa-4x mb-4" style="color: #1abc9c;"></i>
+            <h2 class="fw-bold mb-2" style="color: #34495e;">Your Adventure Awaits</h2>
+            <p class="lead text-muted mb-4 mx-auto" style="max-width: 450px;">The world is full of incredible places. Add them to your wishlist to start planning your next journey.</p>
+            <a href="{{ url_for('index') }}" class="btn btn-lg" style="background-color: #1abc9c; color: white; border-radius: 50px; padding: 14px 35px; font-weight: 500; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(26, 188, 156, 0.3);">
+                <i class="fas fa-compass me-2"></i> Start Exploring
+            </a>
+        </div>
+    </div>
+{% endif %}
+
 {% endblock %}

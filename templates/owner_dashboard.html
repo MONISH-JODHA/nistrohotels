@@ -1,59 +1,91 @@
 {% extends "base.html" %}
-{% block title %}Owner Dashboard - HotelApp{% endblock %}
+{% block title %}Owner Dashboard - DreamStays{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary"><i class="fas fa-tachometer-alt me-2"></i> Owner Dashboard</h2>
-        <a href="{{ url_for('register_hotel') }}" class="btn btn-primary"><i class="fas fa-plus-circle me-2"></i> Register New Hotel</a>
+<style>
+    /* 
+       While inline styles are used as requested, for a true production-ready site, 
+       it's best to move these to a separate CSS file for better performance and maintainability.
+    */
+    body {
+        background-color: #f4f6f9; /* A soft, modern grey background */
+        color: #495057;
+    }
+    .card-metric {
+        background-color: #fff;
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    .card-metric:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.09);
+    }
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+
+<div class="container-fluid mt-4 mb-5 px-4">
+
+    <!-- === HEADER === -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="h2 fw-bold" style="color: #2c3e50;">Dashboard</h1>
+            <p class="mb-0 text-muted">Welcome back, here's your business overview.</p>
+        </div>
+        <a href="{{ url_for('register_hotel') }}" class="btn btn-lg" style="background-color: #26a69a; color: white; border-radius: 12px; font-weight: 500; box-shadow: 0 4px 15px rgba(38, 166, 154, 0.3);">
+            <i class="fas fa-plus me-2"></i> Register New Hotel
+        </a>
     </div>
 
-    <!-- Analytics Section -->
-    <div class="row mb-4">
+    <!-- === ANALYTICS SECTION === -->
+    <div class="row mb-4 g-4">
         <!-- Total Revenue Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Revenue</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">${{ "%.2f"|format(analytics.total_revenue) }}</div>
-                        </div>
-                        <div class="col-auto"><i class="fas fa-dollar-sign fa-2x text-gray-300"></i></div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card card-metric h-100 p-2">
+                <div class="card-body d-flex align-items-center">
+                    <div class="p-3 me-3" style="background-color: #e0f2f1; border-radius: 12px;">
+                        <i class="fas fa-dollar-sign fa-2x" style="color: #00796b;"></i>
+                    </div>
+                    <div>
+                        <p class="mb-1 text-muted" style="font-weight: 500;">Total Revenue</p>
+                        <h4 class="h4 mb-0 fw-bold" style="color: #2c3e50;">${{ "%.2f"|format(analytics.total_revenue) }}</h4>
                     </div>
                 </div>
             </div>
         </div>
         <!-- Occupancy Rate Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Occupancy (Last 30d)</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "%.1f"|format(analytics.occupancy_rate) }}%</div>
-                        </div>
-                        <div class="col-auto"><i class="fas fa-chart-pie fa-2x text-gray-300"></i></div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card card-metric h-100 p-2">
+                <div class="card-body d-flex align-items-center">
+                    <div class="p-3 me-3" style="background-color: #e3f2fd; border-radius: 12px;">
+                        <i class="fas fa-chart-pie fa-2x" style="color: #1e88e5;"></i>
+                    </div>
+                    <div>
+                        <p class="mb-1 text-muted" style="font-weight: 500;">Occupancy (30d)</p>
+                        <h4 class="h4 mb-0 fw-bold" style="color: #2c3e50;">{{ "%.1f"|format(analytics.occupancy_rate) }}%</h4>
                     </div>
                 </div>
             </div>
         </div>
         <!-- Total Bookings Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total Bookings</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ analytics.total_bookings }}</div>
-                        </div>
-                        <div class="col-auto"><i class="fas fa-calendar-check fa-2x text-gray-300"></i></div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card card-metric h-100 p-2">
+                <div class="card-body d-flex align-items-center">
+                     <div class="p-3 me-3" style="background-color: #f3e5f5; border-radius: 12px;">
+                        <i class="fas fa-calendar-check fa-2x" style="color: #8e24aa;"></i>
+                    </div>
+                    <div>
+                        <p class="mb-1 text-muted" style="font-weight: 500;">Total Bookings</p>
+                        <h4 class="h4 mb-0 fw-bold" style="color: #2c3e50;">{{ analytics.total_bookings }}</h4>
                     </div>
                 </div>
             </div>
         </div>
         <!-- Popular Rooms Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-warning shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
@@ -76,42 +108,67 @@
         </div>
     </div>
     
-    <!-- Booking Trends Chart -->
-    <div class="card shadow-sm mb-5 border-0">
-        <div class="card-header bg-light py-3">
-            <h4 class="mb-0"><i class="fas fa-chart-line me-2"></i> Booking Trends (Last 30 Days)</h4>
-        </div>
-        <div class="card-body p-4">
-            <canvas id="bookingChart"></canvas>
-        </div>
-    </div>
-
-    <!-- My Hotels Table -->
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-info text-white py-3"><h4 class="mb-0"><i class="fas fa-hotel me-2"></i> My Registered Hotels</h4></div>
-        <div class="card-body p-0">
-            {% if hotels %}
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead><tr><th class="ps-3">Hotel Name</th><th>Location</th><th>Status</th><th>Actions</th></tr></thead>
-                    <tbody>
-                        {% for hotel in hotels %}
-                        <tr>
-                            <td class="ps-3"><strong><a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}">{{ hotel.name }}</a></strong></td>
-                            <td>{{ hotel.location }}</td>
-                            <td>{% if hotel.is_approved %}<span class="badge bg-success">Approved</span>{% else %}<span class="badge bg-warning text-dark">Pending Approval</span>{% endif %}</td>
-                            <td>
-                                <a href="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" class="btn btn-sm btn-primary" title="Manage Rooms"><i class="fas fa-bed"></i> Manage Rooms</a>
-                                <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="btn btn-sm btn-outline-info" title="View Hotel Page"><i class="fas fa-eye"></i> View</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <!-- === BOOKING TRENDS & HOTELS LIST === -->
+    <div class="row g-5">
+        <!-- Booking Trends Chart Column -->
+        <div class="col-lg-7">
+            <div class="card card-metric h-100">
+                <div class="card-header" style="background-color: transparent; border-bottom: 1px solid #eef2f7; padding: 1.5rem;">
+                    <h5 class="mb-0 fw-bold" style="color: #2c3e50;"><i class="fas fa-chart-line me-2 text-muted"></i> Booking Trends (Last 30 Days)</h5>
+                </div>
+                <div class="card-body p-4">
+                    <canvas id="bookingChart" style="min-height: 300px;"></canvas>
+                </div>
             </div>
-            {% else %}
-            <div class="card-body p-4"><p class="text-muted text-center">You have not registered any hotels yet.</p></div>
-            {% endif %}
+        </div>
+        
+        <!-- My Hotels Table Column -->
+        <div class="col-lg-5">
+             <div class="card card-metric h-100">
+                <div class="card-header" style="background-color: transparent; border-bottom: 1px solid #eef2f7; padding: 1.5rem;">
+                    <h5 class="mb-0 fw-bold" style="color: #2c3e50;"><i class="fas fa-hotel me-2 text-muted"></i> My Registered Hotels</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if hotels %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="font-size: 0.95rem;">
+                            <thead style="color: #6c757d;">
+                                <tr style="border-bottom: 1px solid #eef2f7;">
+                                    <th class="ps-4 py-3 fw-normal">Hotel</th>
+                                    <th class="py-3 fw-normal">Status</th>
+                                    <th class="pe-4 py-3 fw-normal text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for hotel in hotels %}
+                                <tr style="border-bottom: 1px solid #eef2f7;">
+                                    <td class="ps-4 py-3">
+                                        <div class="fw-bold" style="color: #34495e;">{{ hotel.name }}</div>
+                                        <div class="small text-muted">{{ hotel.location }}</div>
+                                    </td>
+                                    <td class="py-3">
+                                        {% if hotel.is_approved %}
+                                            <span class="badge" style="background-color: #d4edda; color: #155724; font-weight: 500;">Approved</span>
+                                        {% else %}
+                                            <span class="badge" style="background-color: #fff3cd; color: #856404; font-weight: 500;">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end pe-4 py-3">
+                                        <a href="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" class="btn btn-sm" style="background-color: #2c3e50; color: white;" title="Manage Rooms"><i class="fas fa-bed"></i></a>
+                                        <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="btn btn-sm btn-outline-secondary" title="View Hotel Page"><i class="fas fa-eye"></i></a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="d-flex align-items-center justify-content-center h-100 p-4">
+                        <p class="text-muted text-center">You have not registered any hotels yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -126,37 +183,72 @@ document.addEventListener('DOMContentLoaded', function () {
         const chartLabels = {{ analytics.chart_labels|tojson|safe }};
         const chartData = {{ analytics.chart_data|tojson|safe }};
 
+        // Create a gradient for the chart background
+        const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(38, 166, 154, 0.4)');
+        gradient.addColorStop(1, 'rgba(38, 166, 154, 0)');
+
         new Chart(ctx, {
             type: 'line',
             data: {
                 labels: chartLabels,
                 datasets: [{
-                    label: 'Bookings per Day',
+                    label: 'Bookings',
                     data: chartData,
                     fill: true,
-                    borderColor: 'rgb(75, 192, 192)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    tension: 0.1,
-                    pointRadius: 4,
-                    pointBackgroundColor: 'rgb(75, 192, 192)'
+                    backgroundColor: gradient, // Use the elegant gradient
+                    borderColor: '#26a69a', // A vibrant, modern teal
+                    borderWidth: 2.5,
+                    tension: 0.4, // Makes the line curve smoothly
+                    pointRadius: 0, // Hide points for a cleaner look
+                    pointBackgroundColor: '#26a69a',
+                    pointHoverRadius: 5, // Show points on hover
+                    pointHoverBorderWidth: 2,
+                    pointHoverBackgroundColor: '#ffffff'
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 scales: {
                     y: {
                         beginAtZero: true,
                         ticks: {
+                            color: '#95a5a6',
                             stepSize: 1 // Ensure y-axis shows whole numbers for bookings
+                        },
+                        grid: {
+                            color: '#eef2f7', // Lighter grid lines
+                            borderDash: [5, 5] // Dashed grid lines
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#95a5a6'
+                        },
+                         grid: {
+                            display: false, // Hide vertical grid lines for a cleaner look
                         }
                     }
                 },
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: '#2c3e50',
+                        titleFont: { weight: 'bold' },
+                        bodyFont: { size: 14 },
+                        padding: 12,
+                        cornerRadius: 8,
+                        displayColors: false // Hide the color box in tooltip
                     }
-                }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
+                },
             }
         });
     }

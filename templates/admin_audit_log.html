@@ -1,35 +1,138 @@
 {% extends "base.html" %}
-{% block title %}Audit Log{% endblock %}
+{% block title %}System Audit Log{% endblock %}
+
 {% block content %}
+<style>
+    /* Page-specific styles for a modern look */
+    body {
+        background-color: #f8f9fa;
+    }
+    .table thead th {
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 0.8rem;
+        color: #6c757d;
+        font-weight: 600;
+        border-bottom: 2px solid #eef2f7;
+    }
+    .table tbody tr:last-child td {
+        border-bottom: none;
+    }
+    .actor-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    .pagination .page-link {
+        border-radius: 0.25rem;
+        margin: 0 2px;
+        border: none;
+        background-color: #e9ecef;
+        color: #495057;
+    }
+    .pagination .page-item.active .page-link {
+        background-color: #1abc9c;
+        color: white;
+        box-shadow: 0 4px 10px rgba(26, 188, 156, 0.3);
+    }
+     .pagination .page-item.disabled .page-link {
+        background-color: #f8f9fa;
+        color: #adb5bd;
+    }
+</style>
+
 <div class="container my-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary"><i class="fas fa-clipboard-list me-2"></i> System Audit Log</h2>
-        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i> Back to Dashboard</a>
+
+    <!-- === HEADER === -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="display-6 fw-bold" style="color: #2c3e50;"><i class="fas fa-history me-3 text-secondary"></i>System Audit Log</h1>
+            <p class="text-muted mb-0">A record of all important actions performed on the platform.</p>
+        </div>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
     </div>
 
-    <div class="card shadow-sm border-0">
+    <!-- === LOG TABLE CARD === -->
+    <div class="card" style="border: none; border-radius: 16px; box-shadow: 0 8px 40px rgba(0,0,0,0.07);">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-striped table-hover align-middle mb-0">
-                    <thead><tr><th>Timestamp (UTC)</th><th>Actor</th><th>Action</th></tr></thead>
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th style="padding: 1rem 1.5rem;">Timestamp (UTC)</th>
+                            <th style="padding: 1rem 1.5rem;">Actor</th>
+                            <th style="padding: 1rem 1.5rem;">Action</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         {% for log in logs.items %}
+                        <tr style="border-top: 1px solid #f1f3f5;">
+                            <td style="padding: 1rem 1.5rem;">
+                                <div style="color: #34495e; font-weight: 500;">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                            </td>
+                            <td style="padding: 1rem 1.5rem;">
+                                {% if log.actor %}
+                                    <span class="actor-pill" style="background-color: #e3f2fd; color: #1e88e5;">
+                                        <i class="fas fa-user me-2"></i>{{ log.actor.username }}
+                                    </span>
+                                {% else %}
+                                    <span class="actor-pill" style="background-color: #e9ecef; color: #495057;">
+                                        <i class="fas fa-cogs me-2"></i>System
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 1rem 1.5rem;">
+                                <span style="color: #34495e;">{{ log.action }}</span>
+                            </td>
+                        </tr>
+                        {% else %}
                         <tr>
-                            <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                            <td>{{ log.actor.username if log.actor else 'System' }}</td>
-                            <td>{{ log.action }}</td>
+                            <td colspan="3" class="text-center p-5 text-muted">
+                                There are no audit logs to display.
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
-        <div class="card-footer d-flex justify-content-center">
-            <!-- Pagination Controls -->
-            {% if logs.has_prev %}<a href="{{ url_for('admin_audit_log', page=logs.prev_num) }}" class="btn btn-outline-secondary me-2">« Newer</a>{% endif %}
-            Page {{ logs.page }} of {{ logs.pages }}.
-            {% if logs.has_next %}<a href="{{ url_for('admin_audit_log', page=logs.next_num) }}" class="btn btn-outline-secondary ms-2">Older »</a>{% endif %}
+        
+        <!-- === PAGINATION FOOTER === -->
+        {% if logs.pages > 1 %}
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center" style="border-radius: 0 0 16px 16px; padding: 1rem 1.5rem;">
+            <span class="text-muted small">
+                Showing logs {{ logs.first }} - {{ logs.last }} of {{ logs.total }}
+            </span>
+            <nav aria-label="Audit Log Pagination">
+                <ul class="pagination mb-0">
+                    <!-- Previous Button -->
+                    <li class="page-item {% if not logs.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin_audit_log', page=logs.prev_num) if logs.has_prev else '#' }}" aria-label="Previous">
+                            <span aria-hidden="true">«</span>
+                        </a>
+                    </li>
+
+                    <!-- Page Numbers (optional, good for many pages) -->
+                    {# Example for more advanced pagination #}
+                    <li class="page-item active" aria-current="page">
+                        <span class="page-link">{{ logs.page }}</span>
+                    </li>
+
+                    <!-- Next Button -->
+                    <li class="page-item {% if not logs.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin_audit_log', page=logs.next_num) if logs.has_next else '#' }}" aria-label="Next">
+                            <span aria-hidden="true">»</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

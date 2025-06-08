@@ -1,51 +1,209 @@
 {% extends "base.html" %}
 {% block title %}Manage Hotels{% endblock %}
+
+{% block head_extra %}
+{# Google Fonts for a professional dashboard typography #}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    /* --- [ 1. Theming & General Styles ] --- */
+    :root {
+        --primary-color: #005f73;
+        --success-color: #2a9d8f;
+        --warning-color: #fca311;
+        --danger-color: #ae2012;
+        --bg-body: #f4f7f9;
+        --bg-card: #ffffff;
+        --text-dark: #212529;
+        --text-light: #6c757d;
+        --border-color: #e9ecef;
+        --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+        --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    body {
+        background-color: var(--bg-body);
+        font-family: 'Poppins', sans-serif;
+    }
+
+    /* --- [ 2. Page Header & Controls ] --- */
+    .page-header h2 {
+        color: var(--primary-color);
+        font-weight: 700;
+    }
+    .controls-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    /* --- [ 3. Hotel Card Styling (Replaces <table>) ] --- */
+    .hotel-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: box-shadow 0.3s ease, transform 0.3s ease;
+    }
+    .hotel-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-5px);
+    }
+    .hotel-card-image {
+        width: 150px;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 12px;
+        flex-shrink: 0;
+    }
+    .hotel-card-details {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* --- [ 4. Hotel Card Content ] --- */
+    .hotel-card-name {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+    .hotel-card-name:hover { text-decoration: underline; }
+    .hotel-card-location {
+        font-size: 0.9rem;
+        color: var(--text-light);
+        margin-top: -5px;
+    }
+    
+    .hotel-card-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin: 1rem 0;
+    }
+    .meta-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background-color: #f8f9fa;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--text-light);
+    }
+    .meta-tag.status-approved { background-color: rgba(42, 157, 143, 0.1); color: var(--success-color); }
+    .meta-tag.status-pending { background-color: rgba(252, 163, 17, 0.1); color: var(--warning-color); }
+
+    .hotel-card-footer {
+        margin-top: auto;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 0.75rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+    }
+    
+    /* Actions Dropdown */
+    .dropdown-item i { width: 20px; margin-right: 0.5rem; text-align: center; }
+    .dropdown-item.text-success:hover { background-color: rgba(42, 157, 143, 0.1); }
+    .dropdown-item.text-danger:hover { background-color: rgba(174, 32, 18, 0.1); }
+
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container my-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary"><i class="fas fa-hotel me-2"></i> Manage Hotels</h2>
-        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i> Back to Dashboard</a>
+    <div class="d-flex justify-content-between align-items-center mb-4 page-header">
+        <h2 class="mb-0"><i class="fas fa-hotel me-2"></i> Manage Hotels</h2>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary rounded-pill"><i class="fas fa-arrow-left me-2"></i> Back to Dashboard</a>
     </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Hotel Name</th>
-                            <th>Owner</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for hotel in hotels %}
-                        <tr>
-                            <td>{{ hotel.id }}</td>
-                            <td>{{ hotel.name }}</td>
-                            <td>{{ hotel.owner_user.username if hotel.owner_user else 'N/A' }}</td>
-                            <td>
-                                {% if hotel.is_approved %}
-                                    <span class="badge bg-success">Approved</span>
-                                {% else %}
-                                    <span class="badge bg-warning text-dark">Pending</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="{{ url_for('edit_hotel_by_admin', hotel_id=hotel.id) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i> Edit</a>
-                                <!-- FIX IS HERE: Changed 'reject_hotel' to 'delete_hotel_by_admin' -->
-                                <form action="{{ url_for('delete_hotel_by_admin', hotel_id=hotel.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this hotel and all its data?');">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt"></i> Delete</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <!-- Search and Filter Controls -->
+    <div class="controls-card card-body mb-4">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-6">
+                <input type="text" class="form-control" placeholder="Search by hotel or owner name...">
+            </div>
+            <div class="col-md-4">
+                <select class="form-select">
+                    <option selected>Filter by status...</option>
+                    <option value="approved">Approved</option>
+                    <option value="pending">Pending Approval</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100">Filter</button>
             </div>
         </div>
+    </div>
+
+    <!-- Hotels List -->
+    <div class="hotels-list">
+        {% for hotel in hotels %}
+        <div class="hotel-card">
+            <!-- Hotel Image -->
+            {% set hotel_img_src = hotel.main_image_url if hotel.main_image_url and (hotel.main_image_url.startswith('http') or hotel.main_image_url.startswith('/static')) else 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80' %}
+            <img src="{{ hotel_img_src }}" alt="{{ hotel.name }}" class="hotel-card-image d-none d-md-block">
+
+            <!-- Hotel Details -->
+            <div class="hotel-card-details">
+                <div>
+                    <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="hotel-card-name">{{ hotel.name }}</a>
+                    <div class="hotel-card-location"><i class="fas fa-map-marker-alt me-1"></i>{{ hotel.location }}</div>
+                </div>
+
+                <div class="hotel-card-meta">
+                    <div class="meta-tag">
+                        <i class="fas fa-user-tie"></i>
+                        <span>Owner: {{ hotel.owner_user.username if hotel.owner_user else 'N/A' }}</span>
+                    </div>
+                    {% if hotel.is_approved %}
+                        <div class="meta-tag status-approved"><i class="fas fa-check-circle"></i> Approved</div>
+                    {% else %}
+                        <div class="meta-tag status-pending"><i class="fas fa-clock"></i> Pending Approval</div>
+                    {% endif %}
+                </div>
+
+                <div class="hotel-card-footer">
+                    <a href="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" class="btn btn-dark"><i class="fas fa-bed me-2"></i> Manage Rooms</a>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary" type="button" id="actionsDropdown-{{ hotel.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown-{{ hotel.id }}">
+                            <li><a class="dropdown-item" href="{{ url_for('edit_hotel_by_admin', hotel_id=hotel.id) }}"><i class="fas fa-edit"></i> Edit Details</a></li>
+                            {% if not hotel.is_approved %}
+                            <li>
+                                <form action="{{ url_for('approve_hotel', hotel_id=hotel.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="dropdown-item text-success"><i class="fas fa-check"></i> Approve</button>
+                                </form>
+                            </li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form action="{{ url_for('delete_hotel_by_admin', hotel_id=hotel.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this hotel?');">
+                                    <button type="submit" class="dropdown-item text-danger"><i class="fas fa-trash-alt"></i> Delete Hotel</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+            <div class="text-center p-5 bg-light rounded">
+                <p class="lead">No hotels found.</p>
+            </div>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}

@@ -2,49 +2,264 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Booking Receipt - #{{ booking.id }}</title>
+    <title>Booking Confirmation - Voyageur - #{{ booking.id }}</title>
     <style>
-        body { font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif; color: #333; line-height: 1.6; margin: 0; padding: 0; background-color: #ffffff; }
-        .container { width: 90%; max-width: 800px; margin: 20px auto; background-color: #fff; padding: 25px; box-shadow: 0 0 10px rgba(0,0,0,0.05); border: 1px solid #eee; }
-        h1 { color: #005A9C; text-align: center; border-bottom: 2px solid #005A9C; padding-bottom: 10px; margin-bottom: 25px; font-size: 24px; }
-        .app-name { text-align: center; font-size: 20px; font-weight: bold; color: #005A9C; margin-bottom: 20px; }
-        .details-grid { margin-bottom: 20px; }
-        .details-grid dt { font-weight: bold; color: #444; float: left; width: 180px; clear: left; }
-        .details-grid dd { margin-left: 190px; margin-bottom: 8px; }
-        .total-price { font-size: 18px; font-weight: bold; color: #005A9C; text-align: right; margin-top: 25px; padding-top: 15px; border-top: 1px dashed #ccc; }
-        .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #777; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background-color: #f0f5fa; color: #005A9C; font-weight: bold; }
-        .section-title { font-size: 18px; color: #005A9C; margin-top: 25px; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+        /* --- Base & Reset --- */
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f9;
+            color: #1a202c; /* Dark Charcoal */
+        }
+        .container {
+            max-width: 700px;
+            margin: 30px auto;
+            background-color: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+            overflow: hidden; /* To contain the rounded corners of the header */
+        }
+
+        /* --- Header --- */
+        .receipt-header {
+            background: linear-gradient(135deg, #43a0f0, #1e6dc5);
+            color: #ffffff;
+            padding: 40px;
+            text-align: center;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+        }
+        .header-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 5px 0;
+        }
+        .header-subtitle {
+            font-size: 16px;
+            font-weight: 400;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        /* --- Receipt Body & Sections --- */
+        .receipt-body {
+            padding: 30px 40px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e6dc5;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #eef2f7;
+            display: flex;
+            align-items: center;
+        }
+        .section-title i {
+            margin-right: 12px;
+            font-size: 18px;
+        }
+
+        /* --- Details Grid (for Itinerary & Guest Info) --- */
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .detail-item dt {
+            font-weight: 600;
+            color: #4a5568; /* Medium Gray */
+            margin-bottom: 4px;
+        }
+        .detail-item dd {
+            font-weight: 500;
+            color: #1a202c;
+            margin: 0;
+        }
+        .hotel-name {
+            font-size: 18px;
+            font-weight: 700 !important;
+        }
+
+        /* --- Payment Summary Table --- */
+        .payment-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .payment-table th, .payment-table td {
+            padding: 12px 0;
+            text-align: left;
+            border-bottom: 1px solid #eef2f7;
+        }
+        .payment-table thead th {
+            font-weight: 600;
+            color: #718096; /* Lighter Gray */
+            text-transform: uppercase;
+            font-size: 12px;
+            padding-bottom: 8px;
+        }
+        .payment-table td:last-child, .payment-table th:last-child {
+            text-align: right;
+        }
+        .payment-table .description {
+            font-weight: 500;
+            color: #2d3748;
+        }
+        .payment-table .rate {
+            color: #4a5568;
+        }
+        
+        /* --- Total Price Section --- */
+        .total-summary {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #f4f7f9;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .total-summary .label {
+            font-size: 18px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        .total-summary .amount {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e6dc5;
+        }
+
+        /* --- Footer --- */
+        .footer {
+            text-align: center;
+            padding: 30px 40px;
+            font-size: 13px;
+            color: #718096;
+            line-height: 1.7;
+        }
+        .footer a {
+            color: #1e6dc5;
+            font-weight: 500;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
     </style>
+    <!-- Font Awesome for Icons (Optional, but recommended for professional look) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
     <div class="container">
-        <div class="app-name">HotelApp Booking Confirmation</div>
-        <h1>Booking Receipt</h1>
-        <dl class="details-grid">
-            <dt>Booking ID:</dt><dd>#{{ booking.id }}</dd>
-            <dt>Booked By:</dt><dd>{{ user.username }} ({{ user.email }})</dd>
-            <!-- FIX IS HERE: Changed 'booking_date' to 'booking.created_at' -->
-            <dt>Booking Date:</dt><dd>{{ booking.created_at.strftime('%B %d, %Y %I:%M %p UTC') }}</dd>
-        </dl>
-        <div class="section-title">Hotel & Stay Details</div>
-        <table>
-            <tr><th>Hotel Name</th><td>{{ booking.hotel.name }}</td></tr>
-            <tr><th>Room Type</th><td>{{ booking.room_type.name }}</td></tr>
-            <tr><th>Location</th><td>{{ booking.hotel.location }}</td></tr>
-            <tr><th>Check-in Date</th><td>{{ booking.check_in_date.strftime('%A, %B %d, %Y') }}</td></tr>
-            <tr><th>Check-out Date</th><td>{{ booking.check_out_date.strftime('%A, %B %d, %Y') }}</td></tr>
-            <tr><th>Number of Nights</th><td>{{ (booking.check_out_date - booking.check_in_date).days }}</td></tr>
-        </table>
-        <div class="section-title">Payment Summary</div>
-        <table>
-            <thead><tr><th>Description</th><th>Rate per Night</th><th>Nights</th><th>Subtotal</th></tr></thead>
-            <tbody><tr><td>{{ booking.hotel.name }} - {{ booking.room_type.name }}</td><td>${{ "%.2f"|format(booking.total_price / (booking.check_out_date - booking.check_in_date).days) }}</td><td>{{ (booking.check_out_date - booking.check_in_date).days }}</td><td>${{ "%.2f"|format(booking.total_price) }}</td></tr></tbody>
-        </table>
-        <div class="total-price">Total Amount Paid: ${{ "%.2f"|format(booking.total_price) }}</div>
-        <div class="footer"><p>Thank you for booking with HotelApp!</p><p>If you have any questions, please contact our support.</p></div>
+        <!-- === HEADER === -->
+        <div class="receipt-header">
+            <div class="logo">Voyageur</div>
+            <h1 class="header-title">Your Trip is Booked!</h1>
+            <p class="header-subtitle">Thank you for choosing us. Your booking confirmation is below.</p>
+        </div>
+
+        <div class="receipt-body">
+            <!-- === GUEST & BOOKING DETAILS SECTION === -->
+            <div class="section">
+                <h2 class="section-title"><i class="fas fa-user-check"></i>Guest & Booking Details</h2>
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <dt>Booking ID</dt>
+                        <dd>#{{ booking.id }}</dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Booking Date</dt>
+                        <dd>{{ booking.created_at.strftime('%B %d, %Y') }}</dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Booked By</dt>
+                        <dd>{{ user.username }}</dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Email Address</dt>
+                        <dd>{{ user.email }}</dd>
+                    </div>
+                </div>
+            </div>
+
+            <!-- === ITINERARY SECTION === -->
+            <div class="section">
+                <h2 class="section-title"><i class="fas fa-suitcase-rolling"></i>Your Itinerary</h2>
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <dt>Hotel & Location</dt>
+                        <dd class="hotel-name">{{ booking.hotel.name }} <span style="font-weight: 400; color: #718096;">- {{ booking.hotel.location }}</span></dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Room Type</dt>
+                        <dd>{{ booking.room_type.name }}</dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Check-in</dt>
+                        <dd>{{ booking.check_in_date.strftime('%A, %B %d, %Y') }}</dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Check-out</dt>
+                        <dd>{{ booking.check_out_date.strftime('%A, %B %d, %Y') }}</dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Duration of Stay</dt>
+                        <dd>{{ (booking.check_out_date - booking.check_in_date).days }} Night(s)</dd>
+                    </div>
+                </div>
+            </div>
+
+            <!-- === PAYMENT SUMMARY SECTION === -->
+            <div class="section">
+                <h2 class="section-title"><i class="fas fa-file-invoice-dollar"></i>Payment Summary</h2>
+                <table class="payment-table">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Rate / Night</th>
+                            <th>Nights</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="description">
+                                {{ booking.hotel.name }}<br>
+                                <span style="color: #718096; font-size: 13px;">{{ booking.room_type.name }}</span>
+                            </td>
+                            <td class="rate">${{ "%.2f"|format(booking.total_price / (booking.check_out_date - booking.check_in_date).days) }}</td>
+                            <td>{{ (booking.check_out_date - booking.check_in_date).days }}</td>
+                            <td>${{ "%.2f"|format(booking.total_price) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="total-summary">
+                    <span class="label">Total Amount Paid</span>
+                    <span class="amount">${{ "%.2f"|format(booking.total_price) }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- === FOOTER === -->
+        <div class="footer">
+            <p>This is an automated receipt. No payment is due.</p>
+            <p>If you have any questions or need to modify your booking, please visit our <a href="#">Help Center</a> or contact support.</p>
+            <p>© {{ current_year }} Voyageur. All rights reserved.</p>
+        </div>
     </div>
 </body>
 </html>

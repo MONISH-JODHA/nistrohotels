@@ -2,61 +2,224 @@
 {% block title %}Manage Availability for {{ room.name }}{% endblock %}
 
 {% block head_extra %}
+{# Google Fonts for a more modern typography #}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+
 <style>
-    #calendar { max-width: 1100px; margin: 40px auto; }
-    .fc-daygrid-day-number { font-weight: bold; }
-    .fc-event { padding: 4px; cursor: pointer; font-size: 0.85em; }
-    .fc-event-title { white-space: normal; }
-    .fc-day-today { background: #fcf8e3 !important; }
-    .fc-event-main { color: white; }
-    .fc-event[style*="border-color: transparent"] {
-      border: 1px dashed #ccc; /* Give a subtle border to default days */
+    /* --- [ 1. Theming & General Styles ] --- */
+    :root {
+        --primary-color: #005f73;
+        --secondary-color: #0a9396;
+        --accent-color: #ee9b00;
+        --success-color: #2a9d8f;
+        --danger-color: #e76f51;
+        --bg-body: #f4f7f9;
+        --bg-card: #ffffff;
+        --text-dark: #212529;
+        --text-light: #6c757d;
+        --border-color: #e9ecef;
+        --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+        --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
     }
-    .fc-event[style*="border-color: rgb(0, 123, 255)"] {
-        border-width: 3px !important;
-        border-style: solid;
+
+    body {
+        background-color: var(--bg-body);
+        font-family: 'Poppins', sans-serif;
+        color: var(--text-dark);
+    }
+
+    /* --- [ 2. Page Header & Layout ] --- */
+    .page-header h2 {
+        color: var(--primary-color);
+        font-weight: 700;
+    }
+    .page-header p {
+        color: var(--text-light);
+        font-size: 1.1rem;
+    }
+
+    /* --- [ 3. Instructions Panel ] --- */
+    .instructions-panel {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-left: 5px solid var(--secondary-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    .instructions-panel .panel-title {
+        color: var(--primary-color);
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    .instructions-panel ul {
+        list-style-type: none;
+        padding-left: 0;
+        margin: 1rem 0 0 0;
+    }
+    .instructions-panel li {
+        margin-bottom: 0.6rem;
+        color: var(--text-dark);
+        position: relative;
+        padding-left: 25px;
+    }
+    .instructions-panel li::before {
+        content: '✓';
+        position: absolute;
+        left: 0;
+        top: 2px;
+        color: var(--secondary-color);
+        font-weight: 600;
+    }
+    .override-indicator-icon {
+        color: var(--accent-color);
+    }
+
+    /* --- [ 4. Calendar Wrapper & Toolbar ] --- */
+    #calendar-wrapper {
+        background-color: var(--bg-card);
+        border-radius: 16px;
+        box-shadow: var(--shadow-md);
+        padding: 2rem;
+        border: 1px solid var(--border-color);
+    }
+
+    .fc .fc-toolbar-title {
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+    .fc .fc-button {
+        background: none;
+        border: 1px solid var(--border-color);
+        color: var(--text-light);
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    .fc .fc-button:hover, .fc .fc-button:focus {
+        background-color: #f8f9fa;
+        color: var(--text-dark);
+        box-shadow: none;
+    }
+    .fc .fc-button-primary:not(:disabled).fc-button-active {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+    }
+    .fc .fc-today-button {
+        font-weight: 600;
+    }
+
+    /* --- [ 5. Calendar Day Grid ] --- */
+    .fc .fc-daygrid-day-frame {
+        border-radius: 8px;
+        transition: background-color 0.2s ease-in-out;
+        cursor: pointer;
+    }
+    .fc .fc-daygrid-day:hover .fc-daygrid-day-frame {
+        background-color: rgba(10, 147, 150, 0.05); /* Light secondary color */
+    }
+    .fc .fc-day-today {
+        background-color: rgba(238, 155, 0, 0.07) !important; /* Light accent color */
+    }
+    .fc .fc-col-header-cell-cushion {
+        font-weight: 600;
+        color: var(--text-light);
+    }
+    .fc .fc-daygrid-day-number {
+        font-weight: 500;
+    }
+
+    /* --- [ 6. Calendar Event Styling - The Core Improvement ] --- */
+    .fc-event {
+        padding: 6px 10px !important;
+        border-radius: 6px !important;
+        border: none !important;
+        color: white !important;
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .fc-event:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    /* Different colors for availability */
+    .fc-event-success { background-color: var(--success-color); }
+    .fc-event-danger { background-color: var(--danger-color); }
+
+    /* Clearer visual for overridden days */
+    .fc-event.has-override {
+        border-left: 4px solid var(--accent-color) !important;
+    }
+    .override-icon {
+        font-size: 0.8em;
+        margin-right: 5px;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    /* Richer event content */
+    .fc-event-main {
+        font-size: 0.9em;
+        line-height: 1.4;
+    }
+    .event-price {
+        font-weight: 600;
+        display: block;
+    }
+    .event-avail {
+        font-size: 0.9em;
+        opacity: 0.9;
+        display: block;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container my-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 page-header">
         <div>
-            <h2 class="text-primary mb-0">Dynamic Availability & Pricing</h2>
-            <p class="lead text-muted">Hotel: <strong>{{ hotel.name }}</strong> | Room: <strong>{{ room.name }}</strong></p>
+            <h2 class="mb-1">Dynamic Availability & Pricing</h2>
+            <p class="mb-0">Hotel: <strong>{{ hotel.name }}</strong> | Room: <strong>{{ room.name }}</strong></p>
         </div>
-        <a href="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i> Back to Room List</a>
+        <a href="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" class="btn btn-outline-secondary rounded-pill px-3 py-2">
+            <i class="fas fa-arrow-left me-2"></i>Back to Rooms
+        </a>
     </div>
 
-    <div class="alert alert-info shadow-sm">
-        <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i> How to Use This Calendar</h5>
+    <div class="instructions-panel">
+        <div class="panel-title"><i class="fas fa-info-circle me-2"></i>How to Use This Calendar</div>
         <ul>
-            <li>Click on any date to set a custom price or number of available rooms for that day.</li>
-            <li>To revert a date to its default settings, open its edit modal and clear both input fields, then save.</li>
-            <li>A <strong class="text-primary">thick blue border</strong> indicates a day has custom overrides.</li>
-            <li>The event color shows availability: <i class="fas fa-circle text-success me-1"></i><strong>Green</strong> = Available | <i class="fas fa-circle text-danger me-1"></i><strong>Red</strong> = Fully Booked.</li>
+            <li>Click on any date to set a custom price or number of available rooms.</li>
+            <li>To revert a day to its default settings, clear the inputs in its modal and save.</li>
+            <li>Days with a <i class="fas fa-star override-indicator-icon"></i> star have custom settings.</li>
+            <li>Event color shows availability: <i class="fas fa-circle text-success me-1"></i><strong>Available</strong> | <i class="fas fa-circle text-danger me-1"></i><strong>Fully Booked</strong>.</li>
         </ul>
     </div>
     
-    <div id="calendar-container" class="card shadow-sm border-0">
-        <div id="calendar" class="p-4"></div>
+    <div id="calendar-wrapper">
+        <div id="calendar"></div>
     </div>
 </div>
 
-<!-- Modal for editing availability -->
+<!-- Modal for editing availability (no changes needed) -->
 <div class="modal fade" id="availabilityModal" tabindex="-1" aria-labelledby="availabilityModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
+        <!-- Styling for modal content will inherit from the global styles we added -->
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="availabilityModalLabel">Set Overrides for Date</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="availabilityForm">
+                <form id="availabilityForm" novalidate>
                     <input type="hidden" id="modalDate" name="date">
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label for="modalPrice" class="form-label">Custom Price ($)</label>
                         <input type="number" class="form-control" id="modalPrice" name="price" step="0.01" min="0" placeholder="e.g., 150.00">
                         <small class="form-text text-muted">Default: ${{ "%.2f"|format(room.price_per_night) }}. Leave blank to use default.</small>
@@ -64,13 +227,16 @@
                     <div class="mb-3">
                         <label for="modalAvailableRooms" class="form-label">Custom Available Rooms</label>
                         <input type="number" class="form-control" id="modalAvailableRooms" name="available_rooms" step="1" min="0" placeholder="e.g., 5">
-                        <small class="form-text text-muted">Default: {{ room.number_of_rooms }}. Leave blank to use default. Set to 0 to block the date.</small>
+                        <small class="form-text text-muted">Default: {{ room.number_of_rooms }}. Leave blank to use default. Set to 0 to block.</small>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="saveChangesBtn">Save Changes</button>
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4" id="saveChangesBtn">
+                    <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                    <span class="button-text">Save Changes</span>
+                </button>
             </div>
         </div>
     </div>
@@ -88,58 +254,92 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalAvailableRoomsField = document.getElementById('modalAvailableRooms');
     const modalTitle = document.getElementById('availabilityModalLabel');
     const saveChangesBtn = document.getElementById('saveChangesBtn');
-    
+    const saveBtnSpinner = saveChangesBtn.querySelector('.spinner-border');
+    const saveBtnText = saveChangesBtn.querySelector('.button-text');
+
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth'
-        },
-        events: `/api/room/{{ room.id }}/availability`,
-        dateClick: function(info) {
-            modalTitle.textContent = `Set Overrides for ${info.dateStr}`;
-            modalDateField.value = info.dateStr;
-            modalForm.reset();
-            availabilityModal.show();
-        },
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth' },
+        events: { url: `/api/room/{{ room.id }}/availability` },
+        dateClick: function(info) { openModalForDate(info.dateStr); },
         eventClick: function(info) {
             const dateStr = info.event.start.toISOString().split('T')[0];
-            modalTitle.textContent = `Set Overrides for ${dateStr}`;
-            modalDateField.value = dateStr;
-            modalForm.reset();
-            availabilityModal.show();
+            openModalForDate(dateStr, info.event.extendedProps.override_price, info.event.extendedProps.override_available);
+        },
+        
+        // --- UI IMPROVEMENT: Add classes for styling instead of setting color directly ---
+        eventDataTransform: function(eventData) {
+            let classNames = [];
+            if (eventData.available_count > 0) {
+                classNames.push('fc-event-success');
+            } else {
+                classNames.push('fc-event-danger');
+            }
+            eventData.classNames = classNames;
+            return eventData;
+        },
+
+        // --- UI IMPROVEMENT: Use eventDidMount to add override class to the main element ---
+        eventDidMount: function(arg) {
+            if (arg.event.extendedProps.is_override) {
+                arg.el.classList.add('has-override');
+            }
+        },
+
+        // --- UI IMPROVEMENT: Richer event content with price and availability ---
+        eventContent: function(arg) {
+            let props = arg.event.extendedProps;
+            let price = props.price || {{ room.price_per_night }};
+            let formattedPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
+            let overrideIcon = props.is_override ? '<i class="fas fa-star override-icon"></i>' : '';
+            
+            return {
+                html: `${overrideIcon}<span class="event-price">${formattedPrice}</span><span class="event-avail">${props.available_count} rooms</span>`
+            };
         }
     });
     
     calendar.render();
 
-    saveChangesBtn.addEventListener('click', function() {
-        const formData = {
-            date: modalDateField.value,
-            price: modalPriceField.value,
-            available_rooms: modalAvailableRoomsField.value,
-        };
+    function openModalForDate(dateStr, price, availableRooms) {
+        modalTitle.textContent = `Set Overrides for ${dateStr}`;
+        modalDateField.value = dateStr;
+        modalForm.reset();
+        modalPriceField.value = price || '';
+        modalAvailableRoomsField.value = (availableRooms !== undefined && availableRooms !== null) ? availableRooms : '';
+        availabilityModal.show();
+    }
 
+    saveChangesBtn.addEventListener('click', function() {
+        setSaveButtonState(true);
         fetch(`/api/room/{{ room.id }}/availability/update`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
+            body: JSON.stringify({
+                date: modalDateField.value,
+                price: modalPriceField.value || null,
+                available_rooms: modalAvailableRoomsField.value || null,
+            })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) { return response.json().then(err => { throw new Error(err.message || 'Server error') }); }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 availabilityModal.hide();
                 calendar.refetchEvents();
-            } else {
-                alert('Error: ' + (data.message || data.error));
-            }
+            } else { alert('Error: ' + (data.message || 'Unknown error.')); }
         })
-        .catch(error => {
-            console.error('Error:', error)
-            alert('An unexpected error occurred.');
-        });
+        .catch(error => { alert('An unexpected error occurred: ' + error.message); })
+        .finally(() => { setSaveButtonState(false); });
     });
+
+    function setSaveButtonState(isLoading) {
+        saveChangesBtn.disabled = isLoading;
+        saveBtnSpinner.classList.toggle('d-none', !isLoading);
+        saveBtnText.textContent = isLoading ? 'Saving...' : 'Save Changes';
+    }
 });
 </script>
 {% endblock %}
