@@ -157,14 +157,15 @@
             <!-- Hotel Details -->
             <div class="hotel-card-details">
                 <div>
-                    <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="hotel-card-name">{{ hotel.name }}</a>
+                    <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" target="_blank" class="hotel-card-name">{{ hotel.name }}</a>
                     <div class="hotel-card-location"><i class="fas fa-map-marker-alt me-1"></i>{{ hotel.location }}</div>
                 </div>
 
                 <div class="hotel-card-meta">
                     <div class="meta-tag">
                         <i class="fas fa-user-tie"></i>
-                        <span>Owner: {{ hotel.owner_user.username if hotel.owner_user else 'N/A' }}</span>
+                        {# CORRECTED: Use hotel.owner relationship #}
+                        <span>Owner: {{ hotel.owner.username if hotel.owner else 'N/A' }}</span>
                     </div>
                     {% if hotel.is_approved %}
                         <div class="meta-tag status-approved"><i class="fas fa-check-circle"></i> Approved</div>
@@ -201,7 +202,7 @@
         </div>
         {% else %}
             <div class="text-center p-5 bg-light rounded">
-                <p class="lead">No hotels found.</p>
+                <p class="lead">No hotels found in the system.</p>
             </div>
         {% endfor %}
     </div>

@@ -3,10 +3,6 @@
 
 {% block content %}
 <style>
-    /* 
-       While inline styles are used as requested, for a true production-ready site, 
-       it's best to move these to a separate CSS file for better performance and maintainability.
-    */
     body {
         background-color: #f4f6f9; /* A soft, modern grey background */
         color: #495057;
@@ -25,6 +21,16 @@
     .table-hover tbody tr:hover {
         background-color: #f8f9fa;
     }
+    .ranked-list {
+        list-style-position: inside;
+        padding-left: 0;
+        margin-bottom: 0;
+    }
+    .ranked-list li {
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+        color: #495057;
+    }
 </style>
 
 <div class="container-fluid mt-4 mb-5 px-4">
@@ -33,31 +39,17 @@
     <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
             <h1 class="h2 fw-bold" style="color: #2c3e50;">Dashboard</h1>
-            <p class="mb-0 text-muted">Welcome back, here's your business overview.</p>
+            <p class="mb-0 text-muted">Welcome back, {{ current_user.username }}. Here's your business overview.</p>
         </div>
         <a href="{{ url_for('register_hotel') }}" class="btn btn-lg" style="background-color: #26a69a; color: white; border-radius: 12px; font-weight: 500; box-shadow: 0 4px 15px rgba(38, 166, 154, 0.3);">
             <i class="fas fa-plus me-2"></i> Register New Hotel
         </a>
     </div>
 
-    <!-- === ANALYTICS SECTION === -->
+    <!-- === ANALYTICS SECTION (REVENUE REMOVED) === -->
     <div class="row mb-4 g-4">
-        <!-- Total Revenue Card -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card card-metric h-100 p-2">
-                <div class="card-body d-flex align-items-center">
-                    <div class="p-3 me-3" style="background-color: #e0f2f1; border-radius: 12px;">
-                        <i class="fas fa-dollar-sign fa-2x" style="color: #00796b;"></i>
-                    </div>
-                    <div>
-                        <p class="mb-1 text-muted" style="font-weight: 500;">Total Revenue</p>
-                        <h4 class="h4 mb-0 fw-bold" style="color: #2c3e50;">${{ "%.2f"|format(analytics.total_revenue) }}</h4>
-                    </div>
-                </div>
-            </div>
-        </div>
         <!-- Occupancy Rate Card -->
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl-4 col-md-6">
             <div class="card card-metric h-100 p-2">
                 <div class="card-body d-flex align-items-center">
                     <div class="p-3 me-3" style="background-color: #e3f2fd; border-radius: 12px;">
@@ -71,7 +63,7 @@
             </div>
         </div>
         <!-- Total Bookings Card -->
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl-4 col-md-6">
             <div class="card card-metric h-100 p-2">
                 <div class="card-body d-flex align-items-center">
                      <div class="p-3 me-3" style="background-color: #f3e5f5; border-radius: 12px;">
@@ -85,24 +77,24 @@
             </div>
         </div>
         <!-- Popular Rooms Card -->
-    <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Popular Rooms</div>
-                            {% if analytics.popular_room_types %}
-                                <ol class="mb-0 ps-4">
-                                {% for room, count in analytics.popular_room_types %}
-                                    <li><small>{{ room }} ({{count}})</small></li>
-                                {% endfor %}
-                                </ol>
-                            {% else %}
-                                <div class="small text-gray-800">No bookings yet.</div>
-                            {% endif %}
-                        </div>
-                        <div class="col-auto"><i class="fas fa-star fa-2x text-gray-300"></i></div>
-                    </div>
+        <div class="col-xl-4 col-md-12">
+            <div class="card card-metric h-100 p-2">
+                <div class="card-body d-flex align-items-center">
+                    <div class="p-3 me-3" style="background-color: #fffde7; border-radius: 12px;">
+                       <i class="fas fa-star fa-2x" style="color: #fbc02d;"></i>
+                   </div>
+                   <div class="w-100">
+                       <p class="mb-1 text-muted" style="font-weight: 500;">Most Popular Rooms</p>
+                       {% if analytics.popular_room_types %}
+                           <ol class="ranked-list">
+                           {% for room, count in analytics.popular_room_types[:3] %}
+                               <li>{{ room }} <span class="text-muted">({{count}} bookings)</span></li>
+                           {% endfor %}
+                           </ol>
+                       {% else %}
+                           <div class="small text-muted">No booking data yet.</div>
+                       {% endif %}
+                   </div>
                 </div>
             </div>
         </div>

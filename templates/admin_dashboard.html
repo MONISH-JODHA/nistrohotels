@@ -1,17 +1,54 @@
 {% extends "base.html" %}
-{% block title %}Admin Dashboard - WanderStay{% endblock %}
+{% block title %}Admin Dashboard - nestrohotels{% endblock %}
 
 {% block content %}
 <style>
-    /* 
-      A quick note for production: 
-      While inline styles are used as requested, for a true production-ready site, 
-      it's best practice to move these styles to a separate CSS file.
-      The onmouseover/onmouseout attributes are a workaround to simulate a :hover effect.
-    */
     body {
         background-color: #f8f9fa; /* A soft, clean background */
     }
+    
+    .action-card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+        transition: all 0.3s ease-in-out;
+        text-decoration: none;
+        width: 100%;
+    }
+
+    .action-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+    }
+    
+    .action-card .card-icon-wrapper {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .action-card .card-icon {
+        font-size: 1.75rem;
+        color: white;
+    }
+
+    .action-card .card-title {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .action-card .card-text {
+        line-height: 1.6;
+    }
+
+    .action-card .card-link {
+        font-weight: bold;
+    }
+
 </style>
 
 <div class="container my-5 py-4">
@@ -27,102 +64,84 @@
 
         <!-- User Management Card -->
         <div class="col d-flex">
-            <a href="{{ url_for('manage_users') }}" class="card text-center text-decoration-none w-100" 
-               style="border: none; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); transition: all 0.3s ease-in-out;"
-               onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 40px rgba(0,0,0,0.12)';"
-               onmouseout="this.style.transform='none'; this.style.boxShadow='0 8px 30px rgba(0,0,0,0.08)';">
+            <a href="{{ url_for('manage_users') }}" class="card text-center action-card">
                 <div class="card-body p-4 d-flex flex-column">
-                    <div class="mx-auto" style="width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; background: linear-gradient(135deg, #4e73df, #224abe);">
-                        <i class="fas fa-users-cog" style="font-size: 1.75rem; color: white;"></i>
+                    <div class="mx-auto card-icon-wrapper" style="background: linear-gradient(135deg, #4e73df, #224abe);">
+                        <i class="fas fa-users-cog card-icon"></i>
                     </div>
-                    <h5 class="card-title" style="color: #2c3e50; font-weight: 600;">User Management</h5>
-                    <p class="card-text small text-muted flex-grow-1" style="line-height: 1.6;">Edit, suspend, or delete users and manage their roles.</p>
-                    <p class="mt-auto mb-0 fw-bold" style="color: #4e73df;">Go to Users <i class="fas fa-arrow-right ms-1"></i></p>
+                    <h5 class="card-title">User Management</h5>
+                    <p class="card-text small text-muted flex-grow-1">Edit, suspend, or delete users and manage their roles.</p>
+                    <p class="mt-auto mb-0 card-link" style="color: #4e73df;">Go to Users <i class="fas fa-arrow-right ms-1"></i></p>
                 </div>
             </a>
         </div>
 
         <!-- Hotel Management Card -->
         <div class="col d-flex">
-            <a href="{{ url_for('manage_hotels') }}" class="card text-center text-decoration-none w-100" 
-               style="border: none; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); transition: all 0.3s ease-in-out;"
-               onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 40px rgba(0,0,0,0.12)';"
-               onmouseout="this.style.transform='none'; this.style.boxShadow='0 8px 30px rgba(0,0,0,0.08)';">
+            <a href="{{ url_for('manage_hotels') }}" class="card text-center action-card">
                 <div class="card-body p-4 d-flex flex-column">
-                    <div class="mx-auto" style="width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; background: linear-gradient(135deg, #36b9cc, #2c9faf);">
-                        <i class="fas fa-hotel" style="font-size: 1.75rem; color: white;"></i>
+                    <div class="mx-auto card-icon-wrapper" style="background: linear-gradient(135deg, #36b9cc, #2c9faf);">
+                        <i class="fas fa-hotel card-icon"></i>
                     </div>
-                    <h5 class="card-title" style="color: #2c3e50; font-weight: 600;">Hotel Management</h5>
-                    <p class="card-text small text-muted flex-grow-1" style="line-height: 1.6;">Approve, edit, or remove any hotel in the system.</p>
-                    <p class="mt-auto mb-0 fw-bold" style="color: #36b9cc;">Go to Hotels <i class="fas fa-arrow-right ms-1"></i></p>
+                    <h5 class="card-title">Hotel Management</h5>
+                    <p class="card-text small text-muted flex-grow-1">Approve, edit, or remove any hotel in the system.</p>
+                    <p class="mt-auto mb-0 card-link" style="color: #36b9cc;">Go to Hotels <i class="fas fa-arrow-right ms-1"></i></p>
                 </div>
             </a>
         </div>
 
         <!-- Amenity Management Card -->
         <div class="col d-flex">
-            <a href="{{ url_for('manage_amenities') }}" class="card text-center text-decoration-none w-100" 
-               style="border: none; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); transition: all 0.3s ease-in-out;"
-               onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 40px rgba(0,0,0,0.12)';"
-               onmouseout="this.style.transform='none'; this.style.boxShadow='0 8px 30px rgba(0,0,0,0.08)';">
+            <a href="{{ url_for('manage_amenities') }}" class="card text-center action-card">
                 <div class="card-body p-4 d-flex flex-column">
-                    <div class="mx-auto" style="width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; background: linear-gradient(135deg, #1cc88a, #13855c);">
-                        <i class="fas fa-clipboard-list" style="font-size: 1.75rem; color: white;"></i>
+                    <div class="mx-auto card-icon-wrapper" style="background: linear-gradient(135deg, #1cc88a, #13855c);">
+                        <i class="fas fa-clipboard-list card-icon"></i>
                     </div>
-                    <h5 class="card-title" style="color: #2c3e50; font-weight: 600;">Amenity Management</h5>
-                    <p class="card-text small text-muted flex-grow-1" style="line-height: 1.6;">Define the master list of amenities available for hotels.</p>
-                    <p class="mt-auto mb-0 fw-bold" style="color: #1cc88a;">Go to Amenities <i class="fas fa-arrow-right ms-1"></i></p>
+                    <h5 class="card-title">Amenity Management</h5>
+                    <p class="card-text small text-muted flex-grow-1">Define the master list of amenities available for hotels.</p>
+                    <p class="mt-auto mb-0 card-link" style="color: #1cc88a;">Go to Amenities <i class="fas fa-arrow-right ms-1"></i></p>
                 </div>
             </a>
         </div>
 
         <!-- Reporting & Analytics Card -->
         <div class="col d-flex">
-            <a href="{{ url_for('admin_reporting') }}" class="card text-center text-decoration-none w-100" 
-               style="border: none; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); transition: all 0.3s ease-in-out;"
-               onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 40px rgba(0,0,0,0.12)';"
-               onmouseout="this.style.transform='none'; this.style.boxShadow='0 8px 30px rgba(0,0,0,0.08)';">
+            <a href="{{ url_for('admin_reporting') }}" class="card text-center action-card">
                 <div class="card-body p-4 d-flex flex-column">
-                    <div class="mx-auto" style="width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; background: linear-gradient(135deg, #f6c23e, #dda20a);">
-                        <i class="fas fa-chart-bar" style="font-size: 1.75rem; color: white;"></i>
+                    <div class="mx-auto card-icon-wrapper" style="background: linear-gradient(135deg, #f6c23e, #dda20a);">
+                        <i class="fas fa-chart-bar card-icon"></i>
                     </div>
-                    <h5 class="card-title" style="color: #2c3e50; font-weight: 600;">Reporting & Analytics</h5>
-                    <p class="card-text small text-muted flex-grow-1" style="line-height: 1.6;">View platform-wide revenue, booking, and user statistics.</p>
-                    <p class="mt-auto mb-0 fw-bold" style="color: #f6c23e;">Go to Reports <i class="fas fa-arrow-right ms-1"></i></p>
+                    <h5 class="card-title">Reporting & Analytics</h5>
+                    <p class="card-text small text-muted flex-grow-1">View platform-wide revenue, booking, and user statistics.</p>
+                    <p class="mt-auto mb-0 card-link" style="color: #f6c23e;">Go to Reports <i class="fas fa-arrow-right ms-1"></i></p>
                 </div>
             </a>
         </div>
 
         <!-- Owner Dashboards Card -->
         <div class="col d-flex">
-            <a href="{{ url_for('admin_list_owner_dashboards') }}" class="card text-center text-decoration-none w-100" 
-               style="border: none; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); transition: all 0.3s ease-in-out;"
-               onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 40px rgba(0,0,0,0.12)';"
-               onmouseout="this.style.transform='none'; this.style.boxShadow='0 8px 30px rgba(0,0,0,0.08)';">
+            <a href="{{ url_for('admin_list_owner_dashboards') }}" class="card text-center action-card">
                 <div class="card-body p-4 d-flex flex-column">
-                     <div class="mx-auto" style="width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; background: linear-gradient(135deg, #855cd6, #6f42c1);">
-                        <i class="fas fa-tachometer-alt-slow" style="font-size: 1.75rem; color: white;"></i>
+                     <div class="mx-auto card-icon-wrapper" style="background: linear-gradient(135deg, #855cd6, #6f42c1);">
+                        <i class="fas fa-tachometer-alt card-icon"></i>
                     </div>
-                    <h5 class="card-title" style="color: #2c3e50; font-weight: 600;">Owner Dashboards</h5>
-                    <p class="card-text small text-muted flex-grow-1" style="line-height: 1.6;">View the business dashboard for any specific hotel owner.</p>
-                    <p class="mt-auto mb-0 fw-bold" style="color: #6f42c1;">View Dashboards <i class="fas fa-arrow-right ms-1"></i></p>
+                    <h5 class="card-title">Owner Dashboards</h5>
+                    <p class="card-text small text-muted flex-grow-1">View the business dashboard for any specific hotel owner.</p>
+                    <p class="mt-auto mb-0 card-link" style="color: #6f42c1;">View Dashboards <i class="fas fa-arrow-right ms-1"></i></p>
                 </div>
             </a>
         </div>
 
         <!-- Audit Log Card -->
         <div class="col d-flex">
-            <a href="{{ url_for('admin_audit_log') }}" class="card text-center text-decoration-none w-100" 
-               style="border: none; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); transition: all 0.3s ease-in-out;"
-               onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 40px rgba(0,0,0,0.12)';"
-               onmouseout="this.style.transform='none'; this.style.boxShadow='0 8px 30px rgba(0,0,0,0.08)';">
+            <a href="{{ url_for('admin_audit_log') }}" class="card text-center action-card">
                 <div class="card-body p-4 d-flex flex-column">
-                    <div class="mx-auto" style="width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; background: linear-gradient(135deg, #858796, #5a5c69);">
-                        <i class="fas fa-history" style="font-size: 1.75rem; color: white;"></i>
+                    <div class="mx-auto card-icon-wrapper" style="background: linear-gradient(135deg, #858796, #5a5c69);">
+                        <i class="fas fa-history card-icon"></i>
                     </div>
-                    <h5 class="card-title" style="color: #2c3e50; font-weight: 600;">Audit Log</h5>
-                    <p class="card-text small text-muted flex-grow-1" style="line-height: 1.6;">Review a log of important actions taken by users and admins.</p>
-                    <p class="mt-auto mb-0 fw-bold" style="color: #5a5c69;">View Log <i class="fas fa-arrow-right ms-1"></i></p>
+                    <h5 class="card-title">Audit Log</h5>
+                    <p class="card-text small text-muted flex-grow-1">Review a log of important actions taken by users and admins.</p>
+                    <p class="mt-auto mb-0 card-link" style="color: #5a5c69;">View Log <i class="fas fa-arrow-right ms-1"></i></p>
                 </div>
             </a>
         </div>

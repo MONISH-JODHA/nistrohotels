@@ -1,157 +1,197 @@
 {% extends "base.html" %}
-
 {% block title %}Register a New Hotel{% endblock %}
 
-{% block content %}
+{% block head_extra %}
+{# Google Fonts for a professional dashboard typography #}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
-    /* 
-      This contains all the styling to achieve the glassmorphism effect.
-      Note: backdrop-filter is supported by all modern browsers.
-    */
-    .register-page-wrapper {
-        min-height: 100vh;
-        padding: 4rem 0;
-        background-image: url('https://w0.peakpx.com/wallpaper/43/658/HD-wallpaper-grey-prisms-grey-prisms-background-thumbnail.jpg');
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed; /* Keeps the background static on scroll */
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    /* --- [ 1. Theming & General Styles ] --- */
+    :root {
+        --primary-color: #005f73;
+        --success-color: #2a9d8f;
+        --warning-color: #fca311;
+        --bg-body: #f4f7f9;
+        --bg-card: #ffffff;
+        --text-dark: #212529;
+        --text-light: #6c757d;
+        --border-color: #e9ecef;
+        --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    body {
+        background-color: var(--bg-body);
+        font-family: 'Poppins', sans-serif;
     }
 
-    .glass-form-container {
-        max-width: 800px;
-        width: 100%;
-        background: rgba(255, 255, 255, 0.1); /* Translucent background */
-        backdrop-filter: blur(12px); /* The key frosted glass effect */
-        -webkit-backdrop-filter: blur(12px);
-        border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        padding: 3rem;
-        color: white;
+    /* --- [ 2. Page Header ] --- */
+    .page-header h2 {
+        color: var(--primary-color);
+        font-weight: 700;
     }
 
-    .form-control, .form-select {
-        background: rgba(255, 255, 255, 0.15);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: 10px;
-        color: white;
-        padding: 0.8rem 1rem;
+    /* --- [ 3. Main Content Card Styling ] --- */
+    .content-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        box-shadow: var(--shadow-md);
+        margin-bottom: 1.5rem;
     }
+    .content-card-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .content-card-header h5 {
+        font-weight: 600;
+        color: var(--primary-color);
+        margin: 0;
+    }
+    .content-card-body {
+        padding: 1.5rem;
+    }
+
+    /* --- [ 4. Form Styling ] --- */
+    .form-label { font-weight: 500; color: var(--text-dark); }
+    .form-control, .form-select { border-radius: 8px; padding: 0.75rem 1rem; }
     .form-control:focus, .form-select:focus {
-        background: rgba(255, 255, 255, 0.25);
-        color: white;
-        border-color: rgba(255, 255, 255, 0.5);
-        box-shadow: none;
-    }
-    .form-control::placeholder {
-        color: rgba(255, 255, 255, 0.7);
-    }
-    .form-select option {
-        background: #2c3e50; /* Dark background for dropdown options */
-        color: white;
-    }
-    .form-label {
-        font-weight: 500;
-        margin-bottom: 0.5rem;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(0, 95, 115, 0.2);
     }
 
-    /* Custom styling for amenity checkboxes */
-    .amenity-checkbox-group {
+    /* --- [ 5. Interactive Star Rating Selector ] --- */
+    .star-rating-selector {
         display: flex;
-        align-items: center;
-        background: rgba(255, 255, 255, 0.15);
-        padding: 0.75rem 1rem;
-        border-radius: 50px; /* Pill shape */
+        flex-direction: row-reverse; /* Reverses order for pure CSS sibling selector trick */
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+    .star-rating-selector input[type="radio"] { display: none; }
+    .star-rating-selector label {
+        font-size: 2rem;
+        color: #d1d5db; /* Unselected color */
         cursor: pointer;
-        transition: background-color 0.2s ease;
+        transition: color 0.2s;
     }
-    .amenity-checkbox-group:hover {
-        background: rgba(255, 255, 255, 0.25);
+    .star-rating-selector input[type="radio"]:checked ~ label,
+    .star-rating-selector label:hover,
+    .star-rating-selector label:hover ~ label {
+        color: var(--warning-color); /* Selected/Hover color */
     }
-    .amenity-checkbox-group input[type="checkbox"] {
-        width: 1em;
-        height: 1em;
-        accent-color: #2ecc71; /* A nice green for the check */
+
+    /* --- [ 6. Modern Amenity Selector ] --- */
+    .amenity-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 0.75rem;
+    }
+    .amenity-option input[type="checkbox"] { display: none; }
+    .amenity-option label {
+        display: block;
+        padding: 0.75rem 1rem;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        font-weight: 500;
+    }
+    .amenity-option label:hover {
+        border-color: var(--primary-color);
+        background-color: #f8f9fa;
+    }
+    .amenity-option input[type="checkbox"]:checked + label {
+        border-color: var(--primary-color);
+        background-color: rgba(0, 95, 115, 0.05);
+        color: var(--primary-color);
+        font-weight: 600;
     }
 
 </style>
+{% endblock %}
 
-<div class="register-page-wrapper">
-    <div class="glass-form-container">
-        <div class="text-center mb-5">
-            <h1 class="h2 fw-bold">List Your Property on WanderStay</h1>
-            <p style="color: rgba(255, 255, 255, 0.8);">Tell us about your amazing place.</p>
+{% block content %}
+<div class="row justify-content-center my-5">
+    <div class="col-md-10 col-lg-9">
+        <div class="d-flex justify-content-between align-items-center mb-4 page-header">
+            <h2 class="mb-0"><i class="fas fa-plus-circle me-2"></i> Register New Hotel</h2>
+            <a href="{{ url_for('owner_dashboard') }}" class="btn btn-outline-secondary rounded-pill"><i class="fas fa-arrow-left me-2"></i> Back to Dashboard</a>
         </div>
-        
-        <form method="POST" enctype="multipart/form-data">
-            <div class="row g-4">
-                <!-- Hotel Name & Location -->
-                <div class="col-12">
-                    <label for="name" class="form-label">Hotel Name *</label>
-                    <input type="text" class="form-control" id="name" name="name" value="{{ form_data.name or '' }}" required placeholder="e.g., The Paradise Resort">
-                </div>
-                <div class="col-12">
-                    <label for="location" class="form-label">Location / City *</label>
-                    <input type="text" class="form-control" id="location" name="location" value="{{ form_data.location or '' }}" required placeholder="e.g., Bali, Indonesia">
-                </div>
 
-                <!-- Description & Star Rating -->
-                <div class="col-12">
-                    <label for="description" class="form-label">Description</label>
-                    <textarea class="form-control" id="description" name="description" rows="4" placeholder="Tell us what makes your hotel special...">{{ form_data.description or '' }}</textarea>
-                </div>
-                <div class="col-12">
-                    <label for="star_rating" class="form-label">Star Rating</label>
-                    <select class="form-select" id="star_rating" name="star_rating">
-                        <option value="" {% if not form_data.star_rating %}selected{% endif %}>Select a rating</option>
-                        {% for i in range(5, 0, -1) %}
-                            <option value="{{ i }}" {% if form_data.star_rating == i|string %}selected{% endif %}>{{ i }} Star{{ 's' if i > 1 }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <!-- Amenities -->
-                <div class="col-12">
-                    <h5 class="text-center mt-3 mb-3">Hotel Amenities</h5>
+        <form method="POST" action="{{ url_for('register_hotel') }}" enctype="multipart/form-data">
+            
+            <!-- Hotel Information Card -->
+            <div class="content-card">
+                <div class="content-card-header"><h5><i class="fas fa-info-circle me-2"></i> Basic Information</h5></div>
+                <div class="content-card-body">
                     <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">Hotel Name*</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ form_data.get('name', '') }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="location" class="form-label">Location*</label>
+                            <input type="text" class="form-control" id="location" name="location" value="{{ form_data.get('location', '') }}" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="5">{{ form_data.get('description', '') }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Features Card -->
+            <div class="content-card">
+                <div class="content-card-header"><h5><i class="fas fa-star me-2"></i> Key Features</h5></div>
+                <div class="content-card-body">
+                    <label class="form-label">Star Rating</label>
+                    <div class="star-rating-selector">
+                        {% for i in range(5, 0, -1) %}
+                        <input type="radio" id="star{{ i }}" name="star_rating" value="{{ i }}" {% if form_data.get('star_rating')|int == i %}checked{% endif %}>
+                        <label for="star{{ i }}"><i class="fas fa-star"></i></label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Amenities Card -->
+            <div class="content-card">
+                <div class="content-card-header"><h5><i class="fas fa-list-check me-2"></i> Hotel Amenities</h5></div>
+                <div class="content-card-body">
+                    <div class="amenity-selector">
                         {% for amenity in all_amenities %}
-                        <div class="col-md-4">
-                            <label class="amenity-checkbox-group">
-                                <!-- *** FIX IS HERE: We now check against the 'selected_amenities' list *** -->
-                                <input type="checkbox" name="amenities" value="{{ amenity.id }}" class="me-2" {% if amenity.id|string in selected_amenities %}checked{% endif %}>
-                                <span>{{ amenity.name }}</span>
-                            </label>
+                        <div class="amenity-option">
+                            <input class="form-check-input" type="checkbox" name="amenities" value="{{ amenity.id }}" id="amenity_{{ amenity.id }}" 
+                                   {% if amenity.id in selected_amenities %}checked{% endif %}>
+                            <label for="amenity_{{ amenity.id }}">{{ amenity.name }}</label>
                         </div>
                         {% endfor %}
                     </div>
                 </div>
-
-                <!-- Image Upload Section -->
-                <div class="col-12">
-                    <h5 class="text-center mt-3 mb-3">Property Images</h5>
+            </div>
+            
+            <!-- Images Card -->
+            <div class="content-card">
+                <div class="content-card-header"><h5><i class="fas fa-images me-2"></i> Hotel Images</h5></div>
+                <div class="content-card-body">
                      <div class="mb-3">
-                        <label for="main_image_url" class="form-label">Main Display Image URL</label>
-                        <input type="url" class="form-control" id="main_image_url" name="main_image_url" value="{{ form_data.main_image_url or '' }}" placeholder="https://example.com/main_image.jpg">
-                        <div style="font-size: 0.8rem; color: rgba(255,255,255,0.7); margin-top: 5px;">Paste a URL, or leave blank to use the first uploaded image below.</div>
+                        <label for="main_image_url" class="form-label">Main Image URL (Optional)</label>
+                        <input type="url" class="form-control" id="main_image_url" name="main_image_url" value="{{ form_data.get('main_image_url', '') }}" placeholder="https://example.com/image.jpg">
+                        <small class="form-text text-muted">Provide a link to an image, or upload images below to set one automatically.</small>
                     </div>
-                    <div class="mb-3">
-                        <label for="gallery_images_upload" class="form-label">Upload New Gallery Images</label>
-                        <input class="form-control" type="file" id="gallery_images_upload" name="gallery_images_upload" multiple>
-                    </div>
-                </div>
-
-                <!-- Submit Button -->
-                <div class="col-12 mt-5">
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-lg" style="background-color: #2ecc71; border: none; color: white; font-weight: bold; padding: 1rem;">
-                            <i class="fas fa-arrow-right me-2"></i> SUBMIT & ADD ROOMS
-                        </button>
+                     <div>
+                        <label for="gallery_images_upload" class="form-label">Upload Gallery Images (Optional)</label>
+                        <input class="form-control" type="file" id="gallery_images_upload" name="gallery_images_upload" multiple accept="image/*">
                     </div>
                 </div>
             </div>
+
+            <!-- Submit Button -->
+            <div class="text-end mt-4">
+                <button type="submit" class="btn btn-lg btn-success px-5"><i class="fas fa-paper-plane me-2"></i> Submit for Review</button>
+            </div>
+
         </form>
     </div>
 </div>

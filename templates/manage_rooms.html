@@ -1,17 +1,20 @@
 {% extends "base.html" %}
-
 {% block title %}Manage Rooms - {{ hotel.name }}{% endblock %}
 
 {% block content %}
 <style>
+    body {
+        background-color: #f4f6f9;
+    }
     .room-list-item {
         background-color: #fff;
         border: 1px solid #eef2f7;
         border-radius: 12px;
-        transition: box-shadow 0.2s ease;
+        transition: box-shadow 0.2s ease, transform 0.2s ease;
     }
     .room-list-item:hover {
         box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        transform: translateY(-2px);
     }
     .room-thumbnail {
         width: 80px;
@@ -27,20 +30,30 @@
         position: relative;
         overflow: hidden;
         border-radius: 8px;
-    }
-    .delete-overlay {
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.5);
-        color: white;
-        display: flex; align-items: center; justify-content: center;
-        opacity: 0;
-        transition: opacity 0.3s ease;
         cursor: pointer;
     }
-    .image-gallery-item:hover .delete-overlay { opacity: 1; }
-    .form-check-input:checked { background-color: #e74c3c; border-color: #e74c3c; }
-    
+    .image-gallery-item .delete-overlay {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(231, 76, 60, 0.7); /* Red overlay */
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        text-align: center;
+        font-size: 0.8rem;
+    }
+    .image-gallery-item input[type="checkbox"] {
+        display: none;
+    }
+    .image-gallery-item input[type="checkbox"]:checked ~ .delete-overlay {
+        opacity: 1; /* Show overlay when checked */
+    }
+    .image-gallery-item:hover .delete-overlay {
+        opacity: 1; /* Also show on hover for better UX */
+    }
     .room-actions {
         display: flex;
         flex-wrap: nowrap;
@@ -52,9 +65,9 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h2 fw-bold" style="color: #2c3e50;">Manage Rooms</h1>
-            <p class="text-muted mb-0">For hotel: <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}">{{ hotel.name }}</a></p>
+            <p class="text-muted mb-0">For hotel: <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="text-decoration-none">{{ hotel.name }}</a></p>
         </div>
-        <button type="button" class="btn btn-primary btn-lg" style="background-color: #1abc9c; border-color: #1abc9c;" data-bs-toggle="modal" data-bs-target="#roomFormModal" onclick="prepareAddForm()">
+        <button type="button" class="btn btn-primary btn-lg" style="background-color: #1abc9c; border-color: #1abc9c;" data-bs-toggle="modal" data-bs-target="#roomFormModal" id="addRoomBtn">
             <i class="fas fa-plus me-2"></i> Add New Room Type
         </button>
     </div>
@@ -77,7 +90,7 @@
                 <button type="button" class="btn btn-sm btn-outline-secondary me-2 edit-room-btn" 
                         data-bs-toggle="modal" 
                         data-bs-target="#roomFormModal" 
-                        data-room-json='{{ room.to_dict()|tojson|safe }}'
+                        data-room-id="{{ room.id }}"
                         title="Edit room details">
                     <i class="fas fa-edit me-1"></i> Edit
                 </button>
@@ -102,8 +115,7 @@
 <div class="modal fade" id="roomFormModal" tabindex="-1" aria-labelledby="roomFormModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <!-- The form action will be set dynamically by JavaScript -->
-            <form id="roomForm" method="POST" enctype="multipart/form-data">
+            <form id="roomForm" method="POST" action="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" enctype="multipart/form-data">
                 <div class="modal-header border-0">
                     <h5 class="modal-title fw-bold" id="roomFormModalLabel" style="color: #2c3e50;"></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -124,12 +136,12 @@
 
                     <div id="currentImagesContainer" class="mb-3" style="display: none;">
                         <label class="form-label">Current Gallery Images</label>
-                        <p class="small text-muted mt-0">Check to delete.</p>
+                        <p class="small text-muted mt-0">Click image to mark for deletion.</p>
                         <div class="row g-2" id="currentImagesGallery"></div>
                     </div>
 
                     <div class="mb-3"><label for="main_image_url" class="form-label">Main Display Image URL</label><input type="url" class="form-control" id="main_image_url" name="main_image_url" placeholder="https://..."><div class="form-text">Leave blank to use the first uploaded image.</div></div>
-                    <div class="mb-3"><label for="gallery_images_upload" class="form-label">Upload New Gallery Images</label><input class="form-control" type="file" id="gallery_images_upload" name="gallery_images_upload" multiple></div>
+                    <div class="mb-3"><label for="gallery_images_upload" class="form-label">Upload New Gallery Images</label><input class="form-control" type="file" id="gallery_images_upload" name="gallery_images_upload" multiple accept="image/*"></div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -144,73 +156,71 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const roomFormModalEl = document.getElementById('roomFormModal');
+    const roomFormModal = new bootstrap.Modal(document.getElementById('roomFormModal'));
     const form = document.getElementById('roomForm');
     const modalTitle = document.getElementById('roomFormModalLabel');
+    const roomIdField = document.getElementById('room_id');
+    const galleryContainer = document.getElementById('currentImagesGallery');
+    const galleryWrapper = document.getElementById('currentImagesContainer');
 
-    // Attach this to the window so the inline onclick can find it
-    window.prepareAddForm = function() {
+    function resetForm() {
         modalTitle.textContent = 'Add New Room Type';
         form.reset();
-        
-        // ======================= FIX #1 =========================
-        // The form should always submit back to the page that rendered it.
-        // The backend will know it's an "add" because room_id will be empty.
-        form.action = "{{ url_for('manage_rooms', hotel_id=hotel.id) }}";
-        // ========================================================
-
-        document.getElementById('room_id').value = '';
-        document.getElementById('currentImagesContainer').style.display = 'none';
-        document.getElementById('currentImagesGallery').innerHTML = '';
+        roomIdField.value = '';
+        galleryWrapper.style.display = 'none';
+        galleryContainer.innerHTML = '';
     }
 
-    const editButtons = document.querySelectorAll('.edit-room-btn');
-    
-    editButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const roomJson = this.getAttribute('data-room-json');
-            const room = JSON.parse(roomJson);
-            
-            modalTitle.textContent = 'Edit Room Type: ' + room.name;
-            form.reset();
+    // Listener for "Add New Room" button
+    document.getElementById('addRoomBtn').addEventListener('click', function() {
+        resetForm();
+    });
 
-            // ======================= FIX #2 =========================
-            // The form should also submit to the manage_rooms page for editing.
-            // The backend will know it's an "edit" because room_id will have a value.
-            form.action = "{{ url_for('manage_rooms', hotel_id=hotel.id) }}";
-            // ========================================================
+    // Listeners for all "Edit" buttons
+    document.querySelectorAll('.edit-room-btn').forEach(button => {
+        button.addEventListener('click', async function() {
+            resetForm(); // Start with a clean slate
+            const roomId = this.getAttribute('data-room-id');
 
-            document.getElementById('room_id').value = room.id;
-            document.getElementById('name').value = room.name;
-            document.getElementById('price_per_night').value = room.price_per_night;
-            document.getElementById('number_of_rooms').value = room.number_of_rooms;
-            document.getElementById('description').value = room.description || '';
-            document.getElementById('amenities').value = room.amenities || '';
-            document.getElementById('main_image_url').value = room.main_image_url || '';
+            try {
+                // Fetch fresh data from the API
+                const response = await fetch(`/api/room/${roomId}`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const room = await response.json();
 
-            const galleryContainer = document.getElementById('currentImagesGallery');
-            const galleryWrapper = document.getElementById('currentImagesContainer');
-            galleryContainer.innerHTML = '';
-            
-            if (room.gallery_images && room.gallery_images.length > 0) {
-                galleryWrapper.style.display = 'block';
-                room.gallery_images.forEach(image => {
-                    const imageUrl = image.filename.startsWith('http') ? image.filename : `/static/uploads/hotel_images/${image.filename}`;
-                    const col = document.createElement('div');
-                    col.className = 'col-4 col-md-3';
-                    col.innerHTML = `
-                        <div class="image-gallery-item">
-                            <img src="${imageUrl}" class="img-fluid" style="aspect-ratio: 1/1; object-fit: cover;">
-                            <label for="delete_img_${image.id}" class="delete-overlay">
-                                <div class="text-center"><i class="fas fa-trash-alt"></i><div class="small mt-1">Delete</div></div>
+                // Populate the form
+                modalTitle.textContent = 'Edit Room Type: ' + room.name;
+                roomIdField.value = room.id;
+                document.getElementById('name').value = room.name;
+                document.getElementById('price_per_night').value = room.price_per_night;
+                document.getElementById('number_of_rooms').value = room.number_of_rooms;
+                document.getElementById('description').value = room.description || '';
+                document.getElementById('amenities').value = room.amenities || '';
+                document.getElementById('main_image_url').value = room.main_image_url || '';
+
+                // Populate the gallery
+                if (room.gallery_images && room.gallery_images.length > 0) {
+                    galleryWrapper.style.display = 'block';
+                    room.gallery_images.forEach(image => {
+                        const imageUrl = `/static/uploads/hotel_images/${image.filename}`;
+                        const col = document.createElement('div');
+                        col.className = 'col-4 col-md-3';
+                        col.innerHTML = `
+                            <label for="delete_img_${image.id}" class="image-gallery-item">
+                                <img src="${imageUrl}" class="img-fluid" style="aspect-ratio: 1/1; object-fit: cover;">
+                                <div class="delete-overlay">
+                                    <div><i class="fas fa-trash-alt fa-lg"></i><div class="small mt-1">Delete</div></div>
+                                </div>
+                                <input class="form-check-input" type="checkbox" name="images_to_delete" value="${image.id}" id="delete_img_${image.id}">
                             </label>
-                            <input class="form-check-input d-none" type="checkbox" name="images_to_delete" value="${image.id}" id="delete_img_${image.id}">
-                        </div>
-                    `;
-                    galleryContainer.appendChild(col);
-                });
-            } else {
-                galleryWrapper.style.display = 'none';
+                        `;
+                        galleryContainer.appendChild(col);
+                    });
+                }
+
+            } catch (error) {
+                console.error("Failed to fetch room data:", error);
+                alert("Could not load room data. Please check the console for details.");
             }
         });
     });

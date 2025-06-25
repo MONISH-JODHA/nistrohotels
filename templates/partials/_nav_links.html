@@ -1,23 +1,26 @@
-
-
 {% if current_user.is_authenticated %}
+    {# Admin-specific links #}
     {% if current_user.role == 'admin' %}
         <li class="nav-item">
             <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}" href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
         </li>
+    
+    {# Owner-specific links #}
     {% elif current_user.role == 'owner' %}
         <li class="nav-item">
-            <a class="nav-link {% if request.endpoint == 'owner_dashboard' %}active{% endif %}" href="{{ url_for('owner_dashboard') }}">Owner Dashboard</a>
+            <a class="nav-link {% if request.endpoint == 'owner_dashboard' %}active{% endif %}" href="{{ url_for('owner_dashboard') }}">My Dashboard</a>
         </li>
         <li class="nav-item">
             <a class="nav-link {% if request.endpoint == 'register_hotel' %}active{% endif %}" href="{{ url_for('register_hotel') }}">Register Hotel</a>
         </li>
     {% endif %}
 
+    {# Links for ALL authenticated users (Admin, Owner, and User) #}
     <li class="nav-item">
         <a class="nav-link {% if request.endpoint == 'my_bookings' %}active{% endif %}" href="{{ url_for('my_bookings') }}">My Bookings</a>
     </li>
 
+    {# Links for standard 'user' role only #}
     {% if current_user.role == 'user' %}
         <li class="nav-item">
             <a class="nav-link {% if request.endpoint == 'my_wishlist' %}active{% endif %}" href="{{ url_for('my_wishlist') }}">
