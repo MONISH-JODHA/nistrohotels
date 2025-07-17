@@ -856,9 +856,32 @@ def admin_view_owner_dashboard(owner_id):
         flash(f"User '{owner.username}' is not an owner.", "warning")
         return redirect(url_for('admin_list_owner_dashboards'))
     
+<<<<<<< Updated upstream
     # This call now works because the helper function is defined above it
     hotels, analytics = get_dashboard_data_for_owner(owner.id)
     
+=======
+    # Get the base analytics data (which omits revenue)
+    hotels, analytics = get_dashboard_data_for_owner(owner.id)
+    
+    # --- START OF FIX ---
+    # The get_dashboard_data_for_owner function intentionally omits revenue.
+    # We must calculate it here specifically for the admin's view.
+    hotel_ids = [h.id for h in hotels]
+    
+    if hotel_ids:
+        # Calculate the sum of total_price for all bookings associated with this owner's hotels
+        total_revenue = db.session.query(func.sum(Booking.total_price)).filter(Booking.hotel_id.in_(hotel_ids)).scalar() or 0
+    else:
+        # If the owner has no hotels, revenue is 0
+        total_revenue = 0
+        
+    # Add the calculated revenue to the analytics dictionary
+    analytics['total_revenue'] = total_revenue
+    # --- END OF FIX ---
+    
+    # Render the template with the now-complete analytics data
+>>>>>>> Stashed changes
     return render_template('admin_owner_dashboard.html', hotels=hotels, analytics=analytics, owner=owner)
 
 # ... (other admin routes)

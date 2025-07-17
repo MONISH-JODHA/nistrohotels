@@ -2,7 +2,8 @@
 
 {% block title %}Register a New Hotel{% endblock %}
 
-{% block content %}
+{% block head_extra %}
+{# This block is now used to add styles to the head, as intended by base.html #}
 <style>
     /* 
       This contains all the styling to achieve the glassmorphism effect.
@@ -10,8 +11,9 @@
     */
     .register-page-wrapper {
         min-height: 100vh;
-        padding: 4rem 0;
-        background-image: url('https://w0.peakpx.com/wallpaper/43/658/HD-wallpaper-grey-prisms-grey-prisms-background-thumbnail.jpg');
+        /* We add some padding for better spacing */
+        padding: 4rem 1rem;
+        background-image: url('https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1920&q=80');
         background-size: cover;
         background-position: center;
         background-attachment: fixed; /* Keeps the background static on scroll */
@@ -23,14 +25,14 @@
     .glass-form-container {
         max-width: 800px;
         width: 100%;
-        background: rgba(255, 255, 255, 0.1); /* Translucent background */
+        background: rgba(0, 0, 0, 0.4); /* Darkened background for better text contrast */
         backdrop-filter: blur(12px); /* The key frosted glass effect */
         -webkit-backdrop-filter: blur(12px);
         border-radius: 20px;
         border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         padding: 3rem;
-        color: white;
+        color: white; /* This is why the text was invisible */
     }
 
     .form-control, .form-select {
@@ -76,9 +78,12 @@
         height: 1em;
         accent-color: #2ecc71; /* A nice green for the check */
     }
-
 </style>
+{% endblock %}
 
+
+{# Override the entire content container to use our full-page theme #}
+{% block content_container %}
 <div class="register-page-wrapper">
     <div class="glass-form-container">
         <div class="text-center mb-5">
@@ -118,10 +123,9 @@
                     <h5 class="text-center mt-3 mb-3">Hotel Amenities</h5>
                     <div class="row g-3">
                         {% for amenity in all_amenities %}
-                        <div class="col-md-4">
+                        <div class="col-md-4 col-sm-6">
                             <label class="amenity-checkbox-group">
-                                <!-- *** FIX IS HERE: We now check against the 'selected_amenities' list *** -->
-                                <input type="checkbox" name="amenities" value="{{ amenity.id }}" class="me-2" {% if amenity.id|string in selected_amenities %}checked{% endif %}>
+                                <input type="checkbox" name="amenities" value="{{ amenity.id }}" class="me-2" {% if amenity.id in selected_amenities %}checked{% endif %}>
                                 <span>{{ amenity.name }}</span>
                             </label>
                         </div>
@@ -147,7 +151,7 @@
                 <div class="col-12 mt-5">
                     <div class="d-grid">
                         <button type="submit" class="btn btn-lg" style="background-color: #2ecc71; border: none; color: white; font-weight: bold; padding: 1rem;">
-                            <i class="fas fa-arrow-right me-2"></i> SUBMIT & ADD ROOMS
+                            <i class="fas fa-check me-2"></i> SUBMIT & ADD ROOMS
                         </button>
                     </div>
                 </div>

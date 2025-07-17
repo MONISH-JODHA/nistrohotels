@@ -1,107 +1,176 @@
 {% extends "base.html" %}
-{% block title %}Owner Dashboard - DreamStays{% endblock %}
+{% block title %}Owner Dashboard - Nestrohotels{% endblock %}
+
+{% block head_extra %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    /* Using styles in a block for better organization */
+    :root {
+        --primary-color: #005f73;
+        --success-color: #2a9d8f;
+        --info-color: #0a9396;
+        --warning-color: #ee9b00;
+        --bg-body: #f4f7f9;
+        --bg-card: #ffffff;
+        --text-dark: #212529;
+        --text-light: #6c757d;
+        --border-color: #e9ecef;
+        --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+        --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    body {
+        background-color: var(--bg-body);
+        font-family: 'Poppins', sans-serif;
+    }
+    .page-header h1 {
+        color: var(--primary-color);
+        font-weight: 700;
+    }
+    .kpi-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        transition: box-shadow 0.2s, transform 0.2s;
+        height: 100%;
+    }
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md);
+    }
+    .kpi-card .card-border {
+        position: absolute; top: 0; left: 0;
+        height: 4px; width: 100%;
+    }
+    .kpi-card .card-content {
+        display: flex; align-items: center; gap: 1.25rem;
+    }
+    .kpi-card .card-icon {
+        font-size: 2rem;
+    }
+    .kpi-card .card-title {
+        font-size: 0.9rem; font-weight: 500;
+        color: var(--text-light); margin-bottom: 0.25rem;
+    }
+    .kpi-card .card-value {
+        font-size: 1.75rem; font-weight: 700;
+        color: var(--text-dark);
+    }
+    .kpi-info .card-border { background-color: var(--info-color); }
+    .kpi-info .card-icon { color: var(--info-color); }
+    .kpi-success .card-border { background-color: var(--success-color); }
+    .kpi-success .card-icon { color: var(--success-color); }
+    .kpi-warning .card-border { background-color: var(--warning-color); }
+    .kpi-warning .card-icon { color: var(--warning-color); }
+    
+    .ranked-list {
+        list-style: none; padding-left: 0; margin-bottom: 0;
+        counter-reset: rank-counter; font-size: 0.9rem;
+    }
+    .ranked-list-item {
+        display: flex; align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    .ranked-list-item:last-child { margin-bottom: 0; }
+    .ranked-list-item::before {
+        counter-increment: rank-counter; content: counter(rank-counter);
+        background-color: #f0f2f5; color: var(--text-light); font-weight: 600;
+        border-radius: 50%; width: 24px; height: 24px;
+        display: inline-flex; align-items: center; justify-content: center;
+        margin-right: 0.75rem; flex-shrink: 0;
+    }
+
+    .content-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+        height: 100%;
+    }
+    .content-card-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .content-card-header h5 {
+        font-weight: 600; color: var(--primary-color);
+        margin: 0;
+    }
+    .content-card-body { padding: 1.5rem; }
+    .content-card-body.p-0 { padding: 0; }
+</style>
+{% endblock %}
 
 {% block content %}
-<style>
-    /* 
-       While inline styles are used as requested, for a true production-ready site, 
-       it's best to move these to a separate CSS file for better performance and maintainability.
-    */
-    body {
-        background-color: #f4f6f9; /* A soft, modern grey background */
-        color: #495057;
-    }
-    .card-metric {
-        background-color: #fff;
-        border: none;
-        border-radius: 16px;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
-        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    }
-    .card-metric:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.09);
-    }
-    .table-hover tbody tr:hover {
-        background-color: #f8f9fa;
-    }
-</style>
-
 <div class="container-fluid mt-4 mb-5 px-4">
 
     <!-- === HEADER === -->
-    <div class="d-flex justify-content-between align-items-center mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-5 page-header">
         <div>
-            <h1 class="h2 fw-bold" style="color: #2c3e50;">Dashboard</h1>
+            <h1 class="h2 mb-1">Owner Dashboard</h1>
             <p class="mb-0 text-muted">Welcome back, here's your business overview.</p>
         </div>
-        <a href="{{ url_for('register_hotel') }}" class="btn btn-lg" style="background-color: #26a69a; color: white; border-radius: 12px; font-weight: 500; box-shadow: 0 4px 15px rgba(38, 166, 154, 0.3);">
+        <a href="{{ url_for('register_hotel') }}" class="btn btn-lg btn-primary rounded-pill px-4">
             <i class="fas fa-plus me-2"></i> Register New Hotel
         </a>
     </div>
 
     <!-- === ANALYTICS SECTION === -->
-    <div class="row mb-4 g-4">
-        <!-- Total Revenue Card -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card card-metric h-100 p-2">
-                <div class="card-body d-flex align-items-center">
-                    <div class="p-3 me-3" style="background-color: #e0f2f1; border-radius: 12px;">
-                        <i class="fas fa-dollar-sign fa-2x" style="color: #00796b;"></i>
-                    </div>
-                    <div>
-                        <p class="mb-1 text-muted" style="font-weight: 500;">Total Revenue</p>
-                        <h4 class="h4 mb-0 fw-bold" style="color: #2c3e50;">${{ "%.2f"|format(analytics.total_revenue) }}</h4>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="row g-4 mb-4">
+        <!-- **FIX**: Removed the "Total Revenue" card which was causing the crash. -->
+        <!-- The grid is now 3 columns, which works better with the remaining cards. -->
+
         <!-- Occupancy Rate Card -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card card-metric h-100 p-2">
-                <div class="card-body d-flex align-items-center">
-                    <div class="p-3 me-3" style="background-color: #e3f2fd; border-radius: 12px;">
-                        <i class="fas fa-chart-pie fa-2x" style="color: #1e88e5;"></i>
-                    </div>
+        <div class="col-xl-4 col-md-6">
+            <div class="kpi-card kpi-info">
+                <div class="card-border"></div>
+                <div class="card-content">
+                    <i class="fas fa-chart-pie card-icon"></i>
                     <div>
-                        <p class="mb-1 text-muted" style="font-weight: 500;">Occupancy (30d)</p>
-                        <h4 class="h4 mb-0 fw-bold" style="color: #2c3e50;">{{ "%.1f"|format(analytics.occupancy_rate) }}%</h4>
+                        <p class="card-title">Occupancy (30d)</p>
+                        <h4 class="card-value">{{ "%.1f"|format(analytics.occupancy_rate) }}%</h4>
                     </div>
                 </div>
             </div>
         </div>
+        
         <!-- Total Bookings Card -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card card-metric h-100 p-2">
-                <div class="card-body d-flex align-items-center">
-                     <div class="p-3 me-3" style="background-color: #f3e5f5; border-radius: 12px;">
-                        <i class="fas fa-calendar-check fa-2x" style="color: #8e24aa;"></i>
-                    </div>
+        <div class="col-xl-4 col-md-6">
+            <div class="kpi-card kpi-success">
+                <div class="card-border"></div>
+                <div class="card-content">
+                    <i class="fas fa-calendar-check card-icon"></i>
                     <div>
-                        <p class="mb-1 text-muted" style="font-weight: 500;">Total Bookings</p>
-                        <h4 class="h4 mb-0 fw-bold" style="color: #2c3e50;">{{ analytics.total_bookings }}</h4>
+                        <p class="card-title">Total Bookings</p>
+                        <h4 class="card-value">{{ analytics.total_bookings }}</h4>
                     </div>
                 </div>
             </div>
         </div>
-        <!-- Popular Rooms Card -->
-    <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Popular Rooms</div>
+        
+        <!-- Popular Rooms Card (Restyled to match) -->
+        <div class="col-xl-4 col-md-12">
+            <div class="kpi-card kpi-warning">
+                <div class="card-border"></div>
+                <div class="card-content">
+                    <i class="fas fa-star card-icon"></i>
+                    <div>
+                        <p class="card-title">Most Popular Rooms</p>
+                        <div class="card-value-small">
                             {% if analytics.popular_room_types %}
-                                <ol class="mb-0 ps-4">
+                            <ol class="ranked-list">
                                 {% for room, count in analytics.popular_room_types %}
-                                    <li><small>{{ room }} ({{count}})</small></li>
+                                <li class="ranked-list-item">{{ room }} ({{count}} bookings)</li>
                                 {% endfor %}
-                                </ol>
+                            </ol>
                             {% else %}
-                                <div class="small text-gray-800">No bookings yet.</div>
+                            <p class="small text-muted mb-0 mt-1">No bookings yet.</p>
                             {% endif %}
                         </div>
-                        <div class="col-auto"><i class="fas fa-star fa-2x text-gray-300"></i></div>
                     </div>
                 </div>
             </div>
@@ -109,61 +178,47 @@
     </div>
     
     <!-- === BOOKING TRENDS & HOTELS LIST === -->
-    <div class="row g-5">
-        <!-- Booking Trends Chart Column -->
+    <div class="row g-4">
         <div class="col-lg-7">
-            <div class="card card-metric h-100">
-                <div class="card-header" style="background-color: transparent; border-bottom: 1px solid #eef2f7; padding: 1.5rem;">
-                    <h5 class="mb-0 fw-bold" style="color: #2c3e50;"><i class="fas fa-chart-line me-2 text-muted"></i> Booking Trends (Last 30 Days)</h5>
+            <div class="content-card">
+                <div class="content-card-header">
+                    <h5><i class="fas fa-chart-line me-2 text-muted"></i> Booking Trends (Last 30 Days)</h5>
                 </div>
-                <div class="card-body p-4">
-                    <canvas id="bookingChart" style="min-height: 300px;"></canvas>
+                <div class="content-card-body">
+                    <canvas id="bookingChart" style="min-height: 350px;"></canvas>
                 </div>
             </div>
         </div>
-        
-        <!-- My Hotels Table Column -->
         <div class="col-lg-5">
-             <div class="card card-metric h-100">
-                <div class="card-header" style="background-color: transparent; border-bottom: 1px solid #eef2f7; padding: 1.5rem;">
-                    <h5 class="mb-0 fw-bold" style="color: #2c3e50;"><i class="fas fa-hotel me-2 text-muted"></i> My Registered Hotels</h5>
+             <div class="content-card">
+                <div class="content-card-header">
+                    <h5><i class="fas fa-hotel me-2 text-muted"></i> My Registered Hotels</h5>
                 </div>
-                <div class="card-body p-0">
+                <div class="content-card-body p-0">
                     {% if hotels %}
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" style="font-size: 0.95rem;">
-                            <thead style="color: #6c757d;">
-                                <tr style="border-bottom: 1px solid #eef2f7;">
-                                    <th class="ps-4 py-3 fw-normal">Hotel</th>
-                                    <th class="py-3 fw-normal">Status</th>
-                                    <th class="pe-4 py-3 fw-normal text-end">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for hotel in hotels %}
-                                <tr style="border-bottom: 1px solid #eef2f7;">
-                                    <td class="ps-4 py-3">
-                                        <div class="fw-bold" style="color: #34495e;">{{ hotel.name }}</div>
-                                        <div class="small text-muted">{{ hotel.location }}</div>
-                                    </td>
-                                    <td class="py-3">
-                                        {% if hotel.is_approved %}
-                                            <span class="badge" style="background-color: #d4edda; color: #155724; font-weight: 500;">Approved</span>
-                                        {% else %}
-                                            <span class="badge" style="background-color: #fff3cd; color: #856404; font-weight: 500;">Pending</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-end pe-4 py-3">
-                                        <a href="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" class="btn btn-sm" style="background-color: #2c3e50; color: white;" title="Manage Rooms"><i class="fas fa-bed"></i></a>
-                                        <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="btn btn-sm btn-outline-secondary" title="View Hotel Page"><i class="fas fa-eye"></i></a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                    <ul class="list-group list-group-flush">
+                        {% for hotel in hotels %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                            <div>
+                                <div class="fw-bold">{{ hotel.name }}</div>
+                                <div class="small text-muted">{{ hotel.location }}</div>
+                            </div>
+                            <div>
+                                {% if hotel.is_approved %}
+                                    <span class="badge rounded-pill bg-success-subtle text-success-emphasis">Approved</span>
+                                {% else %}
+                                    <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">Pending</span>
+                                {% endif %}
+                            </div>
+                            <div class="btn-group">
+                                <a href="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" class="btn btn-sm btn-dark" title="Manage Rooms"><i class="fas fa-bed"></i></a>
+                                <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="btn btn-sm btn-outline-secondary" title="View Hotel Page"><i class="fas fa-eye"></i></a>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
                     {% else %}
-                    <div class="d-flex align-items-center justify-content-center h-100 p-4">
+                    <div class="d-flex align-items-center justify-content-center h-100 p-5">
                         <p class="text-muted text-center">You have not registered any hotels yet.</p>
                     </div>
                     {% endif %}
@@ -182,11 +237,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (ctx) {
         const chartLabels = {{ analytics.chart_labels|tojson|safe }};
         const chartData = {{ analytics.chart_data|tojson|safe }};
-
-        // Create a gradient for the chart background
-        const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, 'rgba(38, 166, 154, 0.4)');
-        gradient.addColorStop(1, 'rgba(38, 166, 154, 0)');
+        const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, ctx.offsetHeight * 1.5);
+        gradient.addColorStop(0, 'rgba(42, 157, 143, 0.4)');
+        gradient.addColorStop(1, 'rgba(42, 157, 143, 0)');
 
         new Chart(ctx, {
             type: 'line',
@@ -196,14 +249,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     label: 'Bookings',
                     data: chartData,
                     fill: true,
-                    backgroundColor: gradient, // Use the elegant gradient
-                    borderColor: '#26a69a', // A vibrant, modern teal
+                    backgroundColor: gradient,
+                    borderColor: 'rgb(42, 157, 143)',
                     borderWidth: 2.5,
-                    tension: 0.4, // Makes the line curve smoothly
-                    pointRadius: 0, // Hide points for a cleaner look
-                    pointBackgroundColor: '#26a69a',
-                    pointHoverRadius: 5, // Show points on hover
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
                     pointHoverBorderWidth: 2,
+                    pointBackgroundColor: 'rgb(42, 157, 143)',
                     pointHoverBackgroundColor: '#ffffff'
                 }]
             },
@@ -213,42 +266,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: {
-                            color: '#95a5a6',
-                            stepSize: 1 // Ensure y-axis shows whole numbers for bookings
-                        },
-                        grid: {
-                            color: '#eef2f7', // Lighter grid lines
-                            borderDash: [5, 5] // Dashed grid lines
-                        }
+                        ticks: { color: '#95a5a6', stepSize: 1, padding: 10 },
+                        grid: { color: '#eef2f7', borderDash: [5, 5] }
                     },
                     x: {
-                        ticks: {
-                            color: '#95a5a6'
-                        },
-                         grid: {
-                            display: false, // Hide vertical grid lines for a cleaner look
-                        }
+                        ticks: { color: '#95a5a6', padding: 10 },
+                        grid: { display: false }
                     }
                 },
                 plugins: {
-                    legend: {
-                        display: false
-                    },
+                    legend: { display: false },
                     tooltip: {
                         enabled: true,
-                        backgroundColor: '#2c3e50',
+                        backgroundColor: '#212529',
                         titleFont: { weight: 'bold' },
                         bodyFont: { size: 14 },
                         padding: 12,
                         cornerRadius: 8,
-                        displayColors: false // Hide the color box in tooltip
+                        displayColors: false
                     }
                 },
-                interaction: {
-                    intersect: false,
-                    mode: 'index',
-                },
+                interaction: { intersect: false, mode: 'index' }
             }
         });
     }
