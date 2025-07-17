@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
         modalTitle.textContent = 'Add New Room Type';
         form.reset();
         
-        // ======================= FIX #1 =========================
+        // ======================= FIX =========================
         // The form should always submit back to the page that rendered it.
         // The backend will know it's an "add" because room_id will be empty.
         form.action = "{{ url_for('manage_rooms', hotel_id=hotel.id) }}";
@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
             modalTitle.textContent = 'Edit Room Type: ' + room.name;
             form.reset();
 
-            // ======================= FIX #2 =========================
+            // ======================= FIX =========================
             // The form should also submit to the manage_rooms page for editing.
             // The backend will know it's an "edit" because room_id will have a value.
             form.action = "{{ url_for('manage_rooms', hotel_id=hotel.id) }}";

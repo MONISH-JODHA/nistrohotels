@@ -207,10 +207,9 @@
     </div>
 </div>
 
-<!-- Modal for editing availability (no changes needed) -->
+<!-- Modal for editing availability -->
 <div class="modal fade" id="availabilityModal" tabindex="-1" aria-labelledby="availabilityModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <!-- Styling for modal content will inherit from the global styles we added -->
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="availabilityModalLabel">Set Overrides for Date</h5>
@@ -260,8 +259,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth' },
-        events: { url: `/api/room/{{ room.id }}/availability` },
-        dateClick: function(info) { openModalForDate(info.dateStr); },
+        events: { 
+            url: `/api/room/{{ room.id }}/availability`,
+            failure: function() {
+                alert('There was an error while fetching availability data!');
+            }
+        },
+        dateClick: function(info) { 
+            openModalForDate(info.dateStr); 
+        },
         eventClick: function(info) {
             const dateStr = info.event.start.toISOString().split('T')[0];
             openModalForDate(dateStr, info.event.extendedProps.override_price, info.event.extendedProps.override_available);
@@ -269,8 +275,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // --- UI IMPROVEMENT: Add classes for styling instead of setting color directly ---
         eventDataTransform: function(eventData) {
+            let props = eventData.extendedProps;
             let classNames = [];
-            if (eventData.available_count > 0) {
+            if (props.available_count > 0) {
                 classNames.push('fc-event-success');
             } else {
                 classNames.push('fc-event-danger');
@@ -289,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- UI IMPROVEMENT: Richer event content with price and availability ---
         eventContent: function(arg) {
             let props = arg.event.extendedProps;
-            let price = props.price || {{ room.price_per_night }};
+            let price = props.price;
             let formattedPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
             let overrideIcon = props.is_override ? '<i class="fas fa-star override-icon"></i>' : '';
             
@@ -302,7 +309,10 @@ document.addEventListener('DOMContentLoaded', function() {
     calendar.render();
 
     function openModalForDate(dateStr, price, availableRooms) {
-        modalTitle.textContent = `Set Overrides for ${dateStr}`;
+        // Use JS Date object for better formatting
+        const d = new Date(dateStr + 'T00:00:00'); // Add time to avoid timezone issues
+        modalTitle.textContent = `Set Overrides for ${d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
+        
         modalDateField.value = dateStr;
         modalForm.reset();
         modalPriceField.value = price || '';

@@ -86,9 +86,9 @@
                 {% set gallery_images = hotel.gallery_images.all() %}
                 {% if gallery_images %}
                 <div class="row g-2 mt-2">
-                    <div class="col"><img src="{{ main_image_src }}" alt="Main Thumbnail" class="img-fluid gallery-thumbnail w-100 active" onclick="document.getElementById('main-hotel-image').src=this.src;"></div>
+                    <div class="col"><img src="{{ main_image_src }}" alt="Main Thumbnail" class="img-fluid gallery-thumbnail w-100 active" onclick="changeMainImage(this)"></div>
                     {% for image in gallery_images[:4] %}
-                    <div class="col"><img src="{{ url_for('static', filename='uploads/hotel_images/' + image.filename) }}" alt="Thumbnail {{ loop.index }}" class="img-fluid gallery-thumbnail w-100" onclick="document.getElementById('main-hotel-image').src=this.src;"></div>
+                    <div class="col"><img src="{{ url_for('static', filename='uploads/hotel_images/' + image.filename) }}" alt="Thumbnail {{ loop.index }}" class="img-fluid gallery-thumbnail w-100" onclick="changeMainImage(this)"></div>
                     {% endfor %}
                 </div>
                 {% endif %}
@@ -99,8 +99,8 @@
                 {% if hotel.star_rating %}<div class="my-2" style="font-size: 1.1rem; color: #f39c12;">{% for i in range(hotel.star_rating) %}<i class="fas fa-star"></i>{% endfor %}{% for i in range(5 - hotel.star_rating) %}<i class="far fa-star"></i>{% endfor %}</div>{% endif %}
                 <p class="lead text-muted mb-4"><i class="fas fa-map-marker-alt me-2"></i>{{ hotel.location }}</p>
                 <p style="color: #495057; line-height: 1.7;">{{ hotel.description or 'No description available for this hotel.' }}</p>
-                {% if hotel.get_amenities_list() %}<h5 class="mt-3 mb-3 fw-bold" style="color: #34495e;">Hotel Amenities</h5><div class="d-flex flex-wrap gap-2">{% for amenity in hotel.get_amenities_list() %}<span class="amenity-tag">{{ amenity }}</span>{% endfor %}</div>{% endif %}
-                <div class="mt-auto pt-4">{% if current_user.is_authenticated %}{% if is_hotel_in_wishlist(hotel.id) %}<form action="{{ url_for('remove_from_wishlist', hotel_id=hotel.id) }}" method="POST" class="d-grid"><button type="submit" class="btn btn-outline-danger btn-lg"><i class="fas fa-heart-broken me-2"></i> Remove from Wishlist</button></form>{% else %}<form action="{{ url_for('add_to_wishlist', hotel_id=hotel.id) }}" method="POST" class="d-grid"><button type="submit" class="btn btn-danger btn-lg"><i class="fas fa-heart me-2"></i> Add to Wishlist</button></form>{% endif %}{% endif %}</div>
+                {% if hotel.amenities %}<h5 class="mt-3 mb-3 fw-bold" style="color: #34495e;">Hotel Amenities</h5><div class="d-flex flex-wrap gap-2">{% for amenity in hotel.amenities %}<span class="amenity-tag">{{ amenity.name }}</span>{% endfor %}</div>{% endif %}
+                <div class="mt-auto pt-4">{% if current_user.is_authenticated and current_user.role == 'user' %}{% if is_hotel_in_wishlist(hotel.id) %}<form action="{{ url_for('remove_from_wishlist', hotel_id=hotel.id) }}" method="POST" class="d-grid"><button type="submit" class="btn btn-outline-danger btn-lg"><i class="fas fa-heart-broken me-2"></i> Remove from Wishlist</button></form>{% else %}<form action="{{ url_for('add_to_wishlist', hotel_id=hotel.id) }}" method="POST" class="d-grid"><button type="submit" class="btn btn-danger btn-lg"><i class="fas fa-heart me-2"></i> Add to Wishlist</button></form>{% endif %}{% endif %}</div>
             </div>
         </div>
     </div>
@@ -116,7 +116,7 @@
         <div class="col">
             <div class="room-card h-100">
                 <div class="row g-0 h-100">
-                    <!-- *** THE FIX IS HERE: Using the `do` extension to build the URL list safely *** -->
+                    <!-- *** FULLY CORRECTED IMAGE URL LIST *** -->
                     {% set all_image_urls = [] %}
                     {% if room.main_image_url and (room.main_image_url.startswith('http') or room.main_image_url.startswith('/static')) %}
                         {% do all_image_urls.append(room.main_image_url) %}
@@ -131,7 +131,7 @@
                          data-room-name="{{ room.name }}"
                          data-room-images='{{ all_image_urls|tojson|safe }}'>
                         
-                        {% set room_image_src = room.main_image_url if room.main_image_url and (room.main_image_url.startswith('http') or room.main_image_url.startswith('/static')) else 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=800&q=80' %}
+                        {% set room_image_src = all_image_urls[0] if all_image_urls else 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=800&q=80' %}
                         <img src="{{ room_image_src }}" class="img-fluid h-100" alt="{{ room.name }}" style="object-fit: cover;">
                         <div class="gallery-overlay">
                             <i class="fas fa-camera fa-2x"></i>
@@ -194,6 +194,16 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Gallery thumbnail logic
+    function changeMainImage(thumbnailElement) {
+        document.getElementById('main-hotel-image').src = thumbnailElement.src;
+        document.querySelectorAll('.gallery-thumbnail').forEach(el => el.classList.remove('active'));
+        thumbnailElement.classList.add('active');
+    }
+    // Make it available globally for the inline onclick
+    window.changeMainImage = changeMainImage;
+
+    // Room image modal logic
     const roomImageModal = document.getElementById('roomImageModal');
     roomImageModal.addEventListener('show.bs.modal', function (event) {
         const button = event.relatedTarget;

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Owner Dashboard - Nestrohotels{% endblock %}
+{% block title %}Owner Dashboard - WanderStay{% endblock %}
 
 {% block head_extra %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -212,7 +212,7 @@
                             </div>
                             <div class="btn-group">
                                 <a href="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" class="btn btn-sm btn-dark" title="Manage Rooms"><i class="fas fa-bed"></i></a>
-                                <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="btn btn-sm btn-outline-secondary" title="View Hotel Page"><i class="fas fa-eye"></i></a>
+                                <a href="{{ url_for('edit_hotel_by_admin', hotel_id=hotel.id) if current_user.role == 'admin' else url_for('hotel_detail', hotel_id=hotel.id) }}" class="btn btn-sm btn-outline-secondary" title="View/Edit Details"><i class="fas fa-edit"></i></a>
                             </div>
                         </li>
                         {% endfor %}
