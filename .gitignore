@@ -1,0 +1,46 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# Log files
+logs/
+*.log
+
+# Databases
+*.db
+
+# Uploaded media (like hotel/room images)
+static/uploads/hotel_images/
+
+# Instance-specific files (like config or databases)
+instance/
+
+# macOS junk
+.DS_Store
+
+# Editor/IDE junk
+.vscode/
+.idea/
+
+# Swap/temp files
+*.swp
+*.swo
+
+# Python distribution stuff
+*.egg-info/
+dist/
+build/
+
+# Secrets
+.env
+*.env
+
+# Start script (if not meant to be tracked)
+start.sh
