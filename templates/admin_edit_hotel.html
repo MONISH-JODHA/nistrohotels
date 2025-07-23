@@ -2,15 +2,13 @@
 {% block title %}Edit Hotel: {{ hotel.name }}{% endblock %}
 
 {% block head_extra %}
-{# Google Fonts for a professional dashboard typography #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    /* --- [ 1. Theming & General Styles ] --- */
     :root {
-        --primary-color: #005f73;
+        --primary-color: #00796B;
         --warning-color: #fca311;
         --bg-body: #f4f7f9;
         --bg-card: #ffffff;
@@ -23,8 +21,6 @@
         background-color: var(--bg-body);
         font-family: 'Poppins', sans-serif;
     }
-
-    /* --- [ 2. Main Content Card Styling ] --- */
     .content-card {
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -44,8 +40,6 @@
     .content-card-body {
         padding: 1.5rem;
     }
-
-    /* --- [ 3. Hotel Identity Header ] --- */
     .hotel-identity-header {
         display: flex;
         align-items: center;
@@ -59,36 +53,30 @@
     }
     .hotel-name { font-weight: 600; font-size: 1.5rem; color: var(--text-dark); }
     .hotel-location { font-size: 1rem; color: var(--text-light); }
-
-    /* --- [ 4. Form Styling ] --- */
     .form-label { font-weight: 500; color: var(--text-dark); }
     .form-control, .form-select { border-radius: 8px; padding: 0.75rem 1rem; }
     .form-control:focus, .form-select:focus {
         border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(0, 95, 115, 0.2);
+        box-shadow: 0 0 0 3px rgba(0, 121, 107, 0.2);
     }
-
-    /* --- [ 5. Interactive Star Rating Selector ] --- */
     .star-rating-selector {
         display: flex;
-        flex-direction: row-reverse; /* Reverses order for pure CSS sibling selector trick */
+        flex-direction: row-reverse;
         justify-content: flex-end;
         gap: 0.5rem;
     }
     .star-rating-selector input[type="radio"] { display: none; }
     .star-rating-selector label {
         font-size: 2rem;
-        color: #d1d5db; /* Unselected color */
+        color: #d1d5db;
         cursor: pointer;
         transition: color 0.2s;
     }
     .star-rating-selector input[type="radio"]:checked ~ label,
     .star-rating-selector label:hover,
     .star-rating-selector label:hover ~ label {
-        color: var(--warning-color); /* Selected/Hover color */
+        color: var(--warning-color);
     }
-
-    /* --- [ 6. Modern Amenity Selector ] --- */
     .amenity-selector {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -110,11 +98,9 @@
     }
     .amenity-option input[type="checkbox"]:checked + label {
         border-color: var(--primary-color);
-        background-color: rgba(0, 95, 115, 0.05);
+        background-color: rgba(0, 121, 107, 0.05);
         color: var(--primary-color);
     }
-
-    /* --- [ 7. Admin Controls & Actions ] --- */
     .form-switch .form-check-input {
         width: 3em;
         height: 1.5em;
@@ -127,7 +113,6 @@
     <div class="col-md-10 col-lg-9">
         <form method="POST" action="{{ url_for('edit_hotel_by_admin', hotel_id=hotel.id) }}">
             
-            <!-- Identity Header -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div class="hotel-identity-header">
                     {% set hotel_img_src = hotel.main_image_url if hotel.main_image_url and (hotel.main_image_url.startswith('http') or hotel.main_image_url.startswith('/static')) else 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80' %}
@@ -143,7 +128,6 @@
                 </div>
             </div>
 
-            <!-- Hotel Information Card -->
             <div class="content-card">
                 <div class="content-card-header"><h5><i class="fas fa-info-circle me-2"></i> Hotel Information</h5></div>
                 <div class="content-card-body">
@@ -155,7 +139,6 @@
                 </div>
             </div>
 
-            <!-- Key Features Card -->
             <div class="content-card">
                 <div class="content-card-header"><h5><i class="fas fa-star me-2"></i> Key Features</h5></div>
                 <div class="content-card-body">
@@ -169,7 +152,6 @@
                 </div>
             </div>
 
-            <!-- Amenities Card -->
             <div class="content-card">
                 <div class="content-card-header"><h5><i class="fas fa-list-check me-2"></i> Hotel Amenities</h5></div>
                 <div class="content-card-body">
@@ -185,7 +167,6 @@
                 </div>
             </div>
 
-            <!-- Admin Controls Card -->
             <div class="content-card">
                 <div class="content-card-header"><h5><i class="fas fa-user-shield me-2"></i> Admin Controls</h5></div>
                 <div class="content-card-body">
@@ -196,7 +177,6 @@
                 </div>
             </div>
             
-            <!-- Bottom Actions -->
             <div class="text-end mt-4">
                 <a href="{{ url_for('manage_hotels') }}" class="btn btn-lg btn-secondary">Cancel</a>
                 <button type="submit" class="btn btn-lg btn-primary px-5"><i class="fas fa-save me-2"></i> Save Changes</button>

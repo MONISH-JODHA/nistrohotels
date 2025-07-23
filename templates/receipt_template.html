@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Booking Confirmation - Voyageur - #{{ booking.id }}</title>
+    <title>Booking Confirmation - Nestrohotels - #{{ booking.id }}</title>
     <style>
         /* --- Base & Reset --- */
         body {
@@ -25,7 +25,7 @@
 
         /* --- Header --- */
         .receipt-header {
-            background: linear-gradient(135deg, #43a0f0, #1e6dc5);
+            background: linear-gradient(135deg, #00796B, #004D40);
             color: #ffffff;
             padding: 40px;
             text-align: center;
@@ -58,7 +58,7 @@
         .section-title {
             font-size: 20px;
             font-weight: 600;
-            color: #1e6dc5;
+            color: #00796B;
             margin-bottom: 20px;
             padding-bottom: 8px;
             border-bottom: 2px solid #eef2f7;
@@ -140,7 +140,7 @@
         .total-summary .amount {
             font-size: 24px;
             font-weight: 700;
-            color: #1e6dc5;
+            color: #00796B;
         }
 
         /* --- Footer --- */
@@ -152,7 +152,7 @@
             line-height: 1.7;
         }
         .footer a {
-            color: #1e6dc5;
+            color: #00796B;
             font-weight: 500;
             text-decoration: none;
         }
@@ -160,22 +160,22 @@
             text-decoration: underline;
         }
     </style>
-    <!-- Font Awesome for Icons (Optional, but recommended for professional look) -->
+    <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
     <div class="container">
         <!-- === HEADER === -->
         <div class="receipt-header">
-            <div class="logo">Voyageur</div>
-            <h1 class="header-title">Your Trip is Booked!</h1>
-            <p class="header-subtitle">Thank you for choosing us. Your booking confirmation is below.</p>
+            <div class="logo">Nestrohotels</div>
+            <h1 class="header-title">Client Trip is Booked!</h1>
+            <p class="header-subtitle">This booking was made by your travel agent.</p>
         </div>
 
         <div class="receipt-body">
             <!-- === GUEST & BOOKING DETAILS SECTION === -->
             <div class="section">
-                <h2 class="section-title"><i class="fas fa-user-check"></i>Guest & Booking Details</h2>
+                <h2 class="section-title"><i class="fas fa-user-check"></i>Client & Booking Details</h2>
                 <div class="details-grid">
                     <div class="detail-item">
                         <dt>Booking ID</dt>
@@ -186,19 +186,23 @@
                         <dd>{{ booking.created_at.strftime('%B %d, %Y') }}</dd>
                     </div>
                     <div class="detail-item">
-                        <dt>Booked By</dt>
-                        <dd>{{ user.username }}</dd>
+                        <dt>Client Name</dt>
+                        <dd>{{ booking.client_name }}</dd>
                     </div>
                     <div class="detail-item">
-                        <dt>Email Address</dt>
-                        <dd>{{ user.email }}</dd>
+                        <dt>Client Email</dt>
+                        <dd>{{ booking.client_email or 'Not Provided' }}</dd>
+                    </div>
+                     <div class="detail-item">
+                        <dt>Booked By (Agent)</dt>
+                        <dd>{{ user.username }} ({{user.email}})</dd>
                     </div>
                 </div>
             </div>
 
             <!-- === ITINERARY SECTION === -->
             <div class="section">
-                <h2 class="section-title"><i class="fas fa-suitcase-rolling"></i>Your Itinerary</h2>
+                <h2 class="section-title"><i class="fas fa-suitcase-rolling"></i>Client's Itinerary</h2>
                 <div class="details-grid">
                     <div class="detail-item">
                         <dt>Hotel & Location</dt>
@@ -257,8 +261,8 @@
         <!-- === FOOTER === -->
         <div class="footer">
             <p>This is an automated receipt. No payment is due.</p>
-            <p>If you have any questions or need to modify your booking, please visit our <a href="#">Help Center</a> or contact support.</p>
-            <p>© {{ current_year }} Voyageur. All rights reserved.</p>
+            <p>If you have any questions or need to modify your booking, please contact your travel agent.</p>
+            <p>© {{ current_year }} Nestrohotels. All rights reserved.</p>
         </div>
     </div>
 </body>

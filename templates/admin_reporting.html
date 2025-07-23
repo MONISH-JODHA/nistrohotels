@@ -2,15 +2,13 @@
 {% block title %}Platform Reporting{% endblock %}
 
 {% block head_extra %}
-{# Google Fonts for a professional dashboard typography #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    /* --- [ 1. Theming & General Styles ] --- */
     :root {
-        --primary-color: #005f73;
+        --primary-color: #00796B;
         --success-color: #2a9d8f;
         --info-color: #0a9396;
         --warning-color: #ee9b00;
@@ -26,14 +24,10 @@
         background-color: var(--bg-body);
         font-family: 'Poppins', sans-serif;
     }
-
-    /* --- [ 2. Page Header ] --- */
     .page-header h2 {
         color: var(--primary-color);
         font-weight: 700;
     }
-
-    /* --- [ 3. KPI Card Styling (Replaces border-left) ] --- */
     .kpi-card {
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -58,9 +52,7 @@
         justify-content: center;
         flex-shrink: 0;
     }
-    .kpi-card .icon-wrapper i {
-        font-size: 1.5rem;
-    }
+    .kpi-card .icon-wrapper i { font-size: 1.5rem; }
     .kpi-card .card-title {
         font-size: 0.8rem;
         font-weight: 600;
@@ -72,14 +64,10 @@
         font-weight: 700;
         color: var(--text-dark);
     }
-
-    /* KPI Icon Colors */
-    .icon-primary { background-color: rgba(0, 95, 115, 0.1); color: var(--primary-color); }
+    .icon-primary { background-color: rgba(0, 121, 107, 0.1); color: var(--primary-color); }
     .icon-success { background-color: rgba(42, 157, 143, 0.1); color: var(--success-color); }
     .icon-info { background-color: rgba(10, 147, 150, 0.1); color: var(--info-color); }
     .icon-warning { background-color: rgba(238, 155, 0, 0.1); color: var(--warning-color); }
-
-    /* --- [ 4. Chart & Data Card Styling ] --- */
     .chart-card, .data-card {
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -95,11 +83,7 @@
         color: var(--primary-color);
         margin: 0;
     }
-    .chart-card-body, .data-card-body {
-        padding: 1.5rem;
-    }
-
-    /* --- [ 5. Popular Destinations List (Visualized) ] --- */
+    .chart-card-body, .data-card-body { padding: 1.5rem; }
     .destination-list { list-style: none; padding: 0; margin: 0; }
     .destination-item { margin-bottom: 1.25rem; }
     .destination-item:last-child { margin-bottom: 0; }
@@ -216,7 +200,6 @@
 document.addEventListener('DOMContentLoaded', function () {
     const ctx = document.getElementById('userGrowthChart');
     if (ctx) {
-        // --- Create Gradient for Chart Fill ---
         const chartCtx = ctx.getContext('2d');
         const gradient = chartCtx.createLinearGradient(0, 0, 0, ctx.offsetHeight * 1.5);
         gradient.addColorStop(0, 'rgba(10, 147, 150, 0.5)');
@@ -247,26 +230,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 scales: {
                     y: {
                         beginAtZero: false,
-                        grid: {
-                            drawBorder: false,
-                        },
-                        ticks: {
-                            padding: 10,
-                        }
+                        grid: { drawBorder: false, },
+                        ticks: { padding: 10, }
                     },
                     x: {
-                        grid: {
-                            display: false, // Cleaner look
-                        },
-                        ticks: {
-                            padding: 10,
-                        }
+                        grid: { display: false, },
+                        ticks: { padding: 10, }
                     }
                 },
                 plugins: {
-                    legend: {
-                        display: false // Cleaner look, as there's only one dataset
-                    },
+                    legend: { display: false },
                     tooltip: {
                         enabled: true,
                         backgroundColor: '#212529',

@@ -3,15 +3,13 @@
 {% block title %}Dashboard for {{ owner.username }}{% endblock %}
 
 {% block head_extra %}
-{# Google Fonts for a professional dashboard typography #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    /* --- [ 1. Theming & General Styles ] --- */
     :root {
-        --primary-color: #005f73;
+        --primary-color: #00796B;
         --success-color: #2a9d8f;
         --info-color: #0a9396;
         --warning-color: #ee9b00;
@@ -28,16 +26,12 @@
         background-color: var(--bg-body);
         font-family: 'Poppins', sans-serif;
     }
-
-    /* --- [ 2. Page Header ] --- */
     .page-header h1 {
         color: var(--primary-color);
         font-weight: 700;
     }
     .page-header p a { text-decoration: none; }
     .page-header p a:hover { text-decoration: underline; }
-
-    /* --- [ 3. KPI Card Styling ] --- */
     .kpi-card {
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -63,9 +57,7 @@
         align-items: center;
         gap: 1.25rem;
     }
-    .kpi-card .card-icon {
-        font-size: 1.75rem;
-    }
+    .kpi-card .card-icon { font-size: 1.75rem; }
     .kpi-card .card-title {
         font-size: 0.9rem;
         font-weight: 500;
@@ -77,8 +69,6 @@
         font-weight: 700;
         color: var(--text-dark);
     }
-
-    /* KPI Colors */
     .kpi-primary .card-border { background-color: var(--primary-color); }
     .kpi-primary .card-icon { color: var(--primary-color); }
     .kpi-info .card-border { background-color: var(--info-color); }
@@ -87,8 +77,6 @@
     .kpi-success .card-icon { color: var(--success-color); }
     .kpi-warning .card-border { background-color: var(--warning-color); }
     .kpi-warning .card-icon { color: var(--warning-color); }
-
-    /* --- [ 4. Ranked List for Popular Rooms ] --- */
     .ranked-list {
         list-style: none;
         padding-left: 0;
@@ -121,8 +109,6 @@
     .ranked-list-item .room-name { color: var(--text-dark); }
     .ranked-list-item .room-count { color: var(--text-light); }
     .ranked-list-item.is-first .fa-medal { color: var(--warning-color); margin-left: auto; }
-
-    /* --- [ 5. Main Content Cards (Chart, Hotels) ] --- */
     .content-card {
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -140,9 +126,7 @@
         margin: 0;
     }
     .content-card-body { padding: 1.5rem; }
-    .content-card-body.p-0 { padding: 0; } /* For tables/lists */
-
-    /* --- [ 6. Hotels List (Replaces Table) ] --- */
+    .content-card-body.p-0 { padding: 0; }
     .hotel-list { list-style: none; padding: 0; margin: 0; }
     .hotel-list-item {
         display: grid;
@@ -166,14 +150,12 @@
     }
     .status-approved { background-color: rgba(42, 157, 143, 0.1); color: var(--success-color); }
     .status-pending { background-color: rgba(238, 155, 0, 0.1); color: var(--warning-color); }
-
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid mt-4 mb-5 px-4">
 
-    <!-- === HEADER === -->
     <div class="d-flex justify-content-between align-items-center mb-4 page-header">
         <div>
             <h1 class="h2 mb-1">Owner Dashboard</h1>
@@ -181,7 +163,6 @@
         </div>
     </div>
 
-    <!-- === ANALYTICS SECTION === -->
     <div class="row g-4 mb-4">
         <div class="col-xl-3 col-md-6"><div class="kpi-card kpi-primary"><div class="card-border"></div><div class="card-content"><i class="fas fa-dollar-sign card-icon"></i><div><p class="card-title">Total Revenue</p><h4 class="card-value">${{ "%.2f"|format(analytics.total_revenue) }}</h4></div></div></div></div>
         <div class="col-xl-3 col-md-6"><div class="kpi-card kpi-info"><div class="card-border"></div><div class="card-content"><i class="fas fa-chart-pie card-icon"></i><div><p class="card-title">Occupancy (30d)</p><h4 class="card-value">{{ "%.1f"|format(analytics.occupancy_rate) }}%</h4></div></div></div></div>
@@ -191,7 +172,7 @@
             <ol class="ranked-list">
                 {% for room, count in analytics.popular_room_types[:2] %}
                 <li class="ranked-list-item {% if loop.first %}is-first{% endif %}">
-                    <span class="room-name">{{ room }}</span> 
+                    <span class="room-name">{{ room }}</span>&nbsp;
                     <span class="room-count">({{count}})</span>
                     {% if loop.first %}<i class="fas fa-medal"></i>{% endif %}
                 </li>
@@ -201,7 +182,6 @@
         </div></div></div></div>
     </div>
     
-    <!-- === BOOKING TRENDS & HOTELS LIST === -->
     <div class="row g-4">
         <div class="col-lg-7">
             <div class="content-card">

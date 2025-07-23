@@ -2,15 +2,13 @@
 {% block title %}View Owner Dashboards{% endblock %}
 
 {% block head_extra %}
-{# Google Fonts for a professional dashboard typography #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    /* --- [ 1. Theming & General Styles ] --- */
     :root {
-        --primary-color: #005f73;
+        --primary-color: #00796B;
         --secondary-color: #0a9396;
         --bg-body: #f4f7f9;
         --bg-card: #ffffff;
@@ -24,8 +22,6 @@
         background-color: var(--bg-body);
         font-family: 'Poppins', sans-serif;
     }
-
-    /* --- [ 2. Page Header ] --- */
     .page-header h1 {
         color: var(--primary-color);
         font-weight: 700;
@@ -34,15 +30,11 @@
         font-size: 1.1rem;
         color: var(--text-light);
     }
-
-    /* --- [ 3. Owner Card Grid Layout ] --- */
     .owner-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
         gap: 1.5rem;
     }
-
-    /* --- [ 4. Individual Owner Card Styling ] --- */
     .owner-card {
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -56,8 +48,6 @@
         transform: translateY(-8px);
         box-shadow: var(--shadow-lg);
     }
-
-    /* Card Header: Avatar & Info */
     .owner-card-header {
         display: flex;
         align-items: center;
@@ -85,8 +75,6 @@
         font-size: 0.9rem;
         color: var(--text-light);
     }
-    
-    /* Card Body: Stats */
     .owner-card-body {
         padding: 1rem 1.5rem;
         border-top: 1px solid var(--border-color);
@@ -109,14 +97,10 @@
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
-
-    /* Card Footer: Action Button */
     .owner-card-footer {
         padding: 1.5rem;
-        margin-top: auto; /* Pushes footer to bottom */
+        margin-top: auto;
     }
-
-    /* --- [ 5. Empty State Styling ] --- */
     .empty-state-card {
         background-color: var(--bg-card);
         border: 2px dashed var(--border-color);
@@ -143,7 +127,6 @@
         {% for owner in owners %}
         <div class="owner-card">
             
-            <!-- Card Header -->
             <div class="owner-card-header">
                 <div class="owner-avatar" style="background-color: hsl({{ owner.id * 57 % 360 }}, 45%, 50%);">
                     <span>{{ owner.username[0]|upper }}</span>
@@ -154,7 +137,6 @@
                 </div>
             </div>
 
-            <!-- Card Body with Stats -->
             <div class="owner-card-body">
                 <div class="owner-stats">
                     <div class="stat-item">
@@ -162,14 +144,12 @@
                         <div class="stat-label"><i class="fas fa-hotel me-1"></i> Hotels</div>
                     </div>
                     <div class="stat-item">
-                        {# Note: This requires you to pass booking counts with the owner object #}
                         <div class="stat-value">{{ owner.total_bookings | default(0) }}</div>
                         <div class="stat-label"><i class="fas fa-calendar-check me-1"></i> Bookings</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Card Footer with Action -->
             <div class="owner-card-footer">
                 <a href="{{ url_for('admin_view_owner_dashboard', owner_id=owner.id) }}" class="btn btn-primary w-100 py-2">
                     View Dashboard <i class="fas fa-arrow-right ms-2"></i>

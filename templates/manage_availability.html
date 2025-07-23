@@ -2,7 +2,6 @@
 {% block title %}Manage Availability for {{ room.name }}{% endblock %}
 
 {% block head_extra %}
-{# Google Fonts for a more modern typography #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -10,9 +9,8 @@
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
 
 <style>
-    /* --- [ 1. Theming & General Styles ] --- */
     :root {
-        --primary-color: #005f73;
+        --primary-color: #00796B;
         --secondary-color: #0a9396;
         --accent-color: #ee9b00;
         --success-color: #2a9d8f;
@@ -25,14 +23,11 @@
         --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
         --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
     }
-
     body {
         background-color: var(--bg-body);
         font-family: 'Poppins', sans-serif;
         color: var(--text-dark);
     }
-
-    /* --- [ 2. Page Header & Layout ] --- */
     .page-header h2 {
         color: var(--primary-color);
         font-weight: 700;
@@ -41,8 +36,6 @@
         color: var(--text-light);
         font-size: 1.1rem;
     }
-
-    /* --- [ 3. Instructions Panel ] --- */
     .instructions-panel {
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -76,11 +69,7 @@
         color: var(--secondary-color);
         font-weight: 600;
     }
-    .override-indicator-icon {
-        color: var(--accent-color);
-    }
-
-    /* --- [ 4. Calendar Wrapper & Toolbar ] --- */
+    .override-indicator-icon { color: var(--accent-color); }
     #calendar-wrapper {
         background-color: var(--bg-card);
         border-radius: 16px;
@@ -88,7 +77,6 @@
         padding: 2rem;
         border: 1px solid var(--border-color);
     }
-
     .fc .fc-toolbar-title {
         color: var(--primary-color);
         font-weight: 600;
@@ -110,31 +98,22 @@
         border-color: var(--primary-color);
         color: white;
     }
-    .fc .fc-today-button {
-        font-weight: 600;
-    }
-
-    /* --- [ 5. Calendar Day Grid ] --- */
     .fc .fc-daygrid-day-frame {
         border-radius: 8px;
         transition: background-color 0.2s ease-in-out;
         cursor: pointer;
     }
     .fc .fc-daygrid-day:hover .fc-daygrid-day-frame {
-        background-color: rgba(10, 147, 150, 0.05); /* Light secondary color */
+        background-color: rgba(10, 147, 150, 0.05);
     }
     .fc .fc-day-today {
-        background-color: rgba(238, 155, 0, 0.07) !important; /* Light accent color */
+        background-color: rgba(238, 155, 0, 0.07) !important;
     }
     .fc .fc-col-header-cell-cushion {
         font-weight: 600;
         color: var(--text-light);
     }
-    .fc .fc-daygrid-day-number {
-        font-weight: 500;
-    }
-
-    /* --- [ 6. Calendar Event Styling - The Core Improvement ] --- */
+    .fc .fc-daygrid-day-number { font-weight: 500; }
     .fc-event {
         padding: 6px 10px !important;
         border-radius: 6px !important;
@@ -148,12 +127,8 @@
         transform: translateY(-2px);
         box-shadow: var(--shadow-md);
     }
-
-    /* Different colors for availability */
     .fc-event-success { background-color: var(--success-color); }
     .fc-event-danger { background-color: var(--danger-color); }
-
-    /* Clearer visual for overridden days */
     .fc-event.has-override {
         border-left: 4px solid var(--accent-color) !important;
     }
@@ -162,8 +137,6 @@
         margin-right: 5px;
         color: rgba(255, 255, 255, 0.8);
     }
-
-    /* Richer event content */
     .fc-event-main {
         font-size: 0.9em;
         line-height: 1.4;
@@ -207,7 +180,6 @@
     </div>
 </div>
 
-<!-- Modal for editing availability -->
 <div class="modal fade" id="availabilityModal" tabindex="-1" aria-labelledby="availabilityModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -261,45 +233,28 @@ document.addEventListener('DOMContentLoaded', function() {
         headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth' },
         events: { 
             url: `/api/room/{{ room.id }}/availability`,
-            failure: function() {
-                alert('There was an error while fetching availability data!');
-            }
+            failure: function() { alert('There was an error while fetching availability data!'); }
         },
-        dateClick: function(info) { 
-            openModalForDate(info.dateStr); 
-        },
+        dateClick: function(info) { openModalForDate(info.dateStr); },
         eventClick: function(info) {
             const dateStr = info.event.start.toISOString().split('T')[0];
             openModalForDate(dateStr, info.event.extendedProps.override_price, info.event.extendedProps.override_available);
         },
-        
-        // --- UI IMPROVEMENT: Add classes for styling instead of setting color directly ---
         eventDataTransform: function(eventData) {
             let props = eventData.extendedProps;
-            let classNames = [];
-            if (props.available_count > 0) {
-                classNames.push('fc-event-success');
-            } else {
-                classNames.push('fc-event-danger');
-            }
-            eventData.classNames = classNames;
+            eventData.classNames = props.available_count > 0 ? ['fc-event-success'] : ['fc-event-danger'];
             return eventData;
         },
-
-        // --- UI IMPROVEMENT: Use eventDidMount to add override class to the main element ---
         eventDidMount: function(arg) {
             if (arg.event.extendedProps.is_override) {
                 arg.el.classList.add('has-override');
             }
         },
-
-        // --- UI IMPROVEMENT: Richer event content with price and availability ---
         eventContent: function(arg) {
             let props = arg.event.extendedProps;
             let price = props.price;
             let formattedPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
             let overrideIcon = props.is_override ? '<i class="fas fa-star override-icon"></i>' : '';
-            
             return {
                 html: `${overrideIcon}<span class="event-price">${formattedPrice}</span><span class="event-avail">${props.available_count} rooms</span>`
             };
@@ -309,8 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
     calendar.render();
 
     function openModalForDate(dateStr, price, availableRooms) {
-        // Use JS Date object for better formatting
-        const d = new Date(dateStr + 'T00:00:00'); // Add time to avoid timezone issues
+        const d = new Date(dateStr + 'T00:00:00');
         modalTitle.textContent = `Set Overrides for ${d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
         
         modalDateField.value = dateStr;
@@ -331,10 +285,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 available_rooms: modalAvailableRoomsField.value || null,
             })
         })
-        .then(response => {
-            if (!response.ok) { return response.json().then(err => { throw new Error(err.message || 'Server error') }); }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
             if (data.success) {
                 availabilityModal.hide();

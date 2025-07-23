@@ -1,40 +1,31 @@
 {% extends "base.html" %}
-
 {% block title %}Register a New Hotel{% endblock %}
 
 {% block head_extra %}
-{# This block is now used to add styles to the head, as intended by base.html #}
 <style>
-    /* 
-      This contains all the styling to achieve the glassmorphism effect.
-      Note: backdrop-filter is supported by all modern browsers.
-    */
     .register-page-wrapper {
         min-height: 100vh;
-        /* We add some padding for better spacing */
         padding: 4rem 1rem;
         background-image: url('https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1920&q=80');
         background-size: cover;
         background-position: center;
-        background-attachment: fixed; /* Keeps the background static on scroll */
+        background-attachment: fixed;
         display: flex;
         align-items: center;
         justify-content: center;
     }
-
     .glass-form-container {
         max-width: 800px;
         width: 100%;
-        background: rgba(0, 0, 0, 0.4); /* Darkened background for better text contrast */
-        backdrop-filter: blur(12px); /* The key frosted glass effect */
+        background: rgba(0, 0, 0, 0.5); 
+        backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border-radius: 20px;
         border: 1px solid rgba(255, 255, 255, 0.2);
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         padding: 3rem;
-        color: white; /* This is why the text was invisible */
+        color: white;
     }
-
     .form-control, .form-select {
         background: rgba(255, 255, 255, 0.15);
         border: 1px solid rgba(255, 255, 255, 0.3);
@@ -48,41 +39,27 @@
         border-color: rgba(255, 255, 255, 0.5);
         box-shadow: none;
     }
-    .form-control::placeholder {
-        color: rgba(255, 255, 255, 0.7);
-    }
-    .form-select option {
-        background: #2c3e50; /* Dark background for dropdown options */
-        color: white;
-    }
-    .form-label {
-        font-weight: 500;
-        margin-bottom: 0.5rem;
-    }
-
-    /* Custom styling for amenity checkboxes */
+    .form-control::placeholder { color: rgba(255, 255, 255, 0.7); }
+    .form-select option { background: #2c3e50; color: white; }
+    .form-label { font-weight: 500; margin-bottom: 0.5rem; }
     .amenity-checkbox-group {
         display: flex;
         align-items: center;
         background: rgba(255, 255, 255, 0.15);
         padding: 0.75rem 1rem;
-        border-radius: 50px; /* Pill shape */
+        border-radius: 50px;
         cursor: pointer;
         transition: background-color 0.2s ease;
     }
-    .amenity-checkbox-group:hover {
-        background: rgba(255, 255, 255, 0.25);
-    }
+    .amenity-checkbox-group:hover { background: rgba(255, 255, 255, 0.25); }
     .amenity-checkbox-group input[type="checkbox"] {
         width: 1em;
         height: 1em;
-        accent-color: #2ecc71; /* A nice green for the check */
+        accent-color: #2ecc71;
     }
 </style>
 {% endblock %}
 
-
-{# Override the entire content container to use our full-page theme #}
 {% block content_container %}
 <div class="register-page-wrapper">
     <div class="glass-form-container">
@@ -93,7 +70,6 @@
         
         <form method="POST" enctype="multipart/form-data">
             <div class="row g-4">
-                <!-- Hotel Name & Location -->
                 <div class="col-12">
                     <label for="name" class="form-label">Hotel Name *</label>
                     <input type="text" class="form-control" id="name" name="name" value="{{ form_data.name or '' }}" required placeholder="e.g., The Paradise Resort">
@@ -102,8 +78,14 @@
                     <label for="location" class="form-label">Location / City *</label>
                     <input type="text" class="form-control" id="location" name="location" value="{{ form_data.location or '' }}" required placeholder="e.g., Bali, Indonesia">
                 </div>
-
-                <!-- Description & Star Rating -->
+                <div class="col-md-6">
+                    <label for="latitude" class="form-label">Latitude</label>
+                    <input type="number" step="any" class="form-control" id="latitude" name="latitude" value="{{ form_data.latitude or '' }}" placeholder="e.g., -8.409518">
+                </div>
+                <div class="col-md-6">
+                    <label for="longitude" class="form-label">Longitude</label>
+                    <input type="number" step="any" class="form-control" id="longitude" name="longitude" value="{{ form_data.longitude or '' }}" placeholder="e.g., 115.188919">
+                </div>
                 <div class="col-12">
                     <label for="description" class="form-label">Description</label>
                     <textarea class="form-control" id="description" name="description" rows="4" placeholder="Tell us what makes your hotel special...">{{ form_data.description or '' }}</textarea>
@@ -117,8 +99,6 @@
                         {% endfor %}
                     </select>
                 </div>
-
-                <!-- Amenities -->
                 <div class="col-12">
                     <h5 class="text-center mt-3 mb-3">Hotel Amenities</h5>
                     <div class="row g-3">
@@ -132,8 +112,6 @@
                         {% endfor %}
                     </div>
                 </div>
-
-                <!-- Image Upload Section -->
                 <div class="col-12">
                     <h5 class="text-center mt-3 mb-3">Property Images</h5>
                      <div class="mb-3">
@@ -146,8 +124,6 @@
                         <input class="form-control" type="file" id="gallery_images_upload" name="gallery_images_upload" multiple>
                     </div>
                 </div>
-
-                <!-- Submit Button -->
                 <div class="col-12 mt-5">
                     <div class="d-grid">
                         <button type="submit" class="btn btn-lg" style="background-color: #2ecc71; border: none; color: white; font-weight: bold; padding: 1rem;">

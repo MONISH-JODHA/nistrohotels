@@ -3,29 +3,18 @@
 
 {% block content %}
 <style>
-    /* 
-      A quick note for production: 
-      While inline styles are used as requested, for a true production-ready site, 
-      it's best practice to move these styles to a separate CSS file.
-      The onmouseover/onmouseout attributes are a workaround to simulate a :hover effect.
-    */
-    body {
-        background-color: #f8f9fa; /* A soft, clean background */
-    }
+    body { background-color: #f8f9fa; }
 </style>
 
 <div class="container my-5 py-4">
 
-    <!-- === HEADER === -->
     <div class="text-center mb-5">
         <h1 class="display-5 fw-bold" style="color: #2c3e50;">Admin Dashboard</h1>
         <p class="lead text-muted">Welcome, {{ current_user.username }}. Use these tools to manage the platform.</p>
     </div>
 
-    <!-- === ADMIN ACTION CARDS === -->
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
 
-        <!-- User Management Card -->
         <div class="col d-flex">
             <a href="{{ url_for('manage_users') }}" class="card text-center text-decoration-none w-100" 
                style="border: none; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); transition: all 0.3s ease-in-out;"
@@ -42,7 +31,6 @@
             </a>
         </div>
 
-        <!-- Hotel Management Card -->
         <div class="col d-flex">
             <a href="{{ url_for('manage_hotels') }}" class="card text-center text-decoration-none w-100" 
                style="border: none; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); transition: all 0.3s ease-in-out;"
@@ -59,7 +47,6 @@
             </a>
         </div>
 
-        <!-- Amenity Management Card -->
         <div class="col d-flex">
             <a href="{{ url_for('manage_amenities') }}" class="card text-center text-decoration-none w-100" 
                style="border: none; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); transition: all 0.3s ease-in-out;"
@@ -76,7 +63,6 @@
             </a>
         </div>
 
-        <!-- Reporting & Analytics Card -->
         <div class="col d-flex">
             <a href="{{ url_for('admin_reporting') }}" class="card text-center text-decoration-none w-100" 
                style="border: none; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); transition: all 0.3s ease-in-out;"
@@ -93,7 +79,6 @@
             </a>
         </div>
 
-        <!-- Owner Dashboards Card -->
         <div class="col d-flex">
             <a href="{{ url_for('admin_list_owner_dashboards') }}" class="card text-center text-decoration-none w-100" 
                style="border: none; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); transition: all 0.3s ease-in-out;"
@@ -110,7 +95,6 @@
             </a>
         </div>
 
-        <!-- Audit Log Card -->
         <div class="col d-flex">
             <a href="{{ url_for('admin_audit_log') }}" class="card text-center text-decoration-none w-100" 
                style="border: none; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); transition: all 0.3s ease-in-out;"

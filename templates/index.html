@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Find Your Perfect Stay{% endblock %}
+{% block title %}Find The Perfect Hotel For Your Clients{% endblock %}
 
 {% block content %}
 <!-- =======================
-Hero Section with Background Image
+Hero Section
 ======================== -->
 <div class="hero-section text-white text-center" style="background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1740&q=80') no-repeat center center; background-size: cover; padding: 120px 1rem 100px 1rem;">
-    <h1 class="display-3 fw-bold mb-3" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.6);">Discover Your Perfect Stay</h1>
+    <h1 class="display-3 fw-bold mb-3" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.6);">Craft Unforgettable Trips</h1>
     <div class="col-lg-8 mx-auto">
-        <p class="lead mb-4" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">Search our curated selection of hotels to plan your next memorable getaway.</p>
+        <p class="lead mb-4" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">Search our curated selection of hotels to build the perfect package for your clients.</p>
     </div>
 </div>
 
@@ -42,7 +42,7 @@ Floating Search & Filter Box
                     </select>
                 </div>
                 <div class="col-lg-2 d-grid">
-                    <button type="submit" class="btn btn-primary btn-lg w-100" style="background-color: #005A9C; border-color: #005A9C;"><i class="fas fa-search me-1"></i> Search</button>
+                    <button type="submit" class="btn btn-primary btn-lg w-100" style="background-color: #00796B; border-color: #00796B;"><i class="fas fa-search me-1"></i> Search</button>
                 </div>
             </div>
             {% if request.args %}
@@ -60,7 +60,7 @@ Floating Search & Filter Box
 Map Section
 ======================== -->
 <div class="container my-5">
-    <h2 class="text-center mb-4" style="color: #005A9C;"><i class="fas fa-map-marked-alt me-2"></i>Explore Hotels on Map</h2>
+    <h2 class="text-center mb-4" style="color: #00796B;"><i class="fas fa-map-marked-alt me-2"></i>Explore Hotels on Map</h2>
     <div id="hotelMap" class="rounded-3 shadow-lg" style="height: 450px; border: 1px solid #dee2e6;">
         <p class="text-center p-5 text-muted">Loading map, please wait...</p>
     </div>
@@ -72,7 +72,7 @@ Map Section
 Hotel Listings Section
 ======================== -->
 <div class="container">
-    <h2 class="mb-5 text-center" style="color: #005A9C;"><i class="fas fa-list-ul me-2"></i>Our Top Hotel Picks</h2>
+    <h2 class="mb-5 text-center" style="color: #00796B;"><i class="fas fa-list-ul me-2"></i>Our Top Hotel Picks for Packages</h2>
     {% if hotels %}
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         {% for hotel in hotels %}
@@ -82,18 +82,18 @@ Hotel Listings Section
                     <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}">
                         <img src="{{ hotel.image_url or 'https://images.unsplash.com/photo-1549294413-26f195200c16?w=800&q=80' }}" class="card-img-top" alt="{{ hotel.name }}" style="height: 220px; object-fit: cover; border-top-left-radius: 0.25rem; border-top-right-radius: 0.25rem;">
                     </a>
-                    {% if current_user.is_authenticated and current_user.role == 'user' %}
+                    {% if current_user.is_authenticated and current_user.role == 'agent' %}
                         <div style="position: absolute; top: 10px; right: 10px;">
-                        {% if is_hotel_in_wishlist(hotel.id) %}
-                            <form action="{{ url_for('remove_from_wishlist', hotel_id=hotel.id) }}" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-light btn-sm rounded-circle" title="Remove from Wishlist" style="width: 38px; height: 38px; background-color: rgba(255, 255, 255, 0.9);">
-                                    <i class="fas fa-heart text-danger fs-6"></i>
+                        {% if is_hotel_in_packages(hotel.id) %}
+                            <form action="{{ url_for('remove_from_packages', hotel_id=hotel.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-light btn-sm rounded-circle" title="Remove from Packages" style="width: 38px; height: 38px; background-color: rgba(255, 255, 255, 0.9);">
+                                    <i class="fas fa-folder-minus text-danger fs-6"></i>
                                 </button>
                             </form>
                         {% else %}
-                            <form action="{{ url_for('add_to_wishlist', hotel_id=hotel.id) }}" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-light btn-sm rounded-circle" title="Add to Wishlist" style="width: 38px; height: 38px; background-color: rgba(255, 255, 255, 0.9);">
-                                    <i class="far fa-heart text-danger fs-6"></i>
+                            <form action="{{ url_for('add_to_packages', hotel_id=hotel.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-light btn-sm rounded-circle" title="Add to Packages" style="width: 38px; height: 38px; background-color: rgba(255, 255, 255, 0.9);">
+                                    <i class="fas fa-folder-plus text-primary fs-6"></i>
                                 </button>
                             </form>
                         {% endif %}
@@ -132,7 +132,7 @@ Hotel Listings Section
                     
                     <div class="mt-auto pt-3 border-top">
                         <div class="d-flex justify-content-between align-items-center">
-                            <p class="fs-5 fw-bold mb-0" style="color: #005A9C;">
+                            <p class="fs-5 fw-bold mb-0" style="color: #00796B;">
                                 {% set min_price = hotel.get_min_price() %}
                                 {% if min_price %}
                                     <small class="text-muted fw-normal fs-6">From</small> ${{ "%.2f"|format(min_price) }} <small class="text-muted fw-normal fs-6">/ night</small>
@@ -140,7 +140,7 @@ Hotel Listings Section
                                     <span class="badge bg-secondary">Not Available</span>
                                 {% endif %}
                             </p>
-                            <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="btn btn-outline-primary btn-sm" style="border-color: #005A9C; color: #005A9C;">View Details</a>
+                            <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="btn btn-outline-primary btn-sm" style="border-color: #00796B; color: #00796B;">View Details</a>
                         </div>
                     </div>
                 </div>
@@ -151,11 +151,11 @@ Hotel Listings Section
     {% else %}
     <div class="text-center py-5 my-5">
         <div class="d-inline-block p-4 p-md-5 rounded-3" style="background-color: #f8f9fa;">
-            <i class="fas fa-search-minus fa-4x mb-4" style="color: #005A9C;"></i>
+            <i class="fas fa-search-minus fa-4x mb-4" style="color: #00796B;"></i>
             <p class="h4 mb-2">No hotels found.</p>
             <p class="text-muted">Try adjusting your search or clearing the filters to see more results.</p>
             {% if request.args %}
-            <a href="{{url_for('index')}}" class="btn btn-primary mt-3" style="background-color: #005A9C; border-color: #005A9C;"><i class="fas fa-times-circle me-2"></i>Clear All Filters</a>
+            <a href="{{url_for('index')}}" class="btn btn-primary mt-3" style="background-color: #00796B; border-color: #00796B;"><i class="fas fa-times-circle me-2"></i>Clear All Filters</a>
             {% endif %}
         </div>
     </div>
@@ -165,24 +165,11 @@ Hotel Listings Section
 
 {% block scripts %}
 <style>
-/* Add a subtle zoom effect on hotel card image hover */
-.hotel-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 35px rgba(0,0,0,0.12) !important;
-}
-.hotel-card:hover img {
-    transform: scale(1.03);
-}
-.hotel-card img {
-    transition: transform 0.4s ease;
-}
-.leaflet-popup-content-wrapper {
-    border-radius: 12px !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
-}
-.leaflet-popup-tip {
-    box-shadow: none !important;
-}
+.hotel-card:hover { transform: translateY(-5px); box-shadow: 0 12px 35px rgba(0,0,0,0.12) !important; }
+.hotel-card:hover img { transform: scale(1.03); }
+.hotel-card img { transition: transform 0.4s ease; }
+.leaflet-popup-content-wrapper { border-radius: 12px !important; box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important; }
+.leaflet-popup-tip { box-shadow: none !important; }
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -190,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const hotelMapDiv = document.getElementById('hotelMap');
     if (!hotelMapDiv) { console.error("Map DIV 'hotelMap' not found!"); return; }
     
-    hotelMapDiv.innerHTML = ''; // Clear "Loading..." text
+    hotelMapDiv.innerHTML = ''; 
     
     const hotelsDataForMap = [
         {% for hotel in hotels %}{% if hotel.latitude is not none and hotel.longitude is not none %}{% set min_price = hotel.get_min_price() %}{
@@ -225,7 +212,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         hotelData.forEach(function(hotel) {
             const marker = L.marker([hotel.lat, hotel.lng], {title: hotel.name});
-            const priceText = hotel.price !== 'N/A' ? `<small style="color:#6c757d; font-size: 0.8em;">From</small> <strong style="color:#005A9C; font-size: 1.2em;">$${hotel.price}</strong> <small style="color:#6c757d;font-size: 0.8em;">/ night</small>` : 'Check for availability';
+            const priceText = hotel.price !== 'N/A' ? `<small style="color:#6c757d; font-size: 0.8em;">From</small> <strong style="color:#00796B; font-size: 1.2em;">$${hotel.price}</strong> <small style="color:#6c757d;font-size: 0.8em;">/ night</small>` : 'Check for availability';
             
             let starsHtml = '';
             if (hotel.rating > 0) {
@@ -240,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <h6 style="margin: 0 0 5px 0; font-weight: 600; color: #343a40; font-size: 1.1em; line-height: 1.2;">${hotel.name}</h6>
                     <p style="font-size: 0.85em; margin-bottom: 8px; color: #6c757d;"><i class="fas fa-map-marker-alt fa-xs me-1"></i> ${hotel.location}</p>
                     <p style="font-size: 1em; margin-bottom: 12px;">${priceText}</p>
-                    <a href="${hotel.url}" class="btn w-100" style="background-color: #005A9C; color: white; padding: 8px; text-decoration: none; display: block; text-align: center; border-radius: 6px;">View Details</a>
+                    <a href="${hotel.url}" class="btn w-100" style="background-color: #00796B; color: white; padding: 8px; text-decoration: none; display: block; text-align: center; border-radius: 6px;">View Details</a>
                 </div>`;
 
             marker.bindPopup(popupContent, {minWidth: 250});
@@ -254,7 +241,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     plotHotelsOnMap(hotelsDataForMap);
     
-    // Fallback to user's location if no hotels are found
     if (hotelsDataForMap.length === 0 && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => map.setView([position.coords.latitude, position.coords.longitude], 10),

@@ -1,5 +1,3 @@
-
-
 {% if current_user.is_authenticated %}
     {% if current_user.role == 'admin' %}
         <li class="nav-item">
@@ -12,16 +10,13 @@
         <li class="nav-item">
             <a class="nav-link {% if request.endpoint == 'register_hotel' %}active{% endif %}" href="{{ url_for('register_hotel') }}">Register Hotel</a>
         </li>
-    {% endif %}
-
-    <li class="nav-item">
-        <a class="nav-link {% if request.endpoint == 'my_bookings' %}active{% endif %}" href="{{ url_for('my_bookings') }}">My Bookings</a>
-    </li>
-
-    {% if current_user.role == 'user' %}
+    {% elif current_user.role == 'agent' %}
         <li class="nav-item">
-            <a class="nav-link {% if request.endpoint == 'my_wishlist' %}active{% endif %}" href="{{ url_for('my_wishlist') }}">
-                <i class="fas fa-heart" style="color: var(--accent-color);"></i> My Wishlist
+            <a class="nav-link {% if request.endpoint == 'client_bookings' %}active{% endif %}" href="{{ url_for('client_bookings') }}">Client Bookings</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'my_packages' %}active{% endif %}" href="{{ url_for('my_packages') }}">
+                <i class="fas fa-folder" style="color: var(--accent-color);"></i> My Packages
             </a>
         </li>
     {% endif %}

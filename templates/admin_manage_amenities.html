@@ -2,15 +2,13 @@
 {% block title %}Manage Amenities{% endblock %}
 
 {% block head_extra %}
-{# Google Fonts for a professional dashboard typography #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    /* --- [ 1. Theming & General Styles ] --- */
     :root {
-        --primary-color: #005f73;
+        --primary-color: #00796B;
         --success-color: #2a9d8f;
         --danger-color: #ae2012;
         --bg-body: #f4f7f9;
@@ -20,20 +18,15 @@
         --text-light: #6c757d;
         --border-color: #e9ecef;
         --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
-        --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
     }
     body {
         background-color: var(--bg-body);
         font-family: 'Poppins', sans-serif;
     }
-
-    /* --- [ 2. Page Header ] --- */
     .page-header h2 {
         color: var(--primary-color);
         font-weight: 700;
     }
-
-    /* --- [ 3. Main Content Card ] --- */
     .content-card {
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -49,24 +42,16 @@
         color: var(--primary-color);
         margin: 0;
     }
-    .content-card-body {
-        padding: 1.5rem;
-    }
-
-    /* --- [ 4. "Add Amenity" Form Styling ] --- */
-    .add-amenity-form .form-label {
-        font-weight: 500;
-    }
+    .content-card-body { padding: 1.5rem; }
+    .add-amenity-form .form-label { font-weight: 500; }
     .add-amenity-form .form-control {
         border-radius: 8px;
         padding: 0.75rem 1rem;
     }
     .add-amenity-form .form-control:focus {
         border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(0, 95, 115, 0.2);
+        box-shadow: 0 0 0 3px rgba(0, 121, 107, 0.2);
     }
-
-    /* --- [ 5. Amenity Tags Display ] --- */
     .amenity-tags-container {
         display: flex;
         flex-wrap: wrap;
@@ -87,10 +72,7 @@
         animation: fadeIn 0.5s ease-out forwards;
         opacity: 0;
     }
-    .amenity-tag:hover {
-        box-shadow: var(--shadow-sm);
-    }
-    
+    .amenity-tag:hover { box-shadow: var(--shadow-sm); }
     .delete-amenity-btn {
         background-color: #e9ecef;
         border: none;
@@ -109,8 +91,6 @@
         background-color: var(--danger-color);
         color: white;
     }
-    
-    /* Animation for tags appearing */
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
@@ -126,7 +106,6 @@
     </div>
 
     <div class="content-card">
-        <!-- Add New Amenity Form Section -->
         <div class="content-card-header">
             <h5><i class="fas fa-plus-circle me-2" style="color: var(--success-color);"></i> Add New Amenity</h5>
         </div>
@@ -144,10 +123,8 @@
             </form>
         </div>
 
-        <!-- Horizontal Divider -->
         <hr class="m-0">
 
-        <!-- Existing Amenities Section -->
         <div class="content-card-header">
             <h5><i class="fas fa-tags me-2 text-muted"></i> Existing Amenities</h5>
         </div>

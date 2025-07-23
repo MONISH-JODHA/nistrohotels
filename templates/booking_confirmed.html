@@ -2,7 +2,6 @@
 {% block title %}Booking Confirmed - #{{ booking.id }}{% endblock %}
 
 {% block head_extra %}
-{# Google Fonts for a modern, elegant typography #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -10,7 +9,7 @@
 <style>
     /* --- [ 1. Theming & General Styles ] --- */
     :root {
-        --primary-color: #005f73;
+        --primary-color: #00796B;
         --success-color: #2a9d8f;
         --success-light-bg: rgba(42, 157, 143, 0.08);
         --bg-body: #f4f7f9;
@@ -159,8 +158,8 @@
                     <div class="icon-circle">
                         <i class="fas fa-check"></i>
                     </div>
-                    <h2>Your Booking is Confirmed!</h2>
-                    <p>Thank you, {{ current_user.username }}! for choosing us. Your adventure awaits.</p>
+                    <h2>Your Client's Booking is Confirmed!</h2>
+                    <p>Thank you, Agent {{ current_user.username }}! You have successfully booked a trip for your client.</p>
                 </div>
 
                 <!-- Hotel Info -->
@@ -175,6 +174,14 @@
 
                 <!-- Booking Details Grid -->
                 <div class="details-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Client Name</span>
+                        <span class="detail-value">{{ booking.client_name }}</span>
+                    </div>
+                     <div class="detail-item">
+                        <span class="detail-label">Client Email</span>
+                        <span class="detail-value">{{ booking.client_email or 'Not Provided' }}</span>
+                    </div>
                     <div class="detail-item">
                         <span class="detail-label">Check-in Date</span>
                         <span class="detail-value">{{ booking.check_in_date.strftime('%A, %B %d, %Y') }}</span>
@@ -200,17 +207,17 @@
                 <!-- Actions -->
                 <div class="cta-section">
                     <a href="{{ url_for('download_receipt', booking_id=booking.id) }}" class="btn btn-success btn-lg rounded-pill py-3 px-5">
-                        <i class="fas fa-download me-2"></i> Download Receipt (PDF)
+                        <i class="fas fa-download me-2"></i> Download Client Receipt (PDF)
                     </a>
                     <div class="secondary-actions">
-                        <a href="{{ url_for('my_bookings') }}" class="me-3"><i class="fas fa-list-alt me-1"></i>View All My Bookings</a>
+                        <a href="{{ url_for('client_bookings') }}" class="me-3"><i class="fas fa-list-alt me-1"></i>View All Client Bookings</a>
                         <a href="{{ url_for('index') }}"><i class="fas fa-search me-1"></i>Browse More Hotels</a>
                     </div>
                 </div>
 
                 <!-- Footer -->
                 <div class="confirmation-footer">
-                    Booking made on {{ booking.created_at.strftime('%B %d, %Y at %I:%M %p UTC') }}
+                    Booking made by Agent {{ current_user.username }} on {{ booking.created_at.strftime('%B %d, %Y at %I:%M %p UTC') }}
                 </div>
             </div>
         </div>

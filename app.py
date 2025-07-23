@@ -9,15 +9,16 @@ import os
 import traceback
 from io import BytesIO
 from weasyprint import HTML
-from sqlalchemy import or_, and_, select, func, desc
+from sqlalchemy import or_, and_, select, func, desc, text
 from collections import Counter
 import logging
 from logging.handlers import RotatingFileHandler
+import re
 
 
 # --- App Configuration ---
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'a_super_duper_secret_key_for_wishlist_v6' # CHANGE THIS!
+app.config['SECRET_KEY'] = 'a_super_duper_secret_key_for_travel_agent_v7'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hotel_booking.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -33,7 +34,7 @@ file_handler.setFormatter(logging.Formatter(
 file_handler.setLevel(logging.INFO)
 app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
-app.logger.info('HotelApp startup')
+app.logger.info('TravelAgentApp startup')
 
 
 # --- Upload Configuration ---
@@ -63,7 +64,8 @@ login_manager.login_message_category = 'info'
 
 @login_manager.user_loader
 def load_user(user_id):
-    user = User.query.get(int(user_id))
+    # FIX: Updated to modern SQLAlchemy 2.0 syntax to resolve LegacyAPIWarning
+    user = db.session.get(User, int(user_id))
     if user and user.is_active:
         return user
     return None
@@ -99,14 +101,14 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default='user')
+    role = db.Column(db.String(20), nullable=False, default='agent')
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    bookings = db.relationship('Booking', backref='booker', lazy=True, foreign_keys='Booking.user_id', cascade="all, delete-orphan")
-    wishlist_items = db.relationship('Wishlist', backref='user', lazy='dynamic', cascade='all, delete-orphan')
-    audit_logs = db.relationship('AuditLog', backref='actor', lazy=True, foreign_keys='AuditLog.user_id')
     
-    # Corrected relationship to fix SAWarning
+    # Relationships
+    bookings = db.relationship('Booking', backref='agent', lazy=True, foreign_keys='Booking.user_id', cascade="all, delete-orphan")
+    packages = db.relationship('TravelPackage', backref='agent', lazy='dynamic', cascade='all, delete-orphan')
+    audit_logs = db.relationship('AuditLog', backref='actor', lazy=True, foreign_keys='AuditLog.user_id')
     hotels = db.relationship('Hotel', back_populates='owner', lazy=True, cascade="all, delete-orphan", foreign_keys='Hotel.owner_id')
 
     def set_password(self, password): self.password_hash = generate_password_hash(password)
@@ -145,12 +147,11 @@ class Hotel(db.Model):
     location = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
     price_per_night = db.Column(db.Float, nullable=True)
-    main_image_url = db.Column(db.String(255), nullable=True, default='https://via.placeholder.com/800x500.png?text=Main+Hotel+Image') # Corrected field name
+    main_image_url = db.Column(db.String(255), nullable=True, default='https://via.placeholder.com/800x500.png?text=Main+Hotel+Image')
     owner_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     
-    # Corrected relationships to fix SAWarning
     owner = db.relationship('User', back_populates='hotels', foreign_keys=[owner_id])
-    owner_user = db.relationship('User', foreign_keys=[owner_id], overlaps="hotels,owner") # for admin views
+    owner_user = db.relationship('User', foreign_keys=[owner_id], overlaps="hotels,owner")
     
     is_approved = db.Column(db.Boolean, default=False, nullable=False)
     star_rating = db.Column(db.Integer, nullable=True) 
@@ -158,11 +159,11 @@ class Hotel(db.Model):
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
     gallery_images = db.relationship('HotelImage', backref='hotel_ref', lazy='dynamic', cascade="all, delete-orphan")
-    wishlisted_by_users = db.relationship('Wishlist', backref='hotel', lazy='dynamic', cascade='all, delete-orphan')
+    packages = db.relationship('TravelPackage', backref='hotel', lazy='dynamic', cascade='all, delete-orphan')
     room_types = db.relationship('RoomType', backref='hotel', lazy='dynamic', cascade="all, delete-orphan")
     bookings = db.relationship('Booking', backref='hotel', lazy=True, foreign_keys='Booking.hotel_id', cascade="all, delete-orphan")   
 
-    @property # Use a property for the display image
+    @property
     def image_url(self):
         return self.main_image_url
     
@@ -186,18 +187,22 @@ class Booking(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     hotel_id = db.Column(db.Integer, db.ForeignKey('hotel.id', ondelete='CASCADE'), nullable=False)
     room_type_id = db.Column(db.Integer, db.ForeignKey('room_type.id', ondelete='CASCADE'), nullable=False)
+    client_name = db.Column(db.String(100), nullable=False, default="N/A")
+    client_email = db.Column(db.String(120), nullable=True)
+    
     check_in_date = db.Column(db.Date, nullable=False)
     check_out_date = db.Column(db.Date, nullable=False)
     total_price = db.Column(db.Float, nullable=False)
     status = db.Column(db.String(50), default='Confirmed')
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
-class Wishlist(db.Model):
+class TravelPackage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    agent_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     hotel_id = db.Column(db.Integer, db.ForeignKey('hotel.id', ondelete='CASCADE'), nullable=False)
+    package_name = db.Column(db.String(150), nullable=False)
+    notes = db.Column(db.Text, nullable=True)
     added_on = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    __table_args__ = (db.UniqueConstraint('user_id', 'hotel_id', name='_user_hotel_wishlist_uc'),)
 
 # --- Helper Functions & Decorators ---
 def log_audit(action):
@@ -226,23 +231,24 @@ def role_required(role_name):
 def verify_hotel_owner(f):
     @wraps(f)
     def decorated_function(hotel_id, *args, **kwargs):
-        hotel = Hotel.query.get_or_404(hotel_id)
+        hotel = db.session.get(Hotel, hotel_id)
+        if not hotel:
+            abort(404)
         if current_user.role == 'owner' and hotel.owner_id != current_user.id:
             flash("You are not authorized to manage this hotel.", "danger")
             return redirect(url_for('owner_dashboard'))
-        # Pass the hotel object to the wrapped function
         if 'hotel' in f.__code__.co_varnames:
              return f(hotel=hotel, *args, **kwargs)
-        return f(hotel_id=hotel_id, *args, **kwargs) # Fallback
+        return f(hotel_id=hotel_id, *args, **kwargs)
     return decorated_function
 
 @app.context_processor
 def utility_processor():
-    def is_hotel_in_wishlist(hotel_id):
-        if current_user.is_authenticated:
-            return Wishlist.query.filter_by(user_id=current_user.id, hotel_id=hotel_id).first() is not None
+    def is_hotel_in_packages(hotel_id):
+        if current_user.is_authenticated and current_user.role == 'agent':
+            return TravelPackage.query.filter_by(agent_id=current_user.id, hotel_id=hotel_id).first() is not None
         return False
-    return dict(is_hotel_in_wishlist=is_hotel_in_wishlist)
+    return dict(is_hotel_in_packages=is_hotel_in_packages)
 
 def get_dashboard_data_for_owner(owner_id):
     hotels = Hotel.query.filter_by(owner_id=owner_id).all()
@@ -303,25 +309,20 @@ def get_daily_details(room_type, target_date):
     return {'price': price, 'available': available}
 
 def check_availability_and_calculate_price(room_type_id, check_in_date, check_out_date):
-    room_type = RoomType.query.get_or_404(room_type_id)
+    room_type = db.session.get(RoomType, room_type_id)
+    if not room_type: abort(404)
     total_price = 0
     current_date = check_in_date
     while current_date < check_out_date:
         daily_info = get_daily_details(room_type, current_date)
-        
-        # Check against override/default availability
         base_available = daily_info['available']
-
-        # Check existing bookings for this specific day
         booked_on_date = Booking.query.filter(
             Booking.room_type_id == room_type_id, 
             Booking.check_in_date <= current_date, 
             Booking.check_out_date > current_date
         ).count()
-        
         if booked_on_date >= base_available:
             return {'available': False, 'message': f"Fully booked on {current_date.strftime('%Y-%m-%d')}.", 'price': 0}
-            
         total_price += daily_info['price']
         current_date += timedelta(days=1)
     return {'available': True, 'message': 'Available', 'price': total_price}
@@ -337,13 +338,11 @@ def index():
 
     if search_term:
         query = query.filter(or_(Hotel.name.ilike(f"%{search_term}%"), Hotel.location.ilike(f"%{search_term}%")))
-    
     if star_rating:
         query = query.filter(Hotel.star_rating >= star_rating)
 
     hotels = query.order_by(Hotel.name.asc()).all()
     
-    # Post-filter by price as it depends on room types
     if min_price is not None or max_price is not None:
         filtered_hotels = []
         for hotel in hotels:
@@ -370,7 +369,7 @@ def register():
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
-        role = request.form.get('role', 'user')
+        role = request.form.get('role', 'agent')
         if User.query.filter_by(username=username).first():
             flash('Username already exists.', 'danger'); return redirect(url_for('register'))
         if User.query.filter_by(email=email).first():
@@ -449,7 +448,8 @@ def profile():
 # --- Hotel & Booking Routes ---
 @app.route('/hotel/<int:hotel_id>')
 def hotel_detail(hotel_id):
-    hotel = Hotel.query.get_or_404(hotel_id)
+    hotel = db.session.get(Hotel, hotel_id)
+    if not hotel: abort(404)
     if not hotel.is_approved and (not current_user.is_authenticated or (current_user.role != 'admin' and current_user.id != hotel.owner_id)):
         flash("This hotel is not yet approved or does not exist.", "warning")
         return redirect(url_for('index'))
@@ -459,8 +459,16 @@ def hotel_detail(hotel_id):
 @app.route('/book_room/<int:room_type_id>', methods=['POST'])
 @login_required
 def book_room(room_type_id):
-    room_type = RoomType.query.get_or_404(room_type_id)
+    room_type = db.session.get(RoomType, room_type_id)
+    if not room_type: abort(404)
     hotel = room_type.hotel
+    
+    client_name = request.form.get('client_name')
+    client_email = request.form.get('client_email')
+    if not client_name:
+        flash("Client name is required to make a booking.", "danger")
+        return redirect(url_for('hotel_detail', hotel_id=hotel.id))
+        
     check_in_str = request.form.get('check_in_date')
     check_out_str = request.form.get('check_out_date')
     try:
@@ -470,23 +478,27 @@ def book_room(room_type_id):
     except (ValueError, TypeError):
         flash("Invalid date format or range.", "danger")
         return redirect(url_for('hotel_detail', hotel_id=hotel.id))
+        
     result = check_availability_and_calculate_price(room_type_id, check_in_date_obj, check_out_date_obj)
     if not result['available']:
         flash(result['message'], 'danger')
         return redirect(url_for('hotel_detail', hotel_id=hotel.id))
+        
     booking = Booking(
         user_id=current_user.id, hotel_id=hotel.id, room_type_id=room_type_id,
+        client_name=client_name, client_email=client_email,
         check_in_date=check_in_date_obj, check_out_date=check_out_date_obj, total_price=result['price']
     )
     db.session.add(booking); db.session.commit()
-    log_audit(f"User '{current_user.username}' booked room '{room_type.name}' at hotel '{hotel.name}' (Booking ID: {booking.id}).")
-    flash(f'Successfully booked the {room_type.name}! Your booking is confirmed.', 'success')
+    log_audit(f"Agent '{current_user.username}' booked room '{room_type.name}' for client '{client_name}' (Booking ID: {booking.id}).")
+    flash(f'Successfully booked the {room_type.name} for {client_name}! The booking is confirmed.', 'success')
     return redirect(url_for('booking_confirmed', booking_id=booking.id))
 
 @app.route('/booking_confirmed/<int:booking_id>')
 @login_required
 def booking_confirmed(booking_id):
-    booking = Booking.query.get_or_404(booking_id)
+    booking = db.session.get(Booking, booking_id)
+    if not booking: abort(404)
     if booking.user_id != current_user.id and current_user.role != 'admin':
         flash("Unauthorized access.", "danger"); return redirect(url_for('index'))
     return render_template('booking_confirmed.html', booking=booking)
@@ -494,8 +506,10 @@ def booking_confirmed(booking_id):
 @app.route('/download_receipt/<int:booking_id>')
 @login_required
 def download_receipt(booking_id):
-    booking = Booking.query.get_or_404(booking_id)
-    if booking.user_id != current_user.id and current_user.role != 'admin':
+    booking = db.session.get(Booking, booking_id)
+    if not booking: abort(404)
+    is_owner = current_user.role == 'owner' and booking.hotel.owner_id == current_user.id
+    if booking.user_id != current_user.id and current_user.role != 'admin' and not is_owner:
         abort(403, description="You are not authorized to view this receipt.")
     
     current_year = datetime.now().year
@@ -503,7 +517,7 @@ def download_receipt(booking_id):
     html_string = render_template(
         'receipt_template.html',
         booking=booking,
-        user=booking.booker,
+        user=booking.agent,
         current_year=current_year
     )
     try:
@@ -515,11 +529,11 @@ def download_receipt(booking_id):
     except Exception as e:
         app.logger.error(f"Failed to generate PDF for booking {booking_id}: {e}")
         flash("Sorry, there was an error generating your receipt PDF.", "danger")
-        return redirect(url_for('my_bookings'))
+        return redirect(url_for('client_bookings'))
 
-@app.route('/my_bookings')
+@app.route('/client_bookings')
 @login_required
-def my_bookings():
+def client_bookings():
     bookings = Booking.query.filter_by(user_id=current_user.id).order_by(desc(Booking.created_at)).all()
     return render_template('my_bookings.html', bookings=bookings)
 
@@ -548,7 +562,9 @@ def register_hotel():
         new_hotel = Hotel(
             name=name, location=location, owner_id=current_user.id, is_approved=False,
             description=request.form.get('description'),
-            star_rating=int(request.form.get('star_rating')) if request.form.get('star_rating') else None
+            star_rating=int(request.form.get('star_rating')) if request.form.get('star_rating') else None,
+            latitude=float(request.form.get('latitude')) if request.form.get('latitude') else None,
+            longitude=float(request.form.get('longitude')) if request.form.get('longitude') else None
         )
         selected_amenity_ids = request.form.getlist('amenities')
         new_hotel.amenities = Amenity.query.filter(Amenity.id.in_(selected_amenity_ids)).all()
@@ -594,12 +610,8 @@ def owner_dashboard():
 
 @app.route('/hotel/<int:hotel_id>/manage_rooms', methods=['GET', 'POST'])
 @role_required(['owner', 'admin'])
-def manage_rooms(hotel_id):
-    hotel = Hotel.query.get_or_404(hotel_id)
-    if current_user.role == 'owner' and hotel.owner_id != current_user.id:
-        flash("You are not authorized to manage this hotel.", "danger")
-        return redirect(url_for('owner_dashboard'))
-
+@verify_hotel_owner
+def manage_rooms(hotel):
     if request.method == 'POST':
         room_id_str = request.form.get('room_id')
         is_editing = room_id_str and room_id_str.isdigit()
@@ -665,14 +677,11 @@ def manage_rooms(hotel_id):
     room_types = hotel.room_types.order_by(RoomType.name.asc()).all()
     return render_template('manage_rooms.html', hotel=hotel, room_types=room_types)
 
+
 @app.route('/hotel/<int:hotel_id>/delete_room/<int:room_type_id>', methods=['POST'])
 @role_required(['owner', 'admin'])
-def delete_room(hotel_id, room_type_id):
-    hotel = Hotel.query.get_or_404(hotel_id)
-    if current_user.role == 'owner' and hotel.owner_id != current_user.id:
-        flash("Unauthorized", "danger")
-        return redirect(url_for('owner_dashboard'))
-
+@verify_hotel_owner
+def delete_room(hotel, room_type_id):
     room = RoomType.query.filter_by(id=room_type_id, hotel_id=hotel.id).first_or_404()
     if room.bookings.first():
         flash(f"Cannot delete '{room.name}' as it has existing bookings.", "danger")
@@ -683,11 +692,8 @@ def delete_room(hotel_id, room_type_id):
 
 @app.route('/hotel/<int:hotel_id>/room/<int:room_type_id>/availability')
 @role_required(['owner', 'admin'])
-def manage_availability(hotel_id, room_type_id):
-    hotel = Hotel.query.get_or_404(hotel_id)
-    if current_user.role == 'owner' and hotel.owner_id != current_user.id:
-        flash("Unauthorized", "danger")
-        return redirect(url_for('owner_dashboard'))
+@verify_hotel_owner
+def manage_availability(hotel, room_type_id):
     room = RoomType.query.filter_by(id=room_type_id, hotel_id=hotel.id).first_or_404()
     return render_template('manage_availability.html', hotel=hotel, room=room)
 
@@ -709,7 +715,8 @@ def admin_list_owner_dashboards():
 @app.route('/admin/owner_dashboard/<int:owner_id>')
 @role_required('admin')
 def admin_view_owner_dashboard(owner_id):
-    owner = User.query.get_or_404(owner_id)
+    owner = db.session.get(User, owner_id)
+    if not owner: abort(404)
     if owner.role != 'owner':
         flash(f"User '{owner.username}' is not an owner.", "warning")
         return redirect(url_for('admin_list_owner_dashboards'))
@@ -760,7 +767,8 @@ def manage_amenities():
 @app.route('/admin/amenity/delete/<int:amenity_id>', methods=['POST'])
 @role_required('admin')
 def delete_amenity(amenity_id):
-    amenity = Amenity.query.get_or_404(amenity_id)
+    amenity = db.session.get(Amenity, amenity_id)
+    if not amenity: abort(404)
     log_audit(f"Admin deleted amenity: '{amenity.name}'")
     db.session.delete(amenity); db.session.commit()
     flash(f"Amenity '{amenity.name}' deleted.", "warning")
@@ -775,14 +783,15 @@ def manage_users():
 @app.route('/admin/user/edit/<int:user_id>', methods=['GET', 'POST'])
 @role_required('admin')
 def edit_user(user_id):
-    user_to_edit = User.query.get_or_404(user_id)
+    user_to_edit = db.session.get(User, user_id)
+    if not user_to_edit: abort(404)
     if user_to_edit.id == current_user.id:
         flash("You cannot edit your own account from this panel.", "warning")
         return redirect(url_for('manage_users'))
     if request.method == 'POST':
         old_role = user_to_edit.role; new_role = request.form.get('role')
         user_to_edit.username = request.form.get('username'); user_to_edit.email = request.form.get('email')
-        if new_role in ['user', 'owner', 'admin']: user_to_edit.role = new_role
+        if new_role in ['agent', 'owner', 'admin']: user_to_edit.role = new_role
         new_password = request.form.get('new_password')
         if new_password: user_to_edit.set_password(new_password); flash(f"User '{user_to_edit.username}'s password has been updated.", "info")
         log_audit(f"Admin edited user '{user_to_edit.username}' (ID: {user_id}). Role changed from {old_role} to {new_role}.")
@@ -794,7 +803,8 @@ def edit_user(user_id):
 @app.route('/admin/user/toggle_active/<int:user_id>', methods=['POST'])
 @role_required('admin')
 def toggle_user_active(user_id):
-    user_to_toggle = User.query.get_or_404(user_id)
+    user_to_toggle = db.session.get(User, user_id)
+    if not user_to_toggle: abort(404)
     if user_to_toggle.id == current_user.id:
         flash("You cannot change your own active status.", "danger")
         return redirect(url_for('manage_users'))
@@ -808,7 +818,8 @@ def toggle_user_active(user_id):
 @app.route('/admin/user/delete/<int:user_id>', methods=['POST'])
 @role_required('admin')
 def delete_user(user_id):
-    user_to_delete = User.query.get_or_404(user_id)
+    user_to_delete = db.session.get(User, user_id)
+    if not user_to_delete: abort(404)
     if user_to_delete.id == current_user.id:
         flash("You cannot delete your own account.", "danger")
         return redirect(url_for('manage_users'))
@@ -827,7 +838,8 @@ def manage_hotels():
 @app.route('/admin/hotel/approve/<int:hotel_id>', methods=['POST'])
 @role_required('admin')
 def approve_hotel(hotel_id):
-    hotel = Hotel.query.get_or_404(hotel_id)
+    hotel = db.session.get(Hotel, hotel_id)
+    if not hotel: abort(404)
     hotel.is_approved = True
     db.session.commit()
     log_audit(f"Admin approved hotel '{hotel.name}' (ID: {hotel_id}).")
@@ -837,7 +849,8 @@ def approve_hotel(hotel_id):
 @app.route('/admin/hotel/edit/<int:hotel_id>', methods=['GET', 'POST'])
 @role_required('admin')
 def edit_hotel_by_admin(hotel_id):
-    hotel = Hotel.query.get_or_404(hotel_id)
+    hotel = db.session.get(Hotel, hotel_id)
+    if not hotel: abort(404)
     all_amenities = Amenity.query.order_by(Amenity.name).all()
     if request.method == 'POST':
         hotel.name = request.form.get('name'); hotel.location = request.form.get('location'); hotel.description = request.form.get('description')
@@ -854,7 +867,8 @@ def edit_hotel_by_admin(hotel_id):
 @app.route('/admin/hotel/delete/<int:hotel_id>', methods=['POST'])
 @role_required('admin')
 def delete_hotel_by_admin(hotel_id):
-    hotel = Hotel.query.get_or_404(hotel_id)
+    hotel = db.session.get(Hotel, hotel_id)
+    if not hotel: abort(404)
     log_audit(f"Admin permanently deleted hotel '{hotel.name}' (ID: {hotel_id}) and all its data.")
     db.session.delete(hotel)
     db.session.commit()
@@ -865,7 +879,8 @@ def delete_hotel_by_admin(hotel_id):
 @app.route('/api/room/<int:room_type_id>/availability')
 @login_required
 def get_availability_data(room_type_id):
-    room_type = RoomType.query.get_or_404(room_type_id)
+    room_type = db.session.get(RoomType, room_type_id)
+    if not room_type: return jsonify({'error': 'Not found'}), 404
     if current_user.role not in ['admin', 'owner'] or (current_user.role == 'owner' and room_type.hotel.owner_id != current_user.id):
         return jsonify({'error': 'Unauthorized'}), 403
     start_str = request.args.get('start'); end_str = request.args.get('end')
@@ -886,23 +901,15 @@ def get_availability_data(room_type_id):
     current_date = start_date
     while current_date < end_date:
         override = overrides.get(current_date)
-        
-        # Determine base price and availability
         base_price = override.price if override and override.price is not None else room_type.price_per_night
         base_available = override.available_rooms if override and override.available_rooms is not None else room_type.number_of_rooms
-        
-        # Count bookings for the current day
         booked_count = sum(1 for b in bookings_in_range if b.check_in_date <= current_date < b.check_out_date)
-        
         remaining = base_available - booked_count
-
         event_data = {
             'start': current_date.isoformat(),
             'allDay': True,
             'extendedProps': {
-                'price': base_price,
-                'available_count': remaining,
-                'is_override': override is not None,
+                'price': base_price, 'available_count': remaining, 'is_override': override is not None,
                 'override_price': override.price if override else None,
                 'override_available': override.available_rooms if override else None
             }
@@ -915,7 +922,8 @@ def get_availability_data(room_type_id):
 @app.route('/api/room/<int:room_type_id>/availability/update', methods=['POST'])
 @login_required
 def update_availability(room_type_id):
-    room_type = RoomType.query.get_or_404(room_type_id)
+    room_type = db.session.get(RoomType, room_type_id)
+    if not room_type: return jsonify({'error': 'Not found', 'success': False}), 404
     if current_user.role not in ['admin', 'owner'] or (current_user.role == 'owner' and room_type.hotel.owner_id != current_user.id):
         return jsonify({'error': 'Unauthorized', 'success': False}), 403
     data = request.json
@@ -951,40 +959,119 @@ def api_calculate_price(room_type_id):
     result = check_availability_and_calculate_price(room_type_id, check_in, check_out)
     return jsonify(result)
 
-# --- Wishlist Routes ---
-@app.route('/wishlist/add/<int:hotel_id>', methods=['POST'])
-@login_required
-def add_to_wishlist(hotel_id):
-    hotel = Hotel.query.get_or_404(hotel_id)
-    if not Wishlist.query.filter_by(user_id=current_user.id, hotel_id=hotel.id).first():
-        db.session.add(Wishlist(user_id=current_user.id, hotel_id=hotel.id)); db.session.commit()
-        flash(f'{hotel.name} added to your wishlist!', 'success')
+# --- Package Routes ---
+@app.route('/packages/add/<int:hotel_id>', methods=['POST'])
+@role_required('agent')
+def add_to_packages(hotel_id):
+    hotel = db.session.get(Hotel, hotel_id)
+    if not hotel: abort(404)
+    if not TravelPackage.query.filter_by(agent_id=current_user.id, hotel_id=hotel.id).first():
+        package_name = f"Package for {hotel.name}"
+        db.session.add(TravelPackage(agent_id=current_user.id, hotel_id=hotel.id, package_name=package_name)); 
+        db.session.commit()
+        flash(f'{hotel.name} added to your packages!', 'success')
     return redirect(request.referrer or url_for('index'))
 
-@app.route('/wishlist/remove/<int:hotel_id>', methods=['POST'])
-@login_required
-def remove_from_wishlist(hotel_id):
-    item = Wishlist.query.filter_by(user_id=current_user.id, hotel_id=hotel_id).first()
+@app.route('/packages/remove/<int:hotel_id>', methods=['POST'])
+@role_required('agent')
+def remove_from_packages(hotel_id):
+    item = TravelPackage.query.filter_by(agent_id=current_user.id, hotel_id=hotel_id).first()
     if item:
         db.session.delete(item)
         db.session.commit()
-        flash('Hotel removed from your wishlist.', 'success')
+        flash('Hotel removed from your packages.', 'success')
     else:
-        flash('Hotel not found in your wishlist.', 'warning')
-    return redirect(request.referrer or url_for('my_wishlist'))
+        flash('Hotel not found in your packages.', 'warning')
+    return redirect(request.referrer or url_for('my_packages'))
 
-@app.route('/my_wishlist')
-@login_required
-def my_wishlist():
-    wishlisted_hotels = Hotel.query.join(Wishlist).filter(Wishlist.user_id == current_user.id).all()
-    return render_template('my_wishlist.html', hotels=wishlisted_hotels)
+@app.route('/my_packages')
+@role_required('agent')
+def my_packages():
+    packaged_hotels = Hotel.query.join(TravelPackage).filter(TravelPackage.agent_id == current_user.id).all()
+    return render_template('manage_packages.html', hotels=packaged_hotels)
 
-# --- App Runner ---
+# --- Chatbot API ---
+def answer_question_from_db(question):
+    question = question.lower()
+    match = re.search(r'(?:hotels in|find hotels in|in) ([\w\s]+)\??$', question)
+    if match:
+        location = match.group(1).strip()
+        hotels = Hotel.query.filter(Hotel.location.ilike(f'%{location}%'), Hotel.is_approved==True).all()
+        if hotels:
+            hotel_names = ", ".join([h.name for h in hotels])
+            return f"I found these hotels in {location.title()}: {hotel_names}."
+        else:
+            return f"I couldn't find any hotels in {location.title()} in our system."
+    match = re.search(r'what amenities does ([\w\s]+) have\??$', question)
+    if match:
+        hotel_name = match.group(1).strip()
+        hotel = Hotel.query.filter(Hotel.name.ilike(f'%{hotel_name}%')).first()
+        if hotel:
+            if hotel.amenities:
+                amenity_names = ", ".join([a.name for a in hotel.amenities])
+                return f"{hotel.name} has the following amenities: {amenity_names}."
+            else:
+                return f"I don't have a list of specific amenities for {hotel.name}."
+        else:
+            return f"Sorry, I couldn't find a hotel named '{hotel_name}'."
+    match = re.search(r'(?:how much is|price of) the ([\w\s]+) room at ([\w\s]+)\??$', question)
+    if match:
+        room_name = match.group(1).strip()
+        hotel_name = match.group(2).strip()
+        room = RoomType.query.join(Hotel).filter(Hotel.name.ilike(f'%{hotel_name}%'), RoomType.name.ilike(f'%{room_name}%')).first()
+        if room:
+            return f"The base price for the {room.name} at {room.hotel.name} is ${room.price_per_night:.2f} per night. Prices may vary based on date."
+        else:
+            return f"I could not find a room named '{room_name}' at a hotel called '{hotel_name}'."
+    return "I can help you find information about hotels, their locations, amenities, and room prices. How can I assist you?"
+
+
+@app.route('/api/chatbot', methods=['POST'])
+def chatbot_api():
+    data = request.get_json()
+    question = data.get('message')
+    if not question:
+        return jsonify({'answer': 'I did not receive a question.'})
+    try:
+        answer = answer_question_from_db(question)
+        return jsonify({'answer': answer})
+    except Exception as e:
+        app.logger.error(f"Chatbot error: {e}")
+        return jsonify({'answer': 'I seem to be having some trouble right now. Please try again later.'})
+
+# --- App Runner & Migration Helper ---
+def migrate_database():
+    """
+    FIX: A pragmatic migration helper for SQLite.
+    Checks for and adds missing columns to the 'booking' table.
+    """
+    with db.engine.connect() as connection:
+        # Use SQLAlchemy's text() for safe query execution
+        result = connection.execute(text("PRAGMA table_info(booking);"))
+        columns = [row[1] for row in result]
+        
+        if 'client_name' not in columns:
+            print("Migrating database: Adding 'client_name' to 'booking' table.")
+            connection.execute(text('ALTER TABLE booking ADD COLUMN client_name VARCHAR(100) NOT NULL DEFAULT "N/A"'))
+            app.logger.info("Database migration: Added 'client_name' column to 'booking' table.")
+        
+        if 'client_email' not in columns:
+            print("Migrating database: Adding 'client_email' to 'booking' table.")
+            connection.execute(text('ALTER TABLE booking ADD COLUMN client_email VARCHAR(120)'))
+            app.logger.info("Database migration: Added 'client_email' column to 'booking' table.")
+        
+        # This commit is necessary for schema changes in SQLite
+        connection.commit()
+
 def create_initial_data():
     with app.app_context():
         db.create_all()
+        
+        # Run the migration check after ensuring all tables exist
+        migrate_database()
+
         if not User.query.filter_by(username='admin').first():
-            admin_user = User(username='admin', email='admin@hotelapp.com', role='admin', is_active=True)
+            admin_user = User(username='admin', email='admin@travelapp.com', role='admin', is_active=True)
             admin_user.set_password('StrongAdminP@ssw0rd!')
             db.session.add(admin_user)
             print("Admin user created.")
@@ -996,5 +1083,5 @@ def create_initial_data():
 
 if __name__ == '__main__':
     create_initial_data()
-    app.logger.info('HotelApp application started successfully.')
-    app.run(debug=True, port=5001)
+    app.logger.info('TravelAgentApp application started successfully.')
+    app.run(debug=True, host='0.0.0.0', port=5001)

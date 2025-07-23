@@ -6,9 +6,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-    /* Using styles in a block for better organization */
     :root {
-        --primary-color: #005f73;
+        --primary-color: #00796B;
         --success-color: #2a9d8f;
         --info-color: #0a9396;
         --warning-color: #ee9b00;
@@ -50,9 +49,7 @@
     .kpi-card .card-content {
         display: flex; align-items: center; gap: 1.25rem;
     }
-    .kpi-card .card-icon {
-        font-size: 2rem;
-    }
+    .kpi-card .card-icon { font-size: 2rem; }
     .kpi-card .card-title {
         font-size: 0.9rem; font-weight: 500;
         color: var(--text-light); margin-bottom: 0.25rem;
@@ -61,6 +58,8 @@
         font-size: 1.75rem; font-weight: 700;
         color: var(--text-dark);
     }
+    .kpi-primary .card-border { background-color: var(--primary-color); }
+    .kpi-primary .card-icon { color: var(--primary-color); }
     .kpi-info .card-border { background-color: var(--info-color); }
     .kpi-info .card-icon { color: var(--info-color); }
     .kpi-success .card-border { background-color: var(--success-color); }
@@ -108,7 +107,6 @@
 {% block content %}
 <div class="container-fluid mt-4 mb-5 px-4">
 
-    <!-- === HEADER === -->
     <div class="d-flex justify-content-between align-items-center mb-5 page-header">
         <div>
             <h1 class="h2 mb-1">Owner Dashboard</h1>
@@ -119,13 +117,20 @@
         </a>
     </div>
 
-    <!-- === ANALYTICS SECTION === -->
     <div class="row g-4 mb-4">
-        <!-- **FIX**: Removed the "Total Revenue" card which was causing the crash. -->
-        <!-- The grid is now 3 columns, which works better with the remaining cards. -->
-
-        <!-- Occupancy Rate Card -->
-        <div class="col-xl-4 col-md-6">
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card kpi-primary">
+                <div class="card-border"></div>
+                <div class="card-content">
+                    <i class="fas fa-dollar-sign card-icon"></i>
+                    <div>
+                        <p class="card-title">Total Revenue</p>
+                        <h4 class="card-value">${{ "%.2f"|format(analytics.total_revenue) }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
             <div class="kpi-card kpi-info">
                 <div class="card-border"></div>
                 <div class="card-content">
@@ -137,9 +142,7 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Total Bookings Card -->
-        <div class="col-xl-4 col-md-6">
+        <div class="col-xl-3 col-md-6">
             <div class="kpi-card kpi-success">
                 <div class="card-border"></div>
                 <div class="card-content">
@@ -151,33 +154,28 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Popular Rooms Card (Restyled to match) -->
-        <div class="col-xl-4 col-md-12">
+        <div class="col-xl-3 col-md-6">
             <div class="kpi-card kpi-warning">
                 <div class="card-border"></div>
                 <div class="card-content">
                     <i class="fas fa-star card-icon"></i>
                     <div>
                         <p class="card-title">Most Popular Rooms</p>
-                        <div class="card-value-small">
-                            {% if analytics.popular_room_types %}
-                            <ol class="ranked-list">
-                                {% for room, count in analytics.popular_room_types %}
-                                <li class="ranked-list-item">{{ room }} ({{count}} bookings)</li>
-                                {% endfor %}
-                            </ol>
-                            {% else %}
-                            <p class="small text-muted mb-0 mt-1">No bookings yet.</p>
-                            {% endif %}
-                        </div>
+                        {% if analytics.popular_room_types %}
+                        <ol class="ranked-list">
+                            {% for room, count in analytics.popular_room_types %}
+                            <li class="ranked-list-item">{{ room }} ({{count}})</li>
+                            {% endfor %}
+                        </ol>
+                        {% else %}
+                        <p class="small text-muted mb-0 mt-1">No bookings yet.</p>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- === BOOKING TRENDS & HOTELS LIST === -->
     <div class="row g-4">
         <div class="col-lg-7">
             <div class="content-card">
@@ -212,7 +210,7 @@
                             </div>
                             <div class="btn-group">
                                 <a href="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" class="btn btn-sm btn-dark" title="Manage Rooms"><i class="fas fa-bed"></i></a>
-                                <a href="{{ url_for('edit_hotel_by_admin', hotel_id=hotel.id) if current_user.role == 'admin' else url_for('hotel_detail', hotel_id=hotel.id) }}" class="btn btn-sm btn-outline-secondary" title="View/Edit Details"><i class="fas fa-edit"></i></a>
+                                <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="btn btn-sm btn-outline-secondary" title="View Hotel Page"><i class="fas fa-eye"></i></a>
                             </div>
                         </li>
                         {% endfor %}

@@ -54,7 +54,7 @@
             <h1 class="h2 fw-bold" style="color: #2c3e50;">Manage Rooms</h1>
             <p class="text-muted mb-0">For hotel: <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}">{{ hotel.name }}</a></p>
         </div>
-        <button type="button" class="btn btn-primary btn-lg" style="background-color: #1abc9c; border-color: #1abc9c;" data-bs-toggle="modal" data-bs-target="#roomFormModal" onclick="prepareAddForm()">
+        <button type="button" class="btn btn-primary btn-lg" style="background-color: #00796B; border-color: #00796B;" data-bs-toggle="modal" data-bs-target="#roomFormModal" onclick="prepareAddForm()">
             <i class="fas fa-plus me-2"></i> Add New Room Type
         </button>
     </div>
@@ -97,13 +97,10 @@
     </div>
 </div>
 
-
-<!-- Add/Edit Room Modal -->
 <div class="modal fade" id="roomFormModal" tabindex="-1" aria-labelledby="roomFormModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <!-- The form action will be set dynamically by JavaScript -->
-            <form id="roomForm" method="POST" enctype="multipart/form-data">
+            <form id="roomForm" method="POST" action="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" enctype="multipart/form-data">
                 <div class="modal-header border-0">
                     <h5 class="modal-title fw-bold" id="roomFormModalLabel" style="color: #2c3e50;"></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -133,7 +130,7 @@
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary" style="background-color: #1abc9c; border-color: #1abc9c;"><i class="fas fa-save me-2"></i>Save Changes</button>
+                    <button type="submit" class="btn btn-primary" style="background-color: #00796B; border-color: #00796B;"><i class="fas fa-save me-2"></i>Save Room</button>
                 </div>
             </form>
         </div>
@@ -144,41 +141,23 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const roomFormModalEl = document.getElementById('roomFormModal');
     const form = document.getElementById('roomForm');
     const modalTitle = document.getElementById('roomFormModalLabel');
 
-    // Attach this to the window so the inline onclick can find it
     window.prepareAddForm = function() {
         modalTitle.textContent = 'Add New Room Type';
         form.reset();
-        
-        // ======================= FIX =========================
-        // The form should always submit back to the page that rendered it.
-        // The backend will know it's an "add" because room_id will be empty.
-        form.action = "{{ url_for('manage_rooms', hotel_id=hotel.id) }}";
-        // ========================================================
-
         document.getElementById('room_id').value = '';
         document.getElementById('currentImagesContainer').style.display = 'none';
         document.getElementById('currentImagesGallery').innerHTML = '';
     }
 
-    const editButtons = document.querySelectorAll('.edit-room-btn');
-    
-    editButtons.forEach(button => {
+    document.querySelectorAll('.edit-room-btn').forEach(button => {
         button.addEventListener('click', function() {
-            const roomJson = this.getAttribute('data-room-json');
-            const room = JSON.parse(roomJson);
+            const room = JSON.parse(this.getAttribute('data-room-json'));
             
             modalTitle.textContent = 'Edit Room Type: ' + room.name;
             form.reset();
-
-            // ======================= FIX =========================
-            // The form should also submit to the manage_rooms page for editing.
-            // The backend will know it's an "edit" because room_id will have a value.
-            form.action = "{{ url_for('manage_rooms', hotel_id=hotel.id) }}";
-            // ========================================================
 
             document.getElementById('room_id').value = room.id;
             document.getElementById('name').value = room.name;
@@ -195,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (room.gallery_images && room.gallery_images.length > 0) {
                 galleryWrapper.style.display = 'block';
                 room.gallery_images.forEach(image => {
-                    const imageUrl = image.filename.startsWith('http') ? image.filename : `/static/uploads/hotel_images/${image.filename}`;
+                    const imageUrl = `/static/uploads/hotel_images/${image.filename}`;
                     const col = document.createElement('div');
                     col.className = 'col-4 col-md-3';
                     col.innerHTML = `

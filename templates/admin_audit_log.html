@@ -3,10 +3,7 @@
 
 {% block content %}
 <style>
-    /* Page-specific styles for a modern look */
-    body {
-        background-color: #f8f9fa;
-    }
+    body { background-color: #f8f9fa; }
     .table thead th {
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -15,9 +12,7 @@
         font-weight: 600;
         border-bottom: 2px solid #eef2f7;
     }
-    .table tbody tr:last-child td {
-        border-bottom: none;
-    }
+    .table tbody tr:last-child td { border-bottom: none; }
     .actor-pill {
         display: inline-flex;
         align-items: center;
@@ -34,9 +29,9 @@
         color: #495057;
     }
     .pagination .page-item.active .page-link {
-        background-color: #1abc9c;
+        background-color: var(--primary-color);
         color: white;
-        box-shadow: 0 4px 10px rgba(26, 188, 156, 0.3);
+        box-shadow: 0 4px 10px rgba(0, 121, 107, 0.3);
     }
      .pagination .page-item.disabled .page-link {
         background-color: #f8f9fa;
@@ -46,7 +41,6 @@
 
 <div class="container my-5">
 
-    <!-- === HEADER === -->
     <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
             <h1 class="display-6 fw-bold" style="color: #2c3e50;"><i class="fas fa-history me-3 text-secondary"></i>System Audit Log</h1>
@@ -57,7 +51,6 @@
         </a>
     </div>
 
-    <!-- === LOG TABLE CARD === -->
     <div class="card" style="border: none; border-radius: 16px; box-shadow: 0 8px 40px rgba(0,0,0,0.07);">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -102,7 +95,6 @@
             </div>
         </div>
         
-        <!-- === PAGINATION FOOTER === -->
         {% if logs.pages > 1 %}
         <div class="card-footer bg-white d-flex justify-content-between align-items-center" style="border-radius: 0 0 16px 16px; padding: 1rem 1.5rem;">
             <span class="text-muted small">
@@ -110,20 +102,14 @@
             </span>
             <nav aria-label="Audit Log Pagination">
                 <ul class="pagination mb-0">
-                    <!-- Previous Button -->
                     <li class="page-item {% if not logs.has_prev %}disabled{% endif %}">
                         <a class="page-link" href="{{ url_for('admin_audit_log', page=logs.prev_num) if logs.has_prev else '#' }}" aria-label="Previous">
                             <span aria-hidden="true">«</span>
                         </a>
                     </li>
-
-                    <!-- Page Numbers (optional, good for many pages) -->
-                    {# Example for more advanced pagination #}
                     <li class="page-item active" aria-current="page">
                         <span class="page-link">{{ logs.page }}</span>
                     </li>
-
-                    <!-- Next Button -->
                     <li class="page-item {% if not logs.has_next %}disabled{% endif %}">
                         <a class="page-link" href="{{ url_for('admin_audit_log', page=logs.next_num) if logs.has_next else '#' }}" aria-label="Next">
                             <span aria-hidden="true">»</span>

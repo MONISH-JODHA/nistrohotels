@@ -1,16 +1,14 @@
 {% extends "base.html" %}
-{% block title %}My Bookings - Nestrohotels{% endblock %}
+{% block title %}Client Bookings - Nestrohotels{% endblock %}
 
 {% block head_extra %}
-{# Google Fonts for a more modern, friendly typography #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    /* --- [ 1. Theming & General Styles ] --- */
     :root {
-        --primary-color: #005f73;
+        --primary-color: #00796B;
         --secondary-color: #0a9396;
         --success-color: #2a9d8f;
         --warning-color: #ee9b00;
@@ -23,19 +21,14 @@
         --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
         --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
     }
-
     body {
         background-color: var(--bg-body);
         font-family: 'Poppins', sans-serif;
     }
-
-    /* --- [ 2. Page Header ] --- */
     .page-header h2 {
         color: var(--primary-color);
         font-weight: 700;
     }
-
-    /* --- [ 3. Booking Card Layout ] --- */
     .booking-card {
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -51,8 +44,6 @@
         box-shadow: var(--shadow-md);
         transform: translateY(-5px);
     }
-
-    /* --- [ 4. Booking Card Content Styling ] --- */
     .booking-hotel-img {
         width: 150px;
         height: 120px;
@@ -65,33 +56,26 @@
         display: flex;
         flex-direction: column;
     }
-
     .booking-hotel-name {
         font-size: 1.25rem;
         font-weight: 600;
         color: var(--primary-color);
         text-decoration: none;
     }
-    .booking-hotel-name:hover {
-        text-decoration: underline;
-    }
-
-    .booking-room-type {
+    .booking-hotel-name:hover { text-decoration: underline; }
+    .booking-client-name {
         font-size: 1rem;
         color: var(--text-light);
         margin-top: -5px;
         margin-bottom: 1rem;
     }
-    
     .booking-dates {
         display: flex;
         gap: 2rem;
         margin-bottom: 1rem;
         font-size: 0.9rem;
     }
-    .booking-dates .date-item {
-        color: var(--text-dark);
-    }
+    .booking-dates .date-item { color: var(--text-dark); }
     .booking-dates .date-item .date-label {
         color: var(--text-light);
         font-weight: 500;
@@ -102,9 +86,8 @@
         margin-right: 0.5rem;
         color: var(--secondary-color);
     }
-    
     .booking-footer {
-        margin-top: auto; /* Pushes footer to the bottom */
+        margin-top: auto;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -121,8 +104,6 @@
         font-weight: 400;
         color: var(--text-light);
     }
-
-    /* --- [ 5. Status Badge Styling ] --- */
     .status-badge {
         padding: 0.3rem 0.8rem;
         border-radius: 20px;
@@ -131,23 +112,10 @@
         display: inline-flex;
         align-items: center;
     }
-    .status-badge i {
-        margin-right: 0.4rem;
-    }
-    .status-confirmed {
-        background-color: rgba(42, 157, 143, 0.1);
-        color: var(--success-color);
-    }
-    .status-pending {
-        background-color: rgba(238, 155, 0, 0.1);
-        color: var(--warning-color);
-    }
-    .status-cancelled {
-        background-color: rgba(174, 32, 18, 0.1);
-        color: var(--danger-color);
-    }
-
-    /* --- [ 6. "No Bookings" Empty State ] --- */
+    .status-badge i { margin-right: 0.4rem; }
+    .status-confirmed { background-color: rgba(42, 157, 143, 0.1); color: var(--success-color); }
+    .status-pending { background-color: rgba(238, 155, 0, 0.1); color: var(--warning-color); }
+    .status-cancelled { background-color: rgba(174, 32, 18, 0.1); color: var(--danger-color); }
     .empty-state {
         text-align: center;
         padding: 4rem 2rem;
@@ -164,18 +132,15 @@
         font-weight: 600;
         color: var(--primary-color);
     }
-    .empty-state p {
-        color: var(--text-light);
-    }
-
+    .empty-state p { color: var(--text-light); }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container my-5">
     <div class="d-flex justify-content-between align-items-center mb-4 page-header">
-        <h2 class="mb-0"><i class="fas fa-briefcase me-2"></i> My Bookings</h2>
-        <a href="{{ url_for('index') }}" class="btn btn-outline-primary rounded-pill"><i class="fas fa-search me-2"></i> Find More Hotels</a>
+        <h2 class="mb-0"><i class="fas fa-briefcase me-2"></i> My Client Bookings</h2>
+        <a href="{{ url_for('index') }}" class="btn btn-outline-primary rounded-pill"><i class="fas fa-search me-2"></i> Find Hotels for Clients</a>
     </div>
 
     {% if bookings %}
@@ -183,15 +148,13 @@
         {% for booking in bookings %}
         <div class="booking-card">
             
-            <!-- Hotel Image -->
             {% set hotel_img_src = booking.hotel.main_image_url if booking.hotel.main_image_url and (booking.hotel.main_image_url.startswith('http') or booking.hotel.main_image_url.startswith('/static')) else 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80' %}
             <img src="{{ hotel_img_src }}" alt="{{ booking.hotel.name }}" class="booking-hotel-img d-none d-md-block">
             
-            <!-- Booking Details -->
             <div class="booking-details">
                 <div>
                     <a href="{{ url_for('hotel_detail', hotel_id=booking.hotel.id) }}" class="booking-hotel-name">{{ booking.hotel.name }}</a>
-                    <div class="booking-room-type">{{ booking.room_type.name }}</div>
+                    <div class="booking-client-name">For Client: <strong>{{ booking.client_name }}</strong></div>
                 </div>
 
                 <div class="booking-dates">
@@ -207,7 +170,6 @@
 
                 <div class="booking-footer">
                     <div>
-                        <!-- Status Badge -->
                         {% set status_class = 'status-pending' %}
                         {% set status_icon = 'fa-clock' %}
                         {% if booking.status == 'Confirmed' %}
@@ -235,8 +197,8 @@
     {% else %}
     <div class="empty-state">
         <i class="fas fa-suitcase-rolling mb-4"></i>
-        <h4 class="lead">Your adventure awaits!</h4>
-        <p class="mb-4">You haven't made any bookings yet. Let's find your next perfect stay.</p>
+        <h4 class="lead">Let's book a trip for your client!</h4>
+        <p class="mb-4">You haven't made any bookings yet. Find the perfect stay for your clients.</p>
         <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg rounded-pill"><i class="fas fa-hotel me-2"></i> Find a Hotel to Book</a>
     </div>
     {% endif %}

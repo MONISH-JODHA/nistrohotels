@@ -2,15 +2,13 @@
 {% block title %}Edit User: {{ user.username }}{% endblock %}
 
 {% block head_extra %}
-{# Google Fonts for a professional dashboard typography #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    /* --- [ 1. Theming & General Styles ] --- */
     :root {
-        --primary-color: #005f73;
+        --primary-color: #00796B;
         --success-color: #2a9d8f;
         --bg-body: #f4f7f9;
         --bg-card: #ffffff;
@@ -23,8 +21,6 @@
         background-color: var(--bg-body);
         font-family: 'Poppins', sans-serif;
     }
-
-    /* --- [ 2. Main Edit Card ] --- */
     .edit-user-card {
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -32,8 +28,6 @@
         box-shadow: var(--shadow-md);
         overflow: hidden;
     }
-
-    /* --- [ 3. User Identity Header ] --- */
     .user-identity-header {
         display: flex;
         align-items: center;
@@ -63,8 +57,6 @@
         font-size: 0.9rem;
         color: var(--text-light);
     }
-
-    /* --- [ 4. Form Styling ] --- */
     .form-section {
         padding: 1.5rem 2rem;
     }
@@ -84,17 +76,15 @@
     }
     .form-control:focus, .form-select:focus {
         border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(0, 95, 115, 0.2);
+        box-shadow: 0 0 0 3px rgba(0, 121, 107, 0.2);
     }
-
-    /* --- [ 5. Custom Role Selector ] --- */
     .role-selector {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 1rem;
     }
     .role-option input[type="radio"] {
-        display: none; /* Hide the actual radio button */
+        display: none;
     }
     .role-option label {
         display: block;
@@ -111,7 +101,7 @@
     }
     .role-option input[type="radio"]:checked + label {
         border-color: var(--primary-color);
-        background-color: rgba(0, 95, 115, 0.05);
+        background-color: rgba(0, 121, 107, 0.05);
         font-weight: 600;
         color: var(--primary-color);
     }
@@ -120,8 +110,6 @@
         display: block;
         margin-bottom: 0.5rem;
     }
-
-    /* --- [ 6. Form Footer & Actions ] --- */
     .form-actions {
         padding: 1.5rem 2rem;
         background-color: #f8f9fa;
@@ -139,7 +127,6 @@
         <form method="POST" action="{{ url_for('edit_user', user_id=user.id) }}">
             <div class="edit-user-card">
                 
-                <!-- User Identity Header -->
                 <div class="user-identity-header">
                     <div class="user-avatar" style="background-color: hsl({{ user.id * 37 % 360 }}, 40%, 50%);">
                         <span>{{ user.username[0]|upper }}</span>
@@ -150,7 +137,6 @@
                     </div>
                 </div>
 
-                <!-- Account Details Section -->
                 <div class="form-section">
                     <h5 class="form-section-title">Account Details</h5>
                     <div class="mb-3">
@@ -165,13 +151,12 @@
 
                 <hr class="m-0">
                 
-                <!-- Role Selection Section -->
                 <div class="form-section">
                     <h5 class="form-section-title">User Role</h5>
                     <div class="role-selector">
                         <div class="role-option">
-                            <input type="radio" id="role_user" name="role" value="user" {% if user.role == 'user' %}checked{% endif %}>
-                            <label for="role_user"><i class="fas fa-user role-icon"></i>User</label>
+                            <input type="radio" id="role_agent" name="role" value="agent" {% if user.role == 'agent' %}checked{% endif %}>
+                            <label for="role_agent"><i class="fas fa-user-secret role-icon"></i>Travel Agent</label>
                         </div>
                         <div class="role-option">
                             <input type="radio" id="role_owner" name="role" value="owner" {% if user.role == 'owner' %}checked{% endif %}>
@@ -186,7 +171,6 @@
 
                 <hr class="m-0">
 
-                <!-- Security / Password Section -->
                 <div class="form-section">
                     <h5 class="form-section-title">Security</h5>
                     <p class="text-muted small mb-3">Enter a new password below to reset it. Leave blank to keep the current password.</p>
@@ -196,7 +180,6 @@
                     </div>
                 </div>
                 
-                <!-- Form Actions Footer -->
                 <div class="form-actions">
                     <a href="{{ url_for('manage_users') }}" class="btn btn-secondary">Cancel</a>
                     <button type="submit" class="btn btn-primary px-4"><i class="fas fa-save me-2"></i> Save Changes</button>

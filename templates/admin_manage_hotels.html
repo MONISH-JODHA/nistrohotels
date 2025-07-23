@@ -2,15 +2,13 @@
 {% block title %}Manage Hotels{% endblock %}
 
 {% block head_extra %}
-{# Google Fonts for a professional dashboard typography #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    /* --- [ 1. Theming & General Styles ] --- */
     :root {
-        --primary-color: #005f73;
+        --primary-color: #00796B;
         --success-color: #2a9d8f;
         --warning-color: #fca311;
         --danger-color: #ae2012;
@@ -26,8 +24,6 @@
         background-color: var(--bg-body);
         font-family: 'Poppins', sans-serif;
     }
-
-    /* --- [ 2. Page Header & Controls ] --- */
     .page-header h2 {
         color: var(--primary-color);
         font-weight: 700;
@@ -38,8 +34,6 @@
         border-radius: 12px;
         box-shadow: var(--shadow-sm);
     }
-
-    /* --- [ 3. Hotel Card Styling (Replaces <table>) ] --- */
     .hotel-card {
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -67,8 +61,6 @@
         display: flex;
         flex-direction: column;
     }
-
-    /* --- [ 4. Hotel Card Content ] --- */
     .hotel-card-name {
         font-size: 1.25rem;
         font-weight: 600;
@@ -101,7 +93,6 @@
     }
     .meta-tag.status-approved { background-color: rgba(42, 157, 143, 0.1); color: var(--success-color); }
     .meta-tag.status-pending { background-color: rgba(252, 163, 17, 0.1); color: var(--warning-color); }
-
     .hotel-card-footer {
         margin-top: auto;
         display: flex;
@@ -111,12 +102,9 @@
         padding-top: 1rem;
         border-top: 1px solid var(--border-color);
     }
-    
-    /* Actions Dropdown */
     .dropdown-item i { width: 20px; margin-right: 0.5rem; text-align: center; }
     .dropdown-item.text-success:hover { background-color: rgba(42, 157, 143, 0.1); }
     .dropdown-item.text-danger:hover { background-color: rgba(174, 32, 18, 0.1); }
-
 </style>
 {% endblock %}
 
@@ -127,34 +115,12 @@
         <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary rounded-pill"><i class="fas fa-arrow-left me-2"></i> Back to Dashboard</a>
     </div>
 
-    <!-- Search and Filter Controls -->
-    <div class="controls-card card-body mb-4">
-        <div class="row g-3 align-items-center">
-            <div class="col-md-6">
-                <input type="text" class="form-control" placeholder="Search by hotel or owner name...">
-            </div>
-            <div class="col-md-4">
-                <select class="form-select">
-                    <option selected>Filter by status...</option>
-                    <option value="approved">Approved</option>
-                    <option value="pending">Pending Approval</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-primary w-100">Filter</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Hotels List -->
     <div class="hotels-list">
         {% for hotel in hotels %}
         <div class="hotel-card">
-            <!-- Hotel Image -->
             {% set hotel_img_src = hotel.main_image_url if hotel.main_image_url and (hotel.main_image_url.startswith('http') or hotel.main_image_url.startswith('/static')) else 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80' %}
             <img src="{{ hotel_img_src }}" alt="{{ hotel.name }}" class="hotel-card-image d-none d-md-block">
 
-            <!-- Hotel Details -->
             <div class="hotel-card-details">
                 <div>
                     <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="hotel-card-name">{{ hotel.name }}</a>

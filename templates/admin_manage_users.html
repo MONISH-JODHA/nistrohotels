@@ -2,15 +2,13 @@
 {% block title %}Manage Users{% endblock %}
 
 {% block head_extra %}
-{# Google Fonts for a professional dashboard typography #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    /* --- [ 1. Theming & General Styles ] --- */
     :root {
-        --primary-color: #005f73;
+        --primary-color: #00796B;
         --success-color: #2a9d8f;
         --warning-color: #fca311;
         --danger-color: #ae2012;
@@ -20,14 +18,11 @@
         --text-light: #6c757d;
         --border-color: #e9ecef;
         --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
-        --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
     }
     body {
         background-color: var(--bg-body);
         font-family: 'Poppins', sans-serif;
     }
-
-    /* --- [ 2. Page Header & Controls ] --- */
     .page-header h2 {
         color: var(--primary-color);
         font-weight: 700;
@@ -40,8 +35,6 @@
         background-color: var(--bg-card);
         border-left: 0;
     }
-
-    /* --- [ 3. Main Users List Card ] --- */
     .users-list-card {
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -49,11 +42,9 @@
         box-shadow: var(--shadow-sm);
         overflow: hidden;
     }
-
-    /* --- [ 4. User List Item Styling (Replaces <tr>) ] --- */
     .user-list-item {
         display: grid;
-        grid-template-columns: auto 1fr auto auto auto; /* Avatar, Info, Role, Status, Actions */
+        grid-template-columns: auto 1fr auto auto auto;
         gap: 1.5rem;
         align-items: center;
         padding: 1.25rem 1.5rem;
@@ -66,8 +57,6 @@
     .user-list-item:hover {
         background-color: #fcfdfe;
     }
-    
-    /* --- [ 5. User Item Components ] --- */
     .user-avatar {
         width: 48px;
         height: 48px;
@@ -77,7 +66,7 @@
         justify-content: center;
         font-weight: 600;
         color: white;
-        background-color: var(--primary-color); /* Fallback */
+        background-color: var(--primary-color);
     }
     .user-avatar img {
         width: 100%;
@@ -85,7 +74,6 @@
         object-fit: cover;
         border-radius: 50%;
     }
-
     .user-info .user-name {
         font-weight: 600;
         color: var(--text-dark);
@@ -95,16 +83,16 @@
         font-size: 0.9rem;
         color: var(--text-light);
     }
-
     .role-badge {
-        background-color: #e9ecef;
-        color: var(--text-light);
         font-weight: 600;
         padding: 0.3rem 0.75rem;
         border-radius: 6px;
         font-size: 0.8rem;
     }
-
+    .role-admin { background-color: rgba(174, 32, 18, 0.1); color: var(--danger-color); }
+    .role-owner { background-color: rgba(252, 163, 17, 0.1); color: var(--warning-color); }
+    .role-agent { background-color: rgba(0, 121, 107, 0.1); color: var(--primary-color); }
+    
     .status-indicator {
         display: flex;
         align-items: center;
@@ -120,14 +108,10 @@
     .status-active { color: var(--success-color); }
     .status-suspended .status-dot { background-color: var(--danger-color); }
     .status-suspended { color: var(--danger-color); }
-
-    /* Suspended user row style */
     .user-list-item.is-suspended {
         opacity: 0.7;
         background-color: #fafafa;
     }
-
-    /* --- [ 6. Actions Dropdown (Kebab Menu) ] --- */
     .btn-actions {
         background: transparent;
         border: none;
@@ -141,7 +125,6 @@
     .dropdown-item.text-success:hover { background-color: rgba(42, 157, 143, 0.1); }
     .dropdown-item.text-warning:hover { background-color: rgba(252, 163, 17, 0.1); }
     .dropdown-item.text-danger:hover { background-color: rgba(174, 32, 18, 0.1); }
-
 </style>
 {% endblock %}
 
@@ -152,18 +135,6 @@
         <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary rounded-pill"><i class="fas fa-arrow-left me-2"></i> Back to Dashboard</a>
     </div>
 
-    <!-- Search and Filter Controls -->
-    <div class="card card-body mb-4 shadow-sm border-0">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <div class="input-group search-control">
-                    <input type="text" class="form-control" placeholder="Search by username or email...">
-                    <span class="input-group-text"><i class="fas fa-search"></i></span>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="users-list-card">
         <div class="list-group list-group-flush">
             {% for user in users %}
@@ -171,8 +142,6 @@
                 
                 <!-- Avatar -->
                 <div class="user-avatar" style="background-color: hsl({{ user.id * 37 % 360 }}, 40%, 50%);">
-                    {# In a real app, you would check for a profile picture URL #}
-                    {# {% if user.profile_pic %} <img src="{{ user.profile_pic }}"> {% else %} ... {% endif %} #}
                     <span>{{ user.username[0]|upper }}</span>
                 </div>
 
@@ -183,7 +152,7 @@
                 </div>
 
                 <!-- Role -->
-                <div><span class="role-badge">{{ user.role|capitalize }}</span></div>
+                <div><span class="role-badge role-{{ user.role }}">{{ user.role|capitalize }}</span></div>
 
                 <!-- Status -->
                 <div>

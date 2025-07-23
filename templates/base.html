@@ -5,33 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Nestrohotels | Your Dream Getaway Awaits{% endblock %}</title>
     
-    <!-- Third-party Libraries -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-
-    <!-- Google Fonts for a Premium Feel -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
-    
-    <!-- Professional Favicon -->
     <link rel="icon" href="https://img.icons8.com/clouds/100/beach-umbrella.png" type="image/png">
 
-    <!-- Global Styles & CSS Variables for a Consistent Theme -->
     <style>
         :root {
-            --primary-color: #00796B;   /* Deep Teal */
-            --accent-color: #FF7043;    /* Warm Coral */
-            --text-color-dark: #2c3e50; /* Dark Slate Blue */
+            --primary-color: #00796B;
+            --accent-color: #FF7043;
+            --text-color-dark: #2c3e50;
             --text-color-light: #555;
             --background-light: #fdfdff;
             --background-soft: #f8f9fa;
         }
-
-        /*--- Base Body & Typography ---*/
         body {
-            padding-top: 85px; /* Adjust for taller navbar */
+            padding-top: 85px;
             font-family: 'Open Sans', sans-serif;
             background: linear-gradient(180deg, var(--background-light) 0%, #f7f7f9 100%);
             color: var(--text-color-light);
@@ -40,8 +32,6 @@
             font-family: 'Montserrat', sans-serif;
             color: var(--text-color-dark);
         }
-
-        /*--- Enhanced Navbar Link Styling ---*/
         .navbar .nav-link {
             font-weight: 500;
             color: var(--text-color-dark);
@@ -49,14 +39,12 @@
             position: relative;
             padding: 0.8rem 1rem;
         }
-        .navbar .nav-link:hover {
-            color: var(--primary-color) !important;
-        }
+        .navbar .nav-link:hover { color: var(--primary-color) !important; }
         .navbar .nav-link.active {
             font-weight: 700;
             color: var(--primary-color) !important;
         }
-        .navbar .nav-link.active::after { /* Underline effect for active link */
+        .navbar .nav-link.active::after {
             content: '';
             position: absolute;
             bottom: 5px; left: 1rem; right: 1rem;
@@ -64,8 +52,6 @@
             background-color: var(--primary-color);
             border-radius: 2px;
         }
-        
-        /*--- Custom Bootstrap Component Styles ---*/
         .dropdown-item.active, .dropdown-item:active { background-color: var(--primary-color); }
         .alert {
             border-radius: 12px;
@@ -78,12 +64,97 @@
         .alert-danger { border-color: #dc3545; }
         .alert-warning { border-color: #ffc107; }
         .alert-info { border-color: #17a2b8; }
+        
+        /* --- Chatbot Styles --- */
+        #chatbot-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+        #chatbot-toggle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out;
+        }
+        #chatbot-toggle:hover { transform: scale(1.1); }
+        #chatbot-window {
+            width: 350px;
+            height: 500px;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+            background: white;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(0.9);
+            transform-origin: bottom right;
+            opacity: 0;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            visibility: hidden;
+        }
+        #chatbot-window.open {
+            transform: scale(1);
+            opacity: 1;
+            visibility: visible;
+        }
+        #chatbot-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            font-weight: bold;
+        }
+        #chatbot-messages {
+            flex-grow: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-message {
+            max-width: 80%;
+            padding: 0.5rem 0.8rem;
+            border-radius: 10px;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+        .chat-message.user {
+            background-color: #e9ecef;
+            color: var(--text-color-dark);
+            align-self: flex-end;
+            border-bottom-right-radius: 0;
+        }
+        .chat-message.bot {
+            background-color: var(--primary-color);
+            color: white;
+            align-self: flex-start;
+            border-bottom-left-radius: 0;
+        }
+        #chatbot-input-form {
+            display: flex;
+            padding: 0.5rem;
+            border-top: 1px solid #dee2e6;
+        }
+        #chatbot-input {
+            flex-grow: 1;
+            border: none;
+            padding: 0.5rem;
+        }
+        #chatbot-input:focus { outline: none; box-shadow: none; }
     </style>
     {% block head_extra %}{% endblock %}
 </head>
 <body class="d-flex flex-column min-vh-100">
 
-    <!-- "Glassmorphism" Navbar for a Modern, Layered Look -->
     <nav class="navbar navbar-expand-lg fixed-top py-3" style="background-color: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0, 0, 0, 0.07);">
         <div class="container-fluid">
             <a class="navbar-brand" href="{{ url_for('index') }}" style="font-weight: 700; color: var(--primary-color); font-size: 1.8rem; text-decoration: none;">
@@ -94,8 +165,32 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav mx-auto mb-2 mb-lg-0" style="font-size: 1.05rem;">
-                    <!-- Navigation links... -->
-                    {% include 'partials/_nav_links.html' %} {# (Assuming you move the nav links to a partial for cleanliness) #}
+                    <!-- === START: FIX for TemplateNotFound Error === -->
+                    <!-- The content of _nav_links.html is now directly here -->
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.role == 'admin' %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}" href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+                            </li>
+                        {% elif current_user.role == 'owner' %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'owner_dashboard' %}active{% endif %}" href="{{ url_for('owner_dashboard') }}">Owner Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'register_hotel' %}active{% endif %}" href="{{ url_for('register_hotel') }}">Register Hotel</a>
+                            </li>
+                        {% elif current_user.role == 'agent' %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'client_bookings' %}active{% endif %}" href="{{ url_for('client_bookings') }}">Client Bookings</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'my_packages' %}active{% endif %}" href="{{ url_for('my_packages') }}">
+                                    <i class="fas fa-folder" style="color: var(--accent-color);"></i> My Packages
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endif %}
+                    <!-- === END: FIX for TemplateNotFound Error === -->
                 </ul>
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
                     {% if current_user.is_authenticated %}
@@ -128,9 +223,7 @@
         </div>
     </nav>
 
-    <!-- Main Content Area -->
     <main class="flex-grow-1">
-        <!-- Using container-fluid for pages like login, and container for others -->
         {% block content_container %}
         <div class="container py-4">
             {% with messages = get_flashed_messages(with_categories=true) %}
@@ -141,8 +234,25 @@
         </div>
         {% endblock %}
     </main>
+    
+    <!-- CHATBOT -->
+    <div id="chatbot-container">
+        <div id="chatbot-window">
+            <div id="chatbot-header">Nestrohotels Assistant</div>
+            <div id="chatbot-messages">
+                <div class="chat-message bot">Hello! How can I help you find information about our hotels today?</div>
+            </div>
+            <form id="chatbot-input-form">
+                <input type="text" id="chatbot-input" placeholder="Ask about hotels, amenities..." autocomplete="off">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i></button>
+            </form>
+        </div>
+        <div id="chatbot-toggle">
+            <i class="fas fa-robot"></i>
+        </div>
+    </div>
 
-    <!-- Signature Footer with a Unique Angled Design -->
+
     <footer class="mt-auto text-white" style="background-color: var(--text-color-dark); padding: 5rem 0 2rem 0; clip-path: polygon(0 15%, 100% 0, 100% 100%, 0% 100%);">
         <div class="container text-center text-md-start">
             <div class="row gy-4">
@@ -151,49 +261,72 @@
                         <i class="fas fa-umbrella-beach me-3"></i>Nestrohotels
                     </h6>
                     <p style="color: rgba(255,255,255,0.7);">
-                        Discover and book unique places to stay anywhere in the world. Your next adventure is just a click away.
+                        Empowering travel agents and hotel owners with the best tools to create unforgettable experiences.
                     </p>
                 </div>
-                <div class="col-lg-2 col-md-6">
-                    <h6 class="text-uppercase fw-bold mb-4">Explore</h6>
-                    <p><a href="#!" class="text-reset" style="text-decoration: none; transition: color 0.2s ease;">Destinations</a></p>
-                    <p><a href="#!" class="text-reset" style="text-decoration: none; transition: color 0.2s ease;">Deals</a></p>
-                    <p><a href="#!" class="text-reset" style="text-decoration: none; transition: color 0.2s ease;">Guides</a></p>
-                </div>
-                <div class="col-lg-2 col-md-6">
-                    <h6 class="text-uppercase fw-bold mb-4">Company</h6>
-                    <p><a href="#!" class="text-reset" style="text-decoration: none; transition: color 0.2s ease;">About Us</a></p>
-                    <p><a href="#!" class="text-reset" style="text-decoration: none; transition: color 0.2s ease;">Careers</a></p>
-                    <p><a href="#!" class="text-reset" style="text-decoration: none; transition: color 0.2s ease;">Help Center</a></p>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <h6 class="text-uppercase fw-bold mb-4">Join Our Newsletter</h6>
-                    <p style="color: rgba(255,255,255,0.7);">Get the latest inspiration and travel deals straight to your inbox.</p>
-                    <div class="input-group mb-3">
-                        <input type="text" class="form-control" placeholder="Your email" style="background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white;">
-                        <button class="btn" type="button" style="background-color: var(--accent-color); color: white; border-color: var(--accent-color);">Subscribe</button>
-                    </div>
-                </div>
+                <div class="col-lg-2 col-md-6"><h6 class="text-uppercase fw-bold mb-4">Explore</h6><p><a href="#!" class="text-reset" style="text-decoration: none; transition: color 0.2s ease;">Destinations</a></p><p><a href="#!" class="text-reset" style="text-decoration: none; transition: color 0.2s ease;">Deals</a></p></div>
+                <div class="col-lg-2 col-md-6"><h6 class="text-uppercase fw-bold mb-4">Company</h6><p><a href="#!" class="text-reset" style="text-decoration: none; transition: color 0.2s ease;">About Us</a></p><p><a href="#!" class="text-reset" style="text-decoration: none; transition: color 0.2s ease;">Partner Program</a></p></div>
+                <div class="col-lg-4 col-md-6"><h6 class="text-uppercase fw-bold mb-4">Join Our Newsletter</h6><p style="color: rgba(255,255,255,0.7);">Get the latest industry news and partner deals.</p><div class="input-group mb-3"><input type="text" class="form-control" placeholder="Your email" style="background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white;"><button class="btn" type="button" style="background-color: var(--accent-color); color: white; border-color: var(--accent-color);">Subscribe</button></div></div>
             </div>
             <div class="d-flex justify-content-between align-items-center pt-4 mt-4" style="border-top: 1px solid rgba(255,255,255,0.2);">
                 <p class="mb-0">© <span id="currentYear"></span> Nestrohotels.com - All Rights Reserved.</p>
-                <div class="d-flex">
-                    <a href="" class="me-3 text-reset"><i class="fab fa-facebook-f fa-lg"></i></a>
-                    <a href="" class="me-3 text-reset"><i class="fab fa-twitter fa-lg"></i></a>
-                    <a href="" class="text-reset"><i class="fab fa-instagram fa-lg"></i></a>
-                </div>
+                <div class="d-flex"><a href="" class="me-3 text-reset"><i class="fab fa-facebook-f fa-lg"></i></a><a href="" class="me-3 text-reset"><i class="fab fa-twitter fa-lg"></i></a><a href="" class="text-reset"><i class="fab fa-instagram fa-lg"></i></a></div>
             </div>
         </div>
     </footer>
 
-    <!-- Core Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const yearSpan = document.getElementById('currentYear');
-            if (yearSpan) {
-                yearSpan.textContent = new Date().getFullYear();
+            if (yearSpan) { yearSpan.textContent = new Date().getFullYear(); }
+            
+            const chatbotToggle = document.getElementById('chatbot-toggle');
+            const chatbotWindow = document.getElementById('chatbot-window');
+            const chatbotMessages = document.getElementById('chatbot-messages');
+            const chatbotInputForm = document.getElementById('chatbot-input-form');
+            const chatbotInput = document.getElementById('chatbot-input');
+
+            chatbotToggle.addEventListener('click', () => {
+                chatbotWindow.classList.toggle('open');
+            });
+
+            chatbotInputForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const messageText = chatbotInput.value.trim();
+                if (!messageText) return;
+
+                addMessage(messageText, 'user');
+                chatbotInput.value = '';
+                
+                const typingIndicator = addMessage('...', 'bot');
+
+                try {
+                    const response = await fetch("{{ url_for('chatbot_api') }}", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: messageText })
+                    });
+                    const data = await response.json();
+                    
+                    typingIndicator.textContent = data.answer;
+                    
+                } catch (error) {
+                    typingIndicator.textContent = 'Sorry, I am having trouble connecting.';
+                    console.error('Chatbot API error:', error);
+                }
+                
+                chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+            });
+
+            function addMessage(text, type) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${type}`;
+                messageDiv.textContent = text;
+                chatbotMessages.appendChild(messageDiv);
+                chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+                return messageDiv;
             }
         });
     </script>
