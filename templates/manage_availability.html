@@ -191,9 +191,9 @@
                 <form id="availabilityForm" novalidate>
                     <input type="hidden" id="modalDate" name="date">
                     <div class="mb-4">
-                        <label for="modalPrice" class="form-label">Custom Price ($)</label>
+                        <label for="modalPrice" class="form-label">Custom Price (₹)</label>
                         <input type="number" class="form-control" id="modalPrice" name="price" step="0.01" min="0" placeholder="e.g., 150.00">
-                        <small class="form-text text-muted">Default: ${{ "%.2f"|format(room.price_per_night) }}. Leave blank to use default.</small>
+                        <small class="form-text text-muted">Default: ₹{{ "%.2f"|format(room.price_per_night) }}. Leave blank to use default.</small>
                     </div>
                     <div class="mb-3">
                         <label for="modalAvailableRooms" class="form-label">Custom Available Rooms</label>
@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
         eventContent: function(arg) {
             let props = arg.event.extendedProps;
             let price = props.price;
-            let formattedPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
+            let formattedPrice = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(price);
             let overrideIcon = props.is_override ? '<i class="fas fa-star override-icon"></i>' : '';
             return {
                 html: `${overrideIcon}<span class="event-price">${formattedPrice}</span><span class="event-avail">${props.available_count} rooms</span>`

@@ -35,8 +35,7 @@
         border-radius: 16px;
         box-shadow: var(--shadow-sm);
         display: flex;
-        gap: 1.5rem;
-        padding: 1.5rem;
+        flex-direction: column;
         margin-bottom: 1.5rem;
         transition: box-shadow 0.3s ease, transform 0.3s ease;
     }
@@ -44,17 +43,18 @@
         box-shadow: var(--shadow-md);
         transform: translateY(-5px);
     }
+    .booking-card-header {
+        display: flex;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        align-items: center;
+    }
     .booking-hotel-img {
         width: 150px;
-        height: 120px;
+        height: 100px;
         object-fit: cover;
         border-radius: 12px;
         flex-shrink: 0;
-    }
-    .booking-details {
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
     }
     .booking-hotel-name {
         font-size: 1.25rem;
@@ -67,42 +67,39 @@
         font-size: 1rem;
         color: var(--text-light);
         margin-top: -5px;
-        margin-bottom: 1rem;
     }
-    .booking-dates {
-        display: flex;
-        gap: 2rem;
-        margin-bottom: 1rem;
-        font-size: 0.9rem;
+    .booking-card-body {
+        padding: 1.5rem;
+        border-top: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-color);
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
     }
-    .booking-dates .date-item { color: var(--text-dark); }
-    .booking-dates .date-item .date-label {
+    .info-item .info-label {
+        font-size: 0.8rem;
         color: var(--text-light);
         font-weight: 500;
         display: block;
-        font-size: 0.8rem;
+        text-transform: uppercase;
     }
-    .booking-dates .date-item i {
-        margin-right: 0.5rem;
-        color: var(--secondary-color);
-    }
-    .booking-footer {
-        margin-top: auto;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-top: 1px solid var(--border-color);
-        padding-top: 1rem;
-    }
-    .booking-price {
-        font-size: 1.2rem;
+    .info-item .info-value {
+        font-size: 1rem;
         font-weight: 600;
         color: var(--text-dark);
     }
-    .booking-price .price-label {
-        font-size: 0.8rem;
-        font-weight: 400;
-        color: var(--text-light);
+    .booking-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        background-color: #fcfdff;
+        border-radius: 0 0 16px 16px;
+    }
+    .booking-price {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--text-dark);
     }
     .status-badge {
         padding: 0.3rem 0.8rem;
@@ -116,11 +113,12 @@
     .status-confirmed { background-color: rgba(42, 157, 143, 0.1); color: var(--success-color); }
     .status-pending { background-color: rgba(238, 155, 0, 0.1); color: var(--warning-color); }
     .status-cancelled { background-color: rgba(174, 32, 18, 0.1); color: var(--danger-color); }
+    
     .empty-state {
         text-align: center;
         padding: 4rem 2rem;
         background-color: var(--bg-card);
-        border: 1px dashed var(--border-color);
+        border: 2px dashed var(--border-color);
         border-radius: 16px;
         margin-top: 2rem;
     }
@@ -147,47 +145,44 @@
     <div class="bookings-list">
         {% for booking in bookings %}
         <div class="booking-card">
-            
-            {% set hotel_img_src = booking.hotel.main_image_url if booking.hotel.main_image_url and (booking.hotel.main_image_url.startswith('http') or booking.hotel.main_image_url.startswith('/static')) else 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80' %}
-            <img src="{{ hotel_img_src }}" alt="{{ booking.hotel.name }}" class="booking-hotel-img d-none d-md-block">
-            
-            <div class="booking-details">
-                <div>
+            <div class="booking-card-header">
+                {% set hotel_img_src = booking.hotel.main_image_url if booking.hotel.main_image_url and (booking.hotel.main_image_url.startswith('http') or booking.hotel.main_image_url.startswith('/static')) else 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80' %}
+                <img src="{{ hotel_img_src }}" alt="{{ booking.hotel.name }}" class="booking-hotel-img d-none d-md-block">
+                <div class="flex-grow-1">
                     <a href="{{ url_for('hotel_detail', hotel_id=booking.hotel.id) }}" class="booking-hotel-name">{{ booking.hotel.name }}</a>
                     <div class="booking-client-name">For Client: <strong>{{ booking.client_name }}</strong></div>
                 </div>
-
-                <div class="booking-dates">
-                    <div class="date-item">
-                        <span class="date-label">Check-in</span>
-                        <i class="fas fa-calendar-check"></i>{{ booking.check_in_date.strftime('%b %d, %Y') }}
-                    </div>
-                    <div class="date-item">
-                        <span class="date-label">Check-out</span>
-                        <i class="fas fa-calendar-times"></i>{{ booking.check_out_date.strftime('%b %d, %Y') }}
-                    </div>
+                <div class="text-end">
+                    <div class="booking-price">₹{{ "%.2f"|format(booking.total_price) }}</div>
+                    <span class="small text-muted">Booking #{{ booking.id }}</span>
                 </div>
+            </div>
 
-                <div class="booking-footer">
-                    <div>
-                        {% set status_class = 'status-pending' %}
-                        {% set status_icon = 'fa-clock' %}
-                        {% if booking.status == 'Confirmed' %}
-                            {% set status_class = 'status-confirmed' %}
-                            {% set status_icon = 'fa-check-circle' %}
-                        {% elif booking.status == 'Cancelled' %}
-                            {% set status_class = 'status-cancelled' %}
-                            {% set status_icon = 'fa-times-circle' %}
-                        {% endif %}
-                        <div class="status-badge {{ status_class }}"><i class="fas {{ status_icon }}"></i> {{ booking.status }}</div>
-                    </div>
-                    <div class="text-end">
-                        <div class="booking-price">${{ "%.2f"|format(booking.total_price) }}</div>
-                        <span class="price-label">Booking #{{ booking.id }}</span>
-                    </div>
-                    <div>
-                        <a href="{{ url_for('download_receipt', booking_id=booking.id) }}" class="btn btn-sm btn-info rounded-pill px-3" title="Download Receipt"><i class="fas fa-download me-1"></i> Receipt</a>
-                    </div>
+            <div class="booking-card-body">
+                <div class="info-item">
+                    <span class="info-label">Check-in</span>
+                    <span class="info-value"><i class="fas fa-calendar-check text-success me-2"></i>{{ booking.check_in_date.strftime('%b %d, %Y') }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Check-out</span>
+                    <span class="info-value"><i class="fas fa-calendar-times text-danger me-2"></i>{{ booking.check_out_date.strftime('%b %d, %Y') }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Room Type</span>
+                    <span class="info-value"><i class="fas fa-bed text-info me-2"></i>{{ booking.room_type.name }}</span>
+                </div>
+            </div>
+            
+            <div class="booking-card-footer">
+                <div>
+                    {% set status_class = 'status-pending' %}{% set status_icon = 'fa-clock' %}
+                    {% if booking.status == 'Confirmed' %}{% set status_class = 'status-confirmed' %}{% set status_icon = 'fa-check-circle' %}
+                    {% elif booking.status == 'Cancelled' %}{% set status_class = 'status-cancelled' %}{% set status_icon = 'fa-times-circle' %}
+                    {% endif %}
+                    <div class="status-badge {{ status_class }}"><i class="fas {{ status_icon }}"></i> {{ booking.status }}</div>
+                </div>
+                <div>
+                    <a href="{{ url_for('download_receipt', booking_id=booking.id) }}" class="btn btn-info text-white rounded-pill px-3" title="Download Receipt"><i class="fas fa-download me-1"></i> Receipt</a>
                 </div>
             </div>
         </div>

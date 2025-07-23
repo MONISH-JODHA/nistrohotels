@@ -16,10 +16,10 @@
         background-color: #f8f9fa;
         border-color: #dee2e6;
     }
-    .form-control:focus {
+    .form-control:focus, .form-select:focus {
         background-color: #fff;
-        border-color: #1abc9c;
-        box-shadow: 0 0 0 0.25rem rgba(26, 188, 156, 0.25);
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem rgba(0, 121, 107, 0.2);
     }
     .image-gallery-item {
         position: relative;
@@ -32,6 +32,8 @@
     .image-gallery-item:hover img {
         transform: scale(1.05);
     }
+
+    /* === START OF FIX: Improved Deletion UI === */
     .delete-overlay {
         position: absolute;
         top: 0;
@@ -45,15 +47,38 @@
         justify-content: center;
         opacity: 0;
         transition: opacity 0.3s ease;
-        cursor: pointer;
+        pointer-events: none; /* Let clicks pass through to the checkbox */
     }
+
+    .delete-checkbox {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 10;
+        transform: scale(1.5); /* Make checkbox bigger */
+    }
+
+    /* Show overlay when hovering over the container */
     .image-gallery-item:hover .delete-overlay {
-        opacity: 1;
+        opacity: 0.7;
     }
-    .form-check-input:checked {
-        background-color: #e74c3c;
-        border-color: #e74c3c;
+
+    /* When checkbox is checked, make the overlay red and always visible */
+    .delete-checkbox:checked + .delete-overlay {
+        opacity: 0.7;
+        background: rgba(220, 53, 69, 0.7); /* Red tint */
     }
+    
+    .delete-checkbox:checked + .delete-overlay .delete-text {
+        display: block; /* Show the "To be Deleted" text */
+    }
+
+    .delete-text {
+        display: none;
+        font-weight: bold;
+    }
+    /* === END OF FIX === */
+
 </style>
 
 <div class="container my-5">
@@ -75,7 +100,7 @@
                         <input type="text" class="form-control" id="name" name="name" value="{{ room.name }}" required>
                     </div>
                     <div class="col-md-6">
-                        <label for="price_per_night" class="form-label">Price per Night (USD) *</label>
+                        <label for="price_per_night" class="form-label">Price per Night (₹) *</label>
                         <input type="number" step="0.01" class="form-control" id="price_per_night" name="price_per_night" value="{{ room.price_per_night }}" required>
                     </div>
                     <div class="col-md-6">
@@ -106,13 +131,17 @@
                         <div class="col-6 col-md-4 col-lg-3">
                             <div class="image-gallery-item">
                                 <img src="{{ url_for('static', filename='uploads/hotel_images/' + image.filename) }}" class="img-fluid" style="aspect-ratio: 1/1; object-fit: cover;">
-                                <label for="delete_img_{{ image.id }}" class="delete-overlay">
+                                
+                                <!-- === START OF FIX: Visible Checkbox and Overlay === -->
+                                <input class="form-check-input delete-checkbox" type="checkbox" name="images_to_delete" value="{{ image.id }}" id="delete_img_{{ image.id }}" title="Mark for deletion">
+                                <div class="delete-overlay">
                                     <div class="text-center">
                                         <i class="fas fa-trash-alt fa-2x"></i>
-                                        <div class="mt-1">Delete</div>
+                                        <div class="mt-1 delete-text">To be Deleted</div>
                                     </div>
-                                </label>
-                                <input class="form-check-input d-none" type="checkbox" name="images_to_delete" value="{{ image.id }}" id="delete_img_{{ image.id }}">
+                                </div>
+                                <!-- === END OF FIX === -->
+
                             </div>
                         </div>
                         {% endfor %}
@@ -133,7 +162,7 @@
 
                 <div class="d-flex justify-content-end align-items-center mt-5">
                     <a href="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" class="btn btn-outline-secondary me-3">Cancel</a>
-                    <button type="submit" class="btn btn-primary px-4 py-2" style="background-color: #1abc9c; border-color: #1abc9c;">
+                    <button type="submit" class="btn btn-primary px-4 py-2" style="background-color: var(--primary-color); border-color: var(--primary-color);">
                         <i class="fas fa-save me-2"></i> Save Changes
                     </button>
                 </div>

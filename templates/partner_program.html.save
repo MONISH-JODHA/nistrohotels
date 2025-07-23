@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Partner Program - Nestrohotels{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold">Join Our Partner Program</h1>
+        <p class="lead text-muted">Unlock powerful tools and new opportunities for your business.</p>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="bg-white p-5 rounded-3 shadow-sm h-100">
+                <h2 class="mb-3" style="color: var(--primary-color);"><i class="fas fa-briefcase me-2"></i> For Travel Agents</h2>
+                <p>Supercharge your agency with Nestrohotels. Gain instant access to a global inventory of hotels, streamline your booking process, and delight your clients with curated proposals.</p>
+                <ul class="list-unstyled lh-lg">
+                    <li><i class="fas fa-check-circle me-2 text-success"></i> <strong>Vast Hotel Inventory:</strong> Access thousands of properties worldwide.</li>
+                    <li><i class="fas fa-check-circle me-2 text-success"></i> <strong>Client Proposal Builder:</strong> Create and share beautiful, professional travel proposals.</li>
+                    <li><i class="fas fa-check-circle me-2 text-success"></i> <strong>Seamless Booking:</strong> Book rooms for clients in just a few clicks.</li>
+                    <li><i class="fas fa-check-circle me-2 text-success"></i> <strong>AI-Powered Assistant:</strong> Get quick answers to your questions about hotels and amenities.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="bg-white p-5 rounded-3 shadow-sm h-100">
+                <h2 class="mb-3" style="color: var(--primary-color);"><i class="fas fa-hotel me-2"></i> For Hotel Owners</h2>
+                <p>Expand your reach and increase your bookings by partnering with Nestrohotels. Connect with a network of professional travel agents actively looking for properties like yours.</p>
+                 <ul class="list-unstyled lh-lg">
+                    <li><i class="fas fa-check-circle me-2 text-success"></i> <strong>Global Distribution:</strong> Showcase your property to a network of travel agents.</li>
+                    <li><i class="fas fa-check-circle me-2 text-success"></i> <strong>Analytics Dashboard:</strong> Track your revenue, bookings, and occupancy rates.</li>
+                    <li><i class="fas fa-check-circle me-2 text-success"></i> <strong>Room & Availability Management:</strong> Easily manage your room types, pricing, and availability.</li>
+                    <li><i class="fas fa-check-circle me-2 text-success"></i> <strong>No Upfront Costs:</strong> Our partnership model is built for mutual success.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="text-center mt-5">
+        <p class="fs-4">Ready to grow with us?</p>
+        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg mt-2 px-5">Sign Up Now</a>
+    </div>
+</div>
+{% endblock %}

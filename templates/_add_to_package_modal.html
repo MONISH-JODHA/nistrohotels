@@ -6,7 +6,7 @@
         <h5 class="modal-title" id="addToPackageModalLabel-{{ hotel.id }}">Add "{{ hotel.name }}" to Proposal</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <form action="{{ url_for('add_to_packages', hotel_id=hotel.id) }}" method="POST" onsubmit="return preparePackageName(this)">
+      <form action="{{ url_for('add_to_packages', hotel_id=hotel.id) }}" method="POST">
         <div class="modal-body">
             
             <div class="form-check">
@@ -68,7 +68,7 @@
                 });
 
                 // Set initial state based on whether packages exist
-                if (selectExisting.options.length === 0 || selectExisting.options[0].disabled) {
+                if (selectExisting.options.length === 0 || (selectExisting.options.length > 0 && selectExisting.options[0].disabled)) {
                     choiceNew.checked = true;
                     choiceExisting.disabled = true;
                     selectExisting.disabled = true;

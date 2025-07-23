@@ -1,226 +1,269 @@
-{% extends "base.html" %}
-{% block title %}Booking Confirmed - #{{ booking.id }}{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Booking Confirmation - Nestrohotels - #{{ booking.id }}</title>
+    <style>
+        /* --- Base & Reset --- */
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f9;
+            color: #1a202c; /* Dark Charcoal */
+        }
+        .container {
+            max-width: 700px;
+            margin: 30px auto;
+            background-color: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+            overflow: hidden; /* To contain the rounded corners of the header */
+        }
 
-{% block head_extra %}
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+        /* --- Header --- */
+        .receipt-header {
+            background: linear-gradient(135deg, #00796B, #004D40);
+            color: #ffffff;
+            padding: 40px;
+            text-align: center;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+        }
+        .header-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 5px 0;
+        }
+        .header-subtitle {
+            font-size: 16px;
+            font-weight: 400;
+            opacity: 0.9;
+            margin: 0;
+        }
 
-<style>
-    /* --- [ 1. Theming & General Styles ] --- */
-    :root {
-        --primary-color: #00796B;
-        --success-color: #2a9d8f;
-        --success-light-bg: rgba(42, 157, 143, 0.08);
-        --bg-body: #f4f7f9;
-        --bg-card: #ffffff;
-        --text-dark: #212529;
-        --text-light: #6c757d;
-        --border-color: #e9ecef;
-        --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
-    }
-    body {
-        background-color: var(--bg-body);
-        font-family: 'Poppins', sans-serif;
-    }
+        /* --- Receipt Body & Sections --- */
+        .receipt-body {
+            padding: 30px 40px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #00796B;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #eef2f7;
+            display: flex;
+            align-items: center;
+        }
+        .section-title i {
+            margin-right: 12px;
+            font-size: 18px;
+        }
 
-    /* --- [ 2. Main Confirmation Wrapper ] --- */
-    .confirmation-wrapper {
-        background-color: var(--bg-card);
-        border-radius: 20px;
-        box-shadow: var(--shadow-lg);
-        overflow: hidden;
-        margin-top: 2rem;
-    }
+        /* --- Details Grid (for Itinerary & Guest Info) --- */
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .detail-item dt {
+            font-weight: 600;
+            color: #4a5568; /* Medium Gray */
+            margin-bottom: 4px;
+        }
+        .detail-item dd {
+            font-weight: 500;
+            color: #1a202c;
+            margin: 0;
+        }
+        .hotel-name {
+            font-size: 18px;
+            font-weight: 700 !important;
+        }
 
-    /* --- [ 3. Confirmation Header ] --- */
-    .confirmation-header {
-        text-align: center;
-        padding: 3rem 1.5rem 2rem 1.5rem;
-    }
-    .icon-circle {
-        width: 80px;
-        height: 80px;
-        background-color: var(--success-light-bg);
-        border-radius: 50%;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 1.5rem;
-        animation: pulse 1.5s infinite ease-in-out;
-    }
-    .icon-circle .fa-check {
-        color: var(--success-color);
-        font-size: 2.5rem;
-    }
-    .confirmation-header h2 {
-        font-weight: 700;
-        color: var(--primary-color);
-    }
-    .confirmation-header p {
-        color: var(--text-light);
-        max-width: 600px;
-        margin: 0.5rem auto 0 auto;
-    }
+        /* --- Payment Summary Table --- */
+        .payment-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .payment-table th, .payment-table td {
+            padding: 12px 0;
+            text-align: left;
+            border-bottom: 1px solid #eef2f7;
+        }
+        .payment-table thead th {
+            font-weight: 600;
+            color: #718096; /* Lighter Gray */
+            text-transform: uppercase;
+            font-size: 12px;
+            padding-bottom: 8px;
+        }
+        .payment-table td:last-child, .payment-table th:last-child {
+            text-align: right;
+        }
+        .payment-table .description {
+            font-weight: 500;
+            color: #2d3748;
+        }
+        .payment-table .rate {
+            color: #4a5568;
+        }
+        
+        /* --- Total Price Section --- */
+        .total-summary {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #f4f7f9;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .total-summary .label {
+            font-size: 18px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        .total-summary .amount {
+            font-size: 24px;
+            font-weight: 700;
+            color: #00796B;
+        }
 
-    /* --- [ 4. Hotel Info Section ] --- */
-    .hotel-info {
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-        padding: 1.5rem;
-        background-color: #f8f9fa;
-        border-top: 1px solid var(--border-color);
-        border-bottom: 1px solid var(--border-color);
-    }
-    .hotel-image {
-        width: 100px;
-        height: 75px;
-        border-radius: 12px;
-        object-fit: cover;
-    }
-    .hotel-info-text .hotel-name {
-        font-weight: 600;
-        font-size: 1.1rem;
-        color: var(--text-dark);
-    }
-    .hotel-info-text .hotel-location {
-        color: var(--text-light);
-        font-size: 0.9rem;
-    }
+        /* --- Footer --- */
+        .footer {
+            text-align: center;
+            padding: 30px 40px;
+            font-size: 13px;
+            color: #718096;
+            line-height: 1.7;
+        }
+        .footer a {
+            color: #00796B;
+            font-weight: 500;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- === HEADER === -->
+        <div class="receipt-header">
+            <div class="logo">Nestrohotels</div>
+            <h1 class="header-title">Client Trip is Booked!</h1>
+            <p class="header-subtitle">This booking was made by your travel agent.</p>
+        </div>
 
-    /* --- [ 5. Booking Details Grid ] --- */
-    .details-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        padding: 2rem 1.5rem;
-    }
-    .detail-item .detail-label {
-        font-size: 0.85rem;
-        color: var(--text-light);
-        display: block;
-        margin-bottom: 0.25rem;
-    }
-    .detail-item .detail-value {
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--text-dark);
-    }
-    .detail-item .detail-value.price {
-        color: var(--success-color);
-        font-size: 1.2rem;
-    }
-
-    /* --- [ 6. Actions & Footer ] --- */
-    .cta-section {
-        padding: 1.5rem;
-        text-align: center;
-        border-top: 1px solid var(--border-color);
-    }
-    .secondary-actions {
-        margin-top: 1.5rem;
-    }
-    .secondary-actions a {
-        color: var(--text-light);
-        text-decoration: none;
-        transition: color 0.2s;
-    }
-    .secondary-actions a:hover {
-        color: var(--primary-color);
-        text-decoration: underline;
-    }
-    .confirmation-footer {
-        background-color: #f8f9fa;
-        padding: 1rem;
-        text-align: center;
-        font-size: 0.8rem;
-        color: var(--text-light);
-    }
-
-    /* --- [ 7. Animations ] --- */
-    @keyframes pulse {
-        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(42, 157, 143, 0.4); }
-        70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(42, 157, 143, 0); }
-        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(42, 157, 143, 0); }
-    }
-</style>
-{% endblock %}
-
-{% block content %}
-<div class="container my-5">
-    <div class="row justify-content-center">
-        <div class="col-md-10 col-lg-8">
-            <div class="confirmation-wrapper">
-                
-                <!-- Header -->
-                <div class="confirmation-header">
-                    <div class="icon-circle">
-                        <i class="fas fa-check"></i>
-                    </div>
-                    <h2>Your Client's Booking is Confirmed!</h2>
-                    <p>Thank you, Agent {{ current_user.username }}! You have successfully booked a trip for your client.</p>
-                </div>
-
-                <!-- Hotel Info -->
-                <div class="hotel-info">
-                    {% set hotel_img_src = booking.hotel.main_image_url if booking.hotel.main_image_url and (booking.hotel.main_image_url.startswith('http') or booking.hotel.main_image_url.startswith('/static')) else 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80' %}
-                    <img src="{{ hotel_img_src }}" alt="{{ booking.hotel.name }}" class="hotel-image">
-                    <div class="hotel-info-text">
-                        <div class="hotel-name">{{ booking.hotel.name }}</div>
-                        <div class="hotel-location"><i class="fas fa-map-marker-alt me-1"></i>{{ booking.hotel.location }}</div>
-                    </div>
-                </div>
-
-                <!-- Booking Details Grid -->
+        <div class="receipt-body">
+            <!-- === GUEST & BOOKING DETAILS SECTION === -->
+            <div class="section">
+                <h2 class="section-title"><i class="fas fa-user-check"></i>Client & Booking Details</h2>
                 <div class="details-grid">
                     <div class="detail-item">
-                        <span class="detail-label">Client Name</span>
-                        <span class="detail-value">{{ booking.client_name }}</span>
+                        <dt>Booking ID</dt>
+                        <dd>#{{ booking.id }}</dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Booking Date</dt>
+                        <dd>{{ booking.created_at.strftime('%B %d, %Y') }}</dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Client Name</dt>
+                        <dd>{{ booking.client_name }}</dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Client Email</dt>
+                        <dd>{{ booking.client_email or 'Not Provided' }}</dd>
                     </div>
                      <div class="detail-item">
-                        <span class="detail-label">Client Email</span>
-                        <span class="detail-value">{{ booking.client_email or 'Not Provided' }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Check-in Date</span>
-                        <span class="detail-value">{{ booking.check_in_date.strftime('%A, %B %d, %Y') }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Check-out Date</span>
-                        <span class="detail-value">{{ booking.check_out_date.strftime('%A, %B %d, %Y') }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Room Type</span>
-                        <span class="detail-value">{{ booking.room_type.name }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Booking ID</span>
-                        <span class="detail-value">#{{ booking.id }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Total Price Paid</span>
-                        <span class="detail-value price">${{ "%.2f"|format(booking.total_price) }}</span>
+                        <dt>Booked By (Agent)</dt>
+                        <dd>{{ user.username }} ({{user.email}})</dd>
                     </div>
                 </div>
+            </div>
 
-                <!-- Actions -->
-                <div class="cta-section">
-                    <a href="{{ url_for('download_receipt', booking_id=booking.id) }}" class="btn btn-success btn-lg rounded-pill py-3 px-5">
-                        <i class="fas fa-download me-2"></i> Download Client Receipt (PDF)
-                    </a>
-                    <div class="secondary-actions">
-                        <a href="{{ url_for('client_bookings') }}" class="me-3"><i class="fas fa-list-alt me-1"></i>View All Client Bookings</a>
-                        <a href="{{ url_for('index') }}"><i class="fas fa-search me-1"></i>Browse More Hotels</a>
+            <!-- === ITINERARY SECTION === -->
+            <div class="section">
+                <h2 class="section-title"><i class="fas fa-suitcase-rolling"></i>Client's Itinerary</h2>
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <dt>Hotel & Location</dt>
+                        <dd class="hotel-name">{{ booking.hotel.name }} <span style="font-weight: 400; color: #718096;">- {{ booking.hotel.location }}</span></dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Room Type</dt>
+                        <dd>{{ booking.room_type.name }}</dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Check-in</dt>
+                        <dd>{{ booking.check_in_date.strftime('%A, %B %d, %Y') }}</dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Check-out</dt>
+                        <dd>{{ booking.check_out_date.strftime('%A, %B %d, %Y') }}</dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Duration of Stay</dt>
+                        <dd>{{ (booking.check_out_date - booking.check_in_date).days }} Night(s)</dd>
                     </div>
                 </div>
+            </div>
 
-                <!-- Footer -->
-                <div class="confirmation-footer">
-                    Booking made by Agent {{ current_user.username }} on {{ booking.created_at.strftime('%B %d, %Y at %I:%M %p UTC') }}
+            <!-- === PAYMENT SUMMARY SECTION === -->
+            <div class="section">
+                <h2 class="section-title"><i class="fas fa-file-invoice-dollar"></i>Payment Summary</h2>
+                <table class="payment-table">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Rate / Night</th>
+                            <th>Nights</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="description">
+                                {{ booking.hotel.name }}<br>
+                                <span style="color: #718096; font-size: 13px;">{{ booking.room_type.name }}</span>
+                            </td>
+                            <td class="rate">₹{{ "%.2f"|format(booking.total_price / (booking.check_out_date - booking.check_in_date).days) }}</td>
+                            <td>{{ (booking.check_out_date - booking.check_in_date).days }}</td>
+                            <td>₹{{ "%.2f"|format(booking.total_price) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="total-summary">
+                    <span class="label">Total Amount Paid</span>
+                    <span class="amount">₹{{ "%.2f"|format(booking.total_price) }}</span>
                 </div>
             </div>
         </div>
+
+        <!-- === FOOTER === -->
+        <div class="footer">
+            <p>This is an automated receipt. No payment is due.</p>
+            <p>If you have any questions or need to modify your booking, please contact your travel agent.</p>
+            <p>© {{ current_year }} Nestrohotels. All rights reserved.</p>
+        </div>
     </div>
-</div>
-{% endblock %}
+</body>
+</html>

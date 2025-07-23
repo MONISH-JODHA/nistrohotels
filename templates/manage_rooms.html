@@ -2,86 +2,75 @@
 
 {% block title %}Manage Rooms - {{ hotel.name }}{% endblock %}
 
-{% block content %}
+{% block head_extra %}
 <style>
     .room-list-item {
         background-color: #fff;
         border: 1px solid #eef2f7;
         border-radius: 12px;
-        transition: box-shadow 0.2s ease;
+        transition: box-shadow 0.2s ease, transform 0.2s ease;
+        display: flex;
+        padding: 1rem;
+        align-items: center;
+        gap: 1.5rem;
     }
     .room-list-item:hover {
+        transform: translateY(-4px);
         box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     }
     .room-thumbnail {
-        width: 80px;
-        height: 60px;
+        width: 120px;
+        height: 90px;
         object-fit: cover;
         border-radius: 8px;
+        flex-shrink: 0;
     }
-    .modal-content {
-        border-radius: 16px;
-        border: none;
+    .room-info {
+        flex-grow: 1;
     }
-    .image-gallery-item {
-        position: relative;
-        overflow: hidden;
-        border-radius: 8px;
-    }
-    .delete-overlay {
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.5);
-        color: white;
-        display: flex; align-items: center; justify-content: center;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        cursor: pointer;
-    }
-    .image-gallery-item:hover .delete-overlay { opacity: 1; }
-    .form-check-input:checked { background-color: #e74c3c; border-color: #e74c3c; }
-    
     .room-actions {
         display: flex;
         flex-wrap: nowrap;
         align-items: center;
+        gap: 0.5rem;
     }
 </style>
+{% endblock %}
 
+{% block content %}
 <div class="container my-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h2 fw-bold" style="color: #2c3e50;">Manage Rooms</h1>
             <p class="text-muted mb-0">For hotel: <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}">{{ hotel.name }}</a></p>
         </div>
-        <button type="button" class="btn btn-primary btn-lg" style="background-color: #00796B; border-color: #00796B;" data-bs-toggle="modal" data-bs-target="#roomFormModal" onclick="prepareAddForm()">
-            <i class="fas fa-plus me-2"></i> Add New Room Type
-        </button>
+        <div>
+            <a href="{{ url_for('owner_dashboard') }}" class="btn btn-outline-secondary me-2">Back to Dashboard</a>
+            <a href="{{ url_for('register_hotel') }}" class="btn btn-primary" style="background-color: #00796B; border-color: #00796B;" data-bs-toggle="modal" data-bs-target="#addRoomModal">
+                <i class="fas fa-plus me-2"></i> Add New Room Type
+            </a>
+        </div>
     </div>
     
-    <div class="list-group">
+    <div class="list-group list-group-flush">
         {% for room in room_types %}
-        <div class="list-group-item room-list-item p-3 mb-3 d-flex align-items-center">
+        <div class="list-group-item room-list-item mb-3">
             {% set room_img_src = room.main_image_url if room.main_image_url and (room.main_image_url.startswith('http') or room.main_image_url.startswith('/static')) else 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=800&q=80' %}
-            <img src="{{ room_img_src }}" alt="{{ room.name }}" class="room-thumbnail me-4">
-            <div class="flex-grow-1">
+            <img src="{{ room_img_src }}" alt="{{ room.name }}" class="room-thumbnail">
+            
+            <div class="room-info">
                 <h5 class="mb-1 fw-bold" style="color: #34495e;">{{ room.name }}</h5>
-                <small class="text-muted">${{ "%.2f"|format(room.price_per_night) }} / night | {{ room.number_of_rooms }} available rooms</small>
+                <p class="mb-1"><span class="fw-bold text-success">₹{{ "%.2f"|format(room.price_per_night) }}</span> / night</p>
+                <small class="text-muted">{{ room.number_of_rooms }} available rooms</small>
             </div>
             
             <div class="room-actions">
-                <a href="{{ url_for('manage_availability', hotel_id=hotel.id, room_type_id=room.id) }}" class="btn btn-sm btn-outline-info me-2" title="Manage dynamic pricing and availability">
-                    <i class="fas fa-calendar-alt me-1"></i> Availability
+                <a href="{{ url_for('manage_availability', hotel_id=hotel.id, room_type_id=room.id) }}" class="btn btn-sm btn-info text-white" title="Manage dynamic pricing and availability">
+                    <i class="fas fa-calendar-alt"></i><span class="d-none d-md-inline ms-2">Availability</span>
                 </a>
-
-                <button type="button" class="btn btn-sm btn-outline-secondary me-2 edit-room-btn" 
-                        data-bs-toggle="modal" 
-                        data-bs-target="#roomFormModal" 
-                        data-room-json='{{ room.to_dict()|tojson|safe }}'
-                        title="Edit room details">
-                    <i class="fas fa-edit me-1"></i> Edit
-                </button>
-                
+                <a href="{{ url_for('edit_room', hotel_id=hotel.id, room_type_id=room.id) }}" class="btn btn-sm btn-secondary" title="Edit room details">
+                    <i class="fas fa-edit"></i><span class="d-none d-md-inline ms-2">Edit</span>
+                </a>
                 <form action="{{ url_for('delete_room', hotel_id=hotel.id, room_type_id=room.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this room? This cannot be undone.');">
                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete room">
                         <i class="fas fa-trash-alt"></i>
@@ -97,36 +86,28 @@
     </div>
 </div>
 
-<div class="modal fade" id="roomFormModal" tabindex="-1" aria-labelledby="roomFormModalLabel" aria-hidden="true">
+<!-- Add Room Modal -->
+<div class="modal fade" id="addRoomModal" tabindex="-1" aria-labelledby="addRoomModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <form id="roomForm" method="POST" action="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" enctype="multipart/form-data">
+        <div class="modal-content" style="border-radius: 1rem; border: none;">
+            <form id="addRoomForm" method="POST" action="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" enctype="multipart/form-data">
                 <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold" id="roomFormModalLabel" style="color: #2c3e50;"></h5>
+                    <h5 class="modal-title fw-bold" id="addRoomModalLabel" style="color: #2c3e50;">Add New Room Type</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <input type="hidden" name="room_id" id="room_id">
-                    
                     <div class="row g-3">
-                        <div class="col-12"><label for="name" class="form-label">Room Type Name *</label><input type="text" class="form-control" id="name" name="name" required></div>
-                        <div class="col-md-6"><label for="price_per_night" class="form-label">Price per Night (USD) *</label><input type="number" step="0.01" class="form-control" id="price_per_night" name="price_per_night" required></div>
-                        <div class="col-md-6"><label for="number_of_rooms" class="form-label">Number of Rooms *</label><input type="number" class="form-control" id="number_of_rooms" name="number_of_rooms" required></div>
-                        <div class="col-12"><label for="description" class="form-label">Description</label><textarea class="form-control" id="description" name="description" rows="3"></textarea></div>
-                        <div class="col-12"><label for="amenities" class="form-label">Amenities (comma-separated)</label><input type="text" class="form-control" id="amenities" name="amenities" placeholder="e.g., Balcony, Jacuzzi"></div>
+                        <div class="col-12"><label for="add_name" class="form-label">Room Type Name *</label><input type="text" class="form-control" id="add_name" name="name" required></div>
+                        <div class="col-md-6"><label for="add_price_per_night" class="form-label">Price per Night (₹) *</label><input type="number" step="0.01" class="form-control" id="add_price_per_night" name="price_per_night" required></div>
+                        <div class="col-md-6"><label for="add_number_of_rooms" class="form-label">Number of Rooms *</label><input type="number" class="form-control" id="add_number_of_rooms" name="number_of_rooms" required></div>
+                        <div class="col-12"><label for="add_description" class="form-label">Description</label><textarea class="form-control" id="add_description" name="description" rows="3"></textarea></div>
+                        <div class="col-12"><label for="add_amenities" class="form-label">Amenities (comma-separated)</label><input type="text" class="form-control" id="add_amenities" name="amenities" placeholder="e.g., Balcony, Jacuzzi"></div>
                     </div>
                     
                     <hr class="my-4">
                     <h6 class="fw-bold">Room Images</h6>
-
-                    <div id="currentImagesContainer" class="mb-3" style="display: none;">
-                        <label class="form-label">Current Gallery Images</label>
-                        <p class="small text-muted mt-0">Check to delete.</p>
-                        <div class="row g-2" id="currentImagesGallery"></div>
-                    </div>
-
-                    <div class="mb-3"><label for="main_image_url" class="form-label">Main Display Image URL</label><input type="url" class="form-control" id="main_image_url" name="main_image_url" placeholder="https://..."><div class="form-text">Leave blank to use the first uploaded image.</div></div>
-                    <div class="mb-3"><label for="gallery_images_upload" class="form-label">Upload New Gallery Images</label><input class="form-control" type="file" id="gallery_images_upload" name="gallery_images_upload" multiple></div>
+                    <div class="mb-3"><label for="add_main_image_url" class="form-label">Main Display Image URL</label><input type="url" class="form-control" id="add_main_image_url" name="main_image_url" placeholder="https://..."><div class="form-text">Leave blank to use the first uploaded image.</div></div>
+                    <div class="mb-3"><label for="add_gallery_images_upload" class="form-label">Upload New Gallery Images</label><input class="form-control" type="file" id="add_gallery_images_upload" name="gallery_images_upload" multiple></div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -136,63 +117,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('roomForm');
-    const modalTitle = document.getElementById('roomFormModalLabel');
-
-    window.prepareAddForm = function() {
-        modalTitle.textContent = 'Add New Room Type';
-        form.reset();
-        document.getElementById('room_id').value = '';
-        document.getElementById('currentImagesContainer').style.display = 'none';
-        document.getElementById('currentImagesGallery').innerHTML = '';
-    }
-
-    document.querySelectorAll('.edit-room-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const room = JSON.parse(this.getAttribute('data-room-json'));
-            
-            modalTitle.textContent = 'Edit Room Type: ' + room.name;
-            form.reset();
-
-            document.getElementById('room_id').value = room.id;
-            document.getElementById('name').value = room.name;
-            document.getElementById('price_per_night').value = room.price_per_night;
-            document.getElementById('number_of_rooms').value = room.number_of_rooms;
-            document.getElementById('description').value = room.description || '';
-            document.getElementById('amenities').value = room.amenities || '';
-            document.getElementById('main_image_url').value = room.main_image_url || '';
-
-            const galleryContainer = document.getElementById('currentImagesGallery');
-            const galleryWrapper = document.getElementById('currentImagesContainer');
-            galleryContainer.innerHTML = '';
-            
-            if (room.gallery_images && room.gallery_images.length > 0) {
-                galleryWrapper.style.display = 'block';
-                room.gallery_images.forEach(image => {
-                    const imageUrl = `/static/uploads/hotel_images/${image.filename}`;
-                    const col = document.createElement('div');
-                    col.className = 'col-4 col-md-3';
-                    col.innerHTML = `
-                        <div class="image-gallery-item">
-                            <img src="${imageUrl}" class="img-fluid" style="aspect-ratio: 1/1; object-fit: cover;">
-                            <label for="delete_img_${image.id}" class="delete-overlay">
-                                <div class="text-center"><i class="fas fa-trash-alt"></i><div class="small mt-1">Delete</div></div>
-                            </label>
-                            <input class="form-check-input d-none" type="checkbox" name="images_to_delete" value="${image.id}" id="delete_img_${image.id}">
-                        </div>
-                    `;
-                    galleryContainer.appendChild(col);
-                });
-            } else {
-                galleryWrapper.style.display = 'none';
-            }
-        });
-    });
-});
-</script>
 {% endblock %}

@@ -5,11 +5,11 @@
 {% block content %}
 <style>
     .form-control-custom:focus {
-        border-color: #4dabf7;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.2);
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem rgba(0, 121, 107, 0.2);
     }
     .btn-gradient-primary {
-        background: linear-gradient(45deg, #00796B, #004D40);
+        background: linear-gradient(45deg, var(--primary-color), #004D40);
         border: none;
         transition: all 0.3s ease;
         box-shadow: 0 4px 15px rgba(0, 121, 107, 0.2);
@@ -27,7 +27,7 @@
     <div style="background-color: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 20px; padding: 2.5rem; box-shadow: 0 15px 40px rgba(0,0,0,0.1);">
 
         <div class="d-flex align-items-center mb-5">
-            <div style="background: linear-gradient(45deg, #00796B, #004D40); color: white; height: 60px; width: 60px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 1.5rem; margin-right: 20px;">
+            <div style="background: linear-gradient(45deg, var(--primary-color), var(--accent-color)); color: white; height: 60px; width: 60px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 1.5rem; margin-right: 20px;">
                 <i class="fas fa-user-circle"></i>
             </div>
             <div>

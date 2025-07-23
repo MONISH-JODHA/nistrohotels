@@ -245,15 +245,15 @@
                                 {{ booking.hotel.name }}<br>
                                 <span style="color: #718096; font-size: 13px;">{{ booking.room_type.name }}</span>
                             </td>
-                            <td class="rate">${{ "%.2f"|format(booking.total_price / (booking.check_out_date - booking.check_in_date).days) }}</td>
+                            <td class="rate">₹{{ "%.2f"|format(booking.total_price / (booking.check_out_date - booking.check_in_date).days) }}</td>
                             <td>{{ (booking.check_out_date - booking.check_in_date).days }}</td>
-                            <td>${{ "%.2f"|format(booking.total_price) }}</td>
+                            <td>₹{{ "%.2f"|format(booking.total_price) }}</td>
                         </tr>
                     </tbody>
                 </table>
                 <div class="total-summary">
                     <span class="label">Total Amount Paid</span>
-                    <span class="amount">${{ "%.2f"|format(booking.total_price) }}</span>
+                    <span class="amount">₹{{ "%.2f"|format(booking.total_price) }}</span>
                 </div>
             </div>
         </div>

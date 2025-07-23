@@ -164,7 +164,7 @@
     </div>
 
     <div class="row g-4 mb-4">
-        <div class="col-xl-3 col-md-6"><div class="kpi-card kpi-primary"><div class="card-border"></div><div class="card-content"><i class="fas fa-dollar-sign card-icon"></i><div><p class="card-title">Total Revenue</p><h4 class="card-value">${{ "%.2f"|format(analytics.total_revenue) }}</h4></div></div></div></div>
+        <div class="col-xl-3 col-md-6"><div class="kpi-card kpi-primary"><div class="card-border"></div><div class="card-content"><i class="fas fa-dollar-sign card-icon"></i><div><p class="card-title">Total Revenue</p><h4 class="card-value">₹{{ "%.2f"|format(analytics.total_revenue) }}</h4></div></div></div></div>
         <div class="col-xl-3 col-md-6"><div class="kpi-card kpi-info"><div class="card-border"></div><div class="card-content"><i class="fas fa-chart-pie card-icon"></i><div><p class="card-title">Occupancy (30d)</p><h4 class="card-value">{{ "%.1f"|format(analytics.occupancy_rate) }}%</h4></div></div></div></div>
         <div class="col-xl-3 col-md-6"><div class="kpi-card kpi-success"><div class="card-border"></div><div class="card-content"><i class="fas fa-calendar-check card-icon"></i><div><p class="card-title">Total Bookings</p><h4 class="card-value">{{ analytics.total_bookings }}</h4></div></div></div></div>
         <div class="col-xl-3 col-md-6"><div class="kpi-card kpi-warning"><div class="card-border"></div><div class="card-content"><i class="fas fa-star card-icon"></i><div><p class="card-title">Popular Rooms</p>

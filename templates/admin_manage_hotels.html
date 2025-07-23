@@ -33,10 +33,6 @@
         border: 1px solid var(--border-color);
         border-radius: 16px;
         box-shadow: var(--shadow-sm);
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-        padding: 1.5rem;
         margin-bottom: 1.5rem;
         transition: box-shadow 0.3s ease, transform 0.3s ease;
     }
@@ -47,6 +43,7 @@
     .hotel-card-main {
         display: flex;
         gap: 1.5rem;
+        padding: 1.5rem;
     }
     .hotel-card-image {
         width: 150px;
@@ -75,7 +72,7 @@
         display: flex;
         flex-wrap: wrap;
         gap: 0.75rem;
-        margin: 1rem 0;
+        margin-top: 1rem;
     }
     .meta-tag {
         display: inline-flex;
@@ -92,13 +89,14 @@
     .meta-tag.status-pending { background-color: rgba(252, 163, 17, 0.1); color: var(--warning-color); }
     
     .hotel-card-footer {
-        margin-top: auto;
         display: flex;
         justify-content: flex-end;
         align-items: center;
         gap: 0.75rem;
-        padding-top: 1rem;
+        padding: 1rem 1.5rem;
         border-top: 1px solid var(--border-color);
+        background-color: #fcfdfe;
+        border-radius: 0 0 16px 16px;
     }
     .dropdown-item i { width: 20px; margin-right: 0.5rem; text-align: center; }
     .dropdown-item.text-success:hover { background-color: rgba(42, 157, 143, 0.1); }
@@ -141,9 +139,7 @@
             </div>
 
             <div class="hotel-card-footer">
-                <!-- === START OF FIX: Prominent Edit Button === -->
                 <a href="{{ url_for('edit_hotel_by_admin', hotel_id=hotel.id) }}" class="btn btn-secondary"><i class="fas fa-edit me-2"></i> Edit Details</a>
-                <!-- === END OF FIX === -->
                 <a href="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" class="btn btn-dark"><i class="fas fa-bed me-2"></i> Manage Rooms</a>
                 <div class="dropdown">
                     <button class="btn btn-outline-secondary" type="button" id="actionsDropdown-{{ hotel.id }}" data-bs-toggle="dropdown" aria-expanded="false">

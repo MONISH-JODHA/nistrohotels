@@ -1,192 +1,293 @@
 {% extends "base.html" %}
-{% block title %}Edit User: {{ user.username }}{% endblock %}
+{% block title %}Owner Dashboard - Nestrohotels{% endblock %}
 
 {% block head_extra %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-
 <style>
     :root {
         --primary-color: #00796B;
         --success-color: #2a9d8f;
+        --info-color: #0a9396;
+        --warning-color: #ee9b00;
         --bg-body: #f4f7f9;
         --bg-card: #ffffff;
         --text-dark: #212529;
         --text-light: #6c757d;
         --border-color: #e9ecef;
+        --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
         --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
     }
     body {
         background-color: var(--bg-body);
         font-family: 'Poppins', sans-serif;
     }
-    .edit-user-card {
+    .page-header h1 {
+        color: var(--primary-color);
+        font-weight: 700;
+    }
+    .kpi-card {
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
-        border-radius: 16px;
-        box-shadow: var(--shadow-md);
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+        padding: 1.5rem;
+        position: relative;
         overflow: hidden;
+        transition: box-shadow 0.2s, transform 0.2s;
+        height: 100%;
     }
-    .user-identity-header {
-        display: flex;
-        align-items: center;
-        gap: 1.25rem;
-        padding: 1.5rem 2rem;
-        background-color: #f8f9fa;
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md);
+    }
+    .kpi-card .card-border {
+        position: absolute; top: 0; left: 0;
+        height: 4px; width: 100%;
+    }
+    .kpi-card .card-content {
+        display: flex; align-items: center; gap: 1.25rem;
+    }
+    .kpi-card .card-icon { font-size: 2rem; }
+    .kpi-card .card-title {
+        font-size: 0.9rem; font-weight: 500;
+        color: var(--text-light); margin-bottom: 0.25rem;
+    }
+    .kpi-card .card-value {
+        font-size: 1.75rem; font-weight: 700;
+        color: var(--text-dark);
+    }
+    .kpi-primary .card-border { background-color: var(--primary-color); }
+    .kpi-primary .card-icon { color: var(--primary-color); }
+    .kpi-info .card-border { background-color: var(--info-color); }
+    .kpi-info .card-icon { color: var(--info-color); }
+    .kpi-success .card-border { background-color: var(--success-color); }
+    .kpi-success .card-icon { color: var(--success-color); }
+    .kpi-warning .card-border { background-color: var(--warning-color); }
+    .kpi-warning .card-icon { color: var(--warning-color); }
+    
+    .ranked-list {
+        list-style: none; padding-left: 0; margin-bottom: 0;
+        counter-reset: rank-counter; font-size: 0.9rem;
+    }
+    .ranked-list-item {
+        display: flex; align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    .ranked-list-item:last-child { margin-bottom: 0; }
+    .ranked-list-item::before {
+        counter-increment: rank-counter; content: counter(rank-counter);
+        background-color: #f0f2f5; color: var(--text-light); font-weight: 600;
+        border-radius: 50%; width: 24px; height: 24px;
+        display: inline-flex; align-items: center; justify-content: center;
+        margin-right: 0.75rem; flex-shrink: 0;
+    }
+
+    .content-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+        height: 100%;
+    }
+    .content-card-header {
+        padding: 1.25rem 1.5rem;
         border-bottom: 1px solid var(--border-color);
     }
-    .user-avatar {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 1.75rem;
-        color: white;
-        flex-shrink: 0;
+    .content-card-header h5 {
+        font-weight: 600; color: var(--primary-color);
+        margin: 0;
     }
-    .user-name {
-        font-weight: 600;
-        font-size: 1.25rem;
-        color: var(--text-dark);
-    }
-    .user-email {
-        font-size: 0.9rem;
-        color: var(--text-light);
-    }
-    .form-section {
-        padding: 1.5rem 2rem;
-    }
-    .form-section-title {
-        font-weight: 600;
-        color: var(--primary-color);
-        margin-bottom: 1.25rem;
-    }
-    .form-label {
-        font-weight: 500;
-        color: var(--text-dark);
-        margin-bottom: 0.5rem;
-    }
-    .form-control, .form-select {
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-    }
-    .form-control:focus, .form-select:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(0, 121, 107, 0.2);
-    }
-    .role-selector {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 1rem;
-    }
-    .role-option input[type="radio"] {
-        display: none;
-    }
-    .role-option label {
-        display: block;
-        padding: 1rem;
-        border: 2px solid var(--border-color);
-        border-radius: 12px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.2s ease-in-out;
-    }
-    .role-option label:hover {
-        border-color: var(--primary-color);
-        background-color: #f8f9fa;
-    }
-    .role-option input[type="radio"]:checked + label {
-        border-color: var(--primary-color);
-        background-color: rgba(0, 121, 107, 0.05);
-        font-weight: 600;
-        color: var(--primary-color);
-    }
-    .role-option label .role-icon {
-        font-size: 1.5rem;
-        display: block;
-        margin-bottom: 0.5rem;
-    }
-    .form-actions {
-        padding: 1.5rem 2rem;
-        background-color: #f8f9fa;
-        border-top: 1px solid var(--border-color);
-        display: flex;
-        justify-content: flex-end;
-        gap: 0.75rem;
-    }
+    .content-card-body { padding: 1.5rem; }
+    .content-card-body.p-0 { padding: 0; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center my-5">
-    <div class="col-md-9 col-lg-7">
-        <form method="POST" action="{{ url_for('edit_user', user_id=user.id) }}">
-            <div class="edit-user-card">
-                
-                <div class="user-identity-header">
-                    <div class="user-avatar" style="background-color: hsl({{ user.id * 37 % 360 }}, 40%, 50%);">
-                        <span>{{ user.username[0]|upper }}</span>
-                    </div>
+<div class="container-fluid mt-4 mb-5 px-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-5 page-header">
+        <div>
+            <h1 class="h2 mb-1">Owner Dashboard</h1>
+            <p class="mb-0 text-muted">Welcome back, here's your business overview.</p>
+        </div>
+        <a href="{{ url_for('register_hotel') }}" class="btn btn-lg btn-primary rounded-pill px-4">
+            <i class="fas fa-plus me-2"></i> Register New Hotel
+        </a>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card kpi-primary">
+                <div class="card-border"></div>
+                <div class="card-content">
+                    <i class="fas fa-dollar-sign card-icon"></i>
                     <div>
-                        <div class="user-name">{{ user.username }}</div>
-                        <div class="user-email">{{ user.email }}</div>
+                        <p class="card-title">Total Revenue</p>
+                        <h4 class="card-value">₹{{ "%.2f"|format(analytics.total_revenue) }}</h4>
                     </div>
                 </div>
-
-                <div class="form-section">
-                    <h5 class="form-section-title">Account Details</h5>
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
-                    </div>
-                    <div>
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
-                    </div>
-                </div>
-
-                <hr class="m-0">
-                
-                <div class="form-section">
-                    <h5 class="form-section-title">User Role</h5>
-                    <div class="role-selector">
-                        <div class="role-option">
-                            <input type="radio" id="role_agent" name="role" value="agent" {% if user.role == 'agent' %}checked{% endif %}>
-                            <label for="role_agent"><i class="fas fa-user-secret role-icon"></i>Travel Agent</label>
-                        </div>
-                        <div class="role-option">
-                            <input type="radio" id="role_owner" name="role" value="owner" {% if user.role == 'owner' %}checked{% endif %}>
-                            <label for="role_owner"><i class="fas fa-user-tie role-icon"></i>Hotel Owner</label>
-                        </div>
-                        <div class="role-option">
-                            <input type="radio" id="role_admin" name="role" value="admin" {% if user.role == 'admin' %}checked{% endif %}>
-                            <label for="role_admin"><i class="fas fa-user-shield role-icon"></i>Admin</label>
-                        </div>
-                    </div>
-                </div>
-
-                <hr class="m-0">
-
-                <div class="form-section">
-                    <h5 class="form-section-title">Security</h5>
-                    <p class="text-muted small mb-3">Enter a new password below to reset it. Leave blank to keep the current password.</p>
-                    <div>
-                        <label for="new_password" class="form-label">New Password</label>
-                        <input type="password" class="form-control" id="new_password" name="new_password" placeholder="••••••••">
-                    </div>
-                </div>
-                
-                <div class="form-actions">
-                    <a href="{{ url_for('manage_users') }}" class="btn btn-secondary">Cancel</a>
-                    <button type="submit" class="btn btn-primary px-4"><i class="fas fa-save me-2"></i> Save Changes</button>
-                </div>
-
             </div>
-        </form>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card kpi-info">
+                <div class="card-border"></div>
+                <div class="card-content">
+                    <i class="fas fa-chart-pie card-icon"></i>
+                    <div>
+                        <p class="card-title">Occupancy (30d)</p>
+                        <h4 class="card-value">{{ "%.1f"|format(analytics.occupancy_rate) }}%</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card kpi-success">
+                <div class="card-border"></div>
+                <div class="card-content">
+                    <i class="fas fa-calendar-check card-icon"></i>
+                    <div>
+                        <p class="card-title">Total Bookings</p>
+                        <h4 class="card-value">{{ analytics.total_bookings }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card kpi-warning">
+                <div class="card-border"></div>
+                <div class="card-content">
+                    <i class="fas fa-star card-icon"></i>
+                    <div>
+                        <p class="card-title">Most Popular Rooms</p>
+                        {% if analytics.popular_room_types %}
+                        <ol class="ranked-list">
+                            {% for room, count in analytics.popular_room_types %}
+                            <li class="ranked-list-item">{{ room }} ({{count}})</li>
+                            {% endfor %}
+                        </ol>
+                        {% else %}
+                        <p class="small text-muted mb-0 mt-1">No bookings yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="content-card">
+                <div class="content-card-header">
+                    <h5><i class="fas fa-chart-line me-2 text-muted"></i> Booking Trends (Last 30 Days)</h5>
+                </div>
+                <div class="content-card-body">
+                    <canvas id="bookingChart" style="min-height: 350px;"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+             <div class="content-card">
+                <div class="content-card-header">
+                    <h5><i class="fas fa-hotel me-2 text-muted"></i> My Registered Hotels</h5>
+                </div>
+                <div class="content-card-body p-0">
+                    {% if hotels %}
+                    <ul class="list-group list-group-flush">
+                        {% for hotel in hotels %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                            <div>
+                                <div class="fw-bold">{{ hotel.name }}</div>
+                                <div class="small text-muted">{{ hotel.location }}</div>
+                            </div>
+                            <div>
+                                {% if hotel.is_approved %}
+                                    <span class="badge rounded-pill bg-success-subtle text-success-emphasis">Approved</span>
+                                {% else %}
+                                    <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">Pending</span>
+                                {% endif %}
+                            </div>
+                            <div class="btn-group">
+                                <a href="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" class="btn btn-sm btn-dark" title="Manage Rooms"><i class="fas fa-bed"></i></a>
+                                <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="btn btn-sm btn-outline-secondary" title="View Hotel Page"><i class="fas fa-eye"></i></a>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="d-flex align-items-center justify-content-center h-100 p-5">
+                        <p class="text-muted text-center">You have not registered any hotels yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const ctx = document.getElementById('bookingChart');
+    if (ctx) {
+        const chartLabels = {{ analytics.chart_labels|tojson|safe }};
+        const chartData = {{ analytics.chart_data|tojson|safe }};
+        const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, ctx.offsetHeight * 1.5);
+        gradient.addColorStop(0, 'rgba(42, 157, 143, 0.4)');
+        gradient.addColorStop(1, 'rgba(42, 157, 143, 0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: 'Bookings',
+                    data: chartData,
+                    fill: true,
+                    backgroundColor: gradient,
+                    borderColor: 'rgb(42, 157, 143)',
+                    borderWidth: 2.5,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointHoverBorderWidth: 2,
+                    pointBackgroundColor: 'rgb(42, 157, 143)',
+                    pointHoverBackgroundColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#95a5a6', stepSize: 1, padding: 10 },
+                        grid: { color: '#eef2f7', borderDash: [5, 5] }
+                    },
+                    x: {
+                        ticks: { color: '#95a5a6', padding: 10 },
+                        grid: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: '#212529',
+                        titleFont: { weight: 'bold' },
+                        bodyFont: { size: 14 },
+                        padding: 12,
+                        cornerRadius: 8,
+                        displayColors: false
+                    }
+                },
+                interaction: { intersect: false, mode: 'index' }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

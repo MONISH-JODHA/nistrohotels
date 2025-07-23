@@ -71,34 +71,25 @@
     
     <!-- Agent Actions Section -->
     {% if current_user.is_authenticated and current_user.role == 'agent' %}
-        <div class="card shadow-sm border-0 mb-5">
-            <div class="card-body p-4">
-                 <!-- THIS IS THE CRITICAL FIX: Replaced remove button with a status or an add form -->
-                {% if is_hotel_in_packages(hotel.id) %}
-                    <div class="alert alert-success d-flex align-items-center mb-0">
-                        <i class="fas fa-check-circle fa-2x me-3"></i>
-                        <div>
-                            <h5 class="alert-heading mb-0">This hotel is in one or more of your proposals.</h5>
-                            <a href="{{ url_for('my_packages') }}" class="fw-bold text-decoration-none">Manage my proposals <i class="fas fa-arrow-right"></i></a>
-                        </div>
+    <div class="card shadow-sm border-0 mb-5">
+        <div class="card-body p-4 d-flex justify-content-between align-items-center">
+            {% if is_hotel_in_packages(hotel.id) %}
+                <div class="alert alert-success d-flex align-items-center mb-0 flex-grow-1">
+                    <i class="fas fa-check-circle fa-2x me-3"></i>
+                    <div>
+                        <h5 class="alert-heading mb-0">This hotel is in one or more of your proposals.</h5>
+                        <a href="{{ url_for('my_packages') }}" class="fw-bold text-decoration-none">Manage my proposals <i class="fas fa-arrow-right"></i></a>
                     </div>
-                {% else %}
-                    <h5 class="mb-3">Add to a Client Proposal</h5>
-                    <form action="{{ url_for('add_to_packages', hotel_id=hotel.id) }}" method="POST">
-                        <div class="input-group">
-                            <input type="text" class="form-control" name="package_name" list="package-names" placeholder="Enter new or existing proposal name..." required>
-                            <datalist id="package-names">
-                                {% for package_name in agent_packages %}
-                                <option value="{{ package_name }}">
-                                {% endfor %}
-                            </datalist>
-                            <button class="btn btn-primary" type="submit"><i class="fas fa-plus me-2"></i>Add to Proposal</button>
-                        </div>
-                         <div class="form-text">You can add this hotel to an existing proposal or create a new one by typing a new name.</div>
-                    </form>
-                {% endif %}
-            </div>
+                </div>
+            {% else %}
+                <h5 class="mb-0">Add to a Client Proposal</h5>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addToPackageModal-{{ hotel.id }}">
+                    <i class="fas fa-plus me-2"></i>Add to Proposal
+                </button>
+            {% endif %}
         </div>
+    </div>
+    {% include '_add_to_package_modal.html' %}
     {% endif %}
 
 
@@ -141,7 +132,7 @@
                                     <p class="small text-muted mb-3"><strong>Room features:</strong> {{ room.get_amenities_list()|join(', ') }}</p>
                                 {% endif %}
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <p class="h4 fw-bold text-success mb-0">${{ "%.2f"|format(room.price_per_night) }}<span class="fs-6 fw-normal text-muted">/night</span></p>
+                                    <p class="h4 fw-bold text-success mb-0">₹{{ "%.2f"|format(room.price_per_night) }}<span class="fs-6 fw-normal text-muted">/night</span></p>
                                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#bookingModal-{{ room.id }}">Book for Client</button>
                                 </div>
                             </div>
