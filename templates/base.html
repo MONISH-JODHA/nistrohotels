@@ -290,7 +290,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script>
+        <script>
         document.addEventListener('DOMContentLoaded', () => {
             const yearSpan = document.getElementById('currentYear');
             if (yearSpan) { yearSpan.textContent = new Date().getFullYear(); }
@@ -310,10 +310,10 @@
                 const messageText = chatbotInput.value.trim();
                 if (!messageText) return;
 
-                addMessage(messageText, 'user');
+                addMessage({ type: 'simple_text', content: messageText }, 'user');
                 chatbotInput.value = '';
                 
-                const typingIndicator = addMessage('...', 'bot');
+                const typingIndicator = addMessage({ type: 'simple_text', content: '...' }, 'bot');
 
                 try {
                     const response = await fetch("{{ url_for('chatbot_api') }}", {
@@ -323,7 +323,9 @@
                     });
                     const data = await response.json();
                     
-                    typingIndicator.textContent = data.answer;
+                    // Remove typing indicator and render the new rich response
+                    typingIndicator.remove();
+                    addMessage(data, 'bot');
                     
                 } catch (error) {
                     typingIndicator.textContent = 'Sorry, I am having trouble connecting.';
@@ -333,10 +335,39 @@
                 chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
             });
 
-            function addMessage(text, type) {
+            function addMessage(data, type) {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `chat-message ${type}`;
-                messageDiv.textContent = text;
+
+                // Create a container for the main text content
+                const contentP = document.createElement('p');
+                contentP.style.marginBottom = '0';
+                contentP.textContent = data.content;
+                messageDiv.appendChild(contentP);
+
+                // If it's a list of hotels, create links
+                if (data.type === 'hotel_list' && data.data && data.data.length > 0) {
+                    const hotelList = document.createElement('ul');
+                    hotelList.style.paddingLeft = '20px';
+                    hotelList.style.marginBottom = '0';
+                    hotelList.style.marginTop = '8px';
+
+                    data.data.forEach(hotel => {
+                        const item = document.createElement('li');
+                        const link = document.createElement('a');
+                        link.href = hotel.url;
+                        link.textContent = hotel.name;
+                        link.target = "_blank"; // Open in new tab
+                        if (type === 'bot') {
+                            link.style.color = 'white';
+                            link.style.fontWeight = 'bold';
+                        }
+                        item.appendChild(link);
+                        hotelList.appendChild(item);
+                    });
+                    messageDiv.appendChild(hotelList);
+                }
+                
                 chatbotMessages.appendChild(messageDiv);
                 chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
                 return messageDiv;
