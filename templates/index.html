@@ -1,252 +1,264 @@
 {% extends "base.html" %}
+{% block title %}Find Your Perfect Stay - Nestrohotels{% endblock %}
 
-{% block title %}Find The Perfect Hotel For Your Clients{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --font-primary: 'Poppins', sans-serif;
+        --font-display: 'Playfair Display', serif;
+    }
 
-{% block content %}
-<!-- =======================
-Hero Section
-======================== -->
-<div class="hero-section text-white text-center" style="background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1740&q=80') no-repeat center center; background-size: cover; padding: 120px 1rem 100px 1rem;">
-    <h1 class="display-3 fw-bold mb-3" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.6);">Craft Unforgettable Trips</h1>
-    <div class="col-lg-8 mx-auto">
-        <p class="lead mb-4" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">Search our curated selection of hotels to build the perfect package for your clients.</p>
+    .hero-section {
+        background: linear-gradient(rgba(0, 20, 30, 0.6), rgba(0, 20, 30, 0.6)), url('https://images.unsplash.com/photo-1535827841776-24e394d38701?auto=format&fit=crop&w=1600&q=80');
+        background-size: cover;
+        background-position: center;
+        padding: 8rem 0;
+        color: white;
+    }
+    .hero-section h1 {
+        font-family: var(--font-display);
+        font-size: 4rem;
+        text-shadow: 0 3px 10px rgba(0,0,0,0.5);
+    }
+
+    .search-form-card {
+        background-color: rgba(255,255,255,0.9);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 1.5rem;
+        padding: 2.5rem;
+        margin-top: -5rem;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        position: relative;
+        z-index: 10;
+        animation: slideUp 0.8s ease-out forwards;
+    }
+    @keyframes slideUp {
+        from { transform: translateY(50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    .hotel-card {
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 1rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+    }
+    .hotel-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 35px rgba(0,0,0,0.1);
+    }
+    .hotel-card .card-img-container {
+        position: relative;
+        border-radius: 1rem 1rem 0 0;
+        overflow: hidden;
+    }
+    .hotel-card .card-img-top {
+        height: 250px;
+        object-fit: cover;
+    }
+    .hotel-card .card-body {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .hotel-card .amenities-preview {
+        display: flex;
+        gap: 1rem;
+        padding: 0.75rem 0;
+        color: #8492a6;
+    }
+    #map-container {
+        position: sticky;
+        top: 100px;
+    }
+    #map {
+        height: calc(100vh - 120px);
+        border-radius: 1rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    .leaflet-popup-content-wrapper {
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content_container %}
+<div class="hero-section text-center">
+    <div class="container">
+        <h1 class="display-3">Discover Your Next Masterpiece</h1>
+        <p class="lead" style="font-size: 1.5rem;">Curate unforgettable journeys for your clients.</p>
     </div>
 </div>
 
-<!-- =======================
-Floating Search & Filter Box
-======================== -->
-<div class="container mb-5" style="margin-top: -80px; position: relative; z-index: 10;">
-    <div class="p-4 p-md-5 rounded-3 shadow-lg" style="background-color: #ffffff;">
+<div class="container">
+    <div class="search-form-card">
         <form method="GET" action="{{ url_for('index') }}">
             <div class="row g-3 align-items-end">
-                <div class="col-lg-4">
-                    <label for="search_term" class="form-label fw-bold small">Destination or Hotel Name</label>
-                    <input type="text" class="form-control form-control-lg" id="search_term" name="search_term" placeholder="e.g., Paris, Beachfront Resort" value="{{ request.args.get('search_term', '') }}">
+                <div class="col-lg-5">
+                    <label for="search_term" class="form-label fw-bold">Destination or Hotel Name</label>
+                    <input type="text" class="form-control form-control-lg" id="search_term" name="search_term" placeholder="e.g., Jibhi, Hotel Himalaya" value="{{ search_term or '' }}">
                 </div>
                 <div class="col-lg-2 col-md-4">
-                    <label for="min_price" class="form-label fw-bold small">Min Price</label>
-                    <div class="input-group"><span class="input-group-text">$</span><input type="number" class="form-control" id="min_price" name="min_price" placeholder="Any" value="{{ request.args.get('min_price', '') }}" min="0" step="10"></div>
+                    <label for="min_price" class="form-label fw-bold">Min Price</label>
+                    <div class="input-group">
+                        <span class="input-group-text">₹</span>
+                        <input type="number" class="form-control form-control-lg" id="min_price" name="min_price" placeholder="1000" value="{{ min_price or '' }}">
+                    </div>
                 </div>
                 <div class="col-lg-2 col-md-4">
-                     <label for="max_price" class="form-label fw-bold small">Max Price</label>
-                    <div class="input-group"><span class="input-group-text">$</span><input type="number" class="form-control" id="max_price" name="max_price" placeholder="Any" value="{{ request.args.get('max_price', '') }}" min="0" step="10"></div>
+                    <label for="max_price" class="form-label fw-bold">Max Price</label>
+                     <div class="input-group">
+                        <span class="input-group-text">₹</span>
+                        <input type="number" class="form-control form-control-lg" id="max_price" name="max_price" placeholder="5000" value="{{ max_price or '' }}">
+                    </div>
                 </div>
-                <div class="col-lg-2 col-md-4">
-                    <label for="star_rating" class="form-label fw-bold small">Hotel Rating</label>
-                    <select class="form-select" id="star_rating" name="star_rating">
-                        <option value="" {% if not request.args.get('star_rating') %}selected{% endif %}>Any Rating</option>
-                        {% for i in range(5, 0, -1) %}
-                        <option value="{{ i }}" {% if request.args.get('star_rating') == i|string %}selected{% endif %}>{{ i }} Star{% if i > 1 %}s{% endif %} & Up</option>
-                        {% endfor %}
+                <div class="col-lg-1 col-md-4">
+                    <label for="star_rating" class="form-label fw-bold">Stars</label>
+                    <select class="form-select form-select-lg" id="star_rating" name="star_rating">
+                        <option value="">Any</option>
+                        <option value="5" {% if star_rating == '5' %}selected{% endif %}>5 ★</option>
+                        <option value="4" {% if star_rating == '4' %}selected{% endif %}>4+ ★</option>
+                        <option value="3" {% if star_rating == '3' %}selected{% endif %}>3+ ★</option>
                     </select>
                 </div>
-                <div class="col-lg-2 d-grid">
-                    <button type="submit" class="btn btn-primary btn-lg w-100" style="background-color: #00796B; border-color: #00796B;"><i class="fas fa-search me-1"></i> Search</button>
+                <div class="col-lg-2">
+                    <button type="submit" class="btn btn-primary btn-lg w-100 py-3"><i class="fas fa-search me-2"></i>Search</button>
                 </div>
             </div>
-            {% if request.args %}
-            <div class="row mt-3">
-                <div class="col text-center">
-                    <a href="{{ url_for('index') }}" class="btn btn-sm btn-link text-secondary text-decoration-none"><i class="fas fa-times me-1"></i> Clear All Filters</a>
-                </div>
-            </div>
-            {% endif %}
         </form>
     </div>
 </div>
 
-<!-- =======================
-Map Section
-======================== -->
-<div class="container my-5">
-    <h2 class="text-center mb-4" style="color: #00796B;"><i class="fas fa-map-marked-alt me-2"></i>Explore Hotels on Map</h2>
-    <div id="hotelMap" class="rounded-3 shadow-lg" style="height: 450px; border: 1px solid #dee2e6;">
-        <p class="text-center p-5 text-muted">Loading map, please wait...</p>
-    </div>
-</div>
-
-<hr class="my-5">
-
-<!-- =======================
-Hotel Listings Section
-======================== -->
-<div class="container">
-    <h2 class="mb-5 text-center" style="color: #00796B;"><i class="fas fa-list-ul me-2"></i>Our Top Hotel Picks for Packages</h2>
-    {% if hotels %}
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        {% for hotel in hotels %}
-        <div class="col d-flex align-items-stretch">
-            <div class="card h-100 hotel-card" style="border: none; box-shadow: 0 8px 25px rgba(0,0,0,0.1); transition: all 0.3s ease;">
-                <div style="position: relative;">
-                    <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}">
-                        <img src="{{ hotel.image_url or 'https://images.unsplash.com/photo-1549294413-26f195200c16?w=800&q=80' }}" class="card-img-top" alt="{{ hotel.name }}" style="height: 220px; object-fit: cover; border-top-left-radius: 0.25rem; border-top-right-radius: 0.25rem;">
-                    </a>
-                    {% if current_user.is_authenticated and current_user.role == 'agent' %}
-                        <div style="position: absolute; top: 10px; right: 10px;">
-                        {% if is_hotel_in_packages(hotel.id) %}
-                            <form action="{{ url_for('remove_from_packages', hotel_id=hotel.id) }}" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-light btn-sm rounded-circle" title="Remove from Packages" style="width: 38px; height: 38px; background-color: rgba(255, 255, 255, 0.9);">
-                                    <i class="fas fa-folder-minus text-danger fs-6"></i>
-                                </button>
-                            </form>
-                        {% else %}
-                            <form action="{{ url_for('add_to_packages', hotel_id=hotel.id) }}" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-light btn-sm rounded-circle" title="Add to Packages" style="width: 38px; height: 38px; background-color: rgba(255, 255, 255, 0.9);">
-                                    <i class="fas fa-folder-plus text-primary fs-6"></i>
-                                </button>
-                            </form>
-                        {% endif %}
+<main class="container py-5">
+    <div class="row g-5">
+        <div class="col-lg-8">
+            <h2 class="mb-4" style="font-family: var(--font-display);">Showing {{ hotels|length }} Hotels</h2>
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                {% for hotel in hotels %}
+                <div class="col">
+                    <div class="card hotel-card h-100">
+                        <div class="card-img-container">
+                            <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}">
+                                <img src="{{ hotel.image_url|default('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80', true) }}" class="card-img-top" alt="{{ hotel.name }}">
+                            </a>
                         </div>
-                    {% endif %}
-                </div>
-                <div class="card-body d-flex flex-column p-4">
-                    {% if hotel.star_rating %}
-                    <p class="card-text mb-1">
-                        {% for i in range(hotel.star_rating) %}<i class="fas fa-star" style="color: #FFC107;"></i>{% endfor %}
-                        {% for i in range(5 - hotel.star_rating) %}<i class="far fa-star" style="color: #FFC107;"></i>{% endfor %}
-                    </p>
-                    {% endif %}
-                    <h5 class="card-title mt-1"><a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="text-decoration-none stretched-link" style="color: #343a40;">{{ hotel.name }}</a></h5>
-                    <p class="card-text mb-3"><small class="text-muted"><i class="fas fa-map-marker-alt text-secondary me-1"></i> {{ hotel.location }}</small></p>
-                    <p class="card-text small text-muted flex-grow-1">{{ hotel.description[:90] }}{% if hotel.description and hotel.description|length > 90 %}...{% endif %}</p>
-                    
-                    {% if hotel.amenities %}
-                    <div class="card-text amenities-list mb-3">
-                        <small>
-                        {% for amenity in hotel.get_amenities_list()[:4] %}
-                            <span class="badge me-1 mb-1" style="background-color: #f1f3f5; color: #495057; border: 1px solid #dee2e6; padding: 0.5em 0.7em; font-weight: 500;">
-                                {% if 'wifi' in amenity|lower %}<i class="fas fa-wifi me-1"></i>
-                                {% elif 'pool' in amenity|lower %}<i class="fas fa-swimmer me-1"></i>
-                                {% elif 'parking' in amenity|lower %}<i class="fas fa-parking me-1"></i>
-                                {% elif 'gym' in amenity|lower or 'fitness' in amenity|lower %}<i class="fas fa-dumbbell me-1"></i>
-                                {% elif 'spa' in amenity|lower %}<i class="fas fa-spa me-1"></i>
-                                {% elif 'restaurant' in amenity|lower %}<i class="fas fa-utensils me-1"></i>
-                                {% else %}<i class="fas fa-check me-1"></i>{% endif %}
-                                {{ amenity }}
-                            </span>
-                        {% endfor %}
-                        </small>
-                    </div>
-                    {% endif %}
-                    
-                    <div class="mt-auto pt-3 border-top">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <p class="fs-5 fw-bold mb-0" style="color: #00796B;">
-                                {% set min_price = hotel.get_min_price() %}
-                                {% if min_price %}
-                                    <small class="text-muted fw-normal fs-6">From</small> ${{ "%.2f"|format(min_price) }} <small class="text-muted fw-normal fs-6">/ night</small>
-                                {% else %}
-                                    <span class="badge bg-secondary">Not Available</span>
+                        <div class="card-body p-4">
+                            <div>
+                                <p class="card-text mb-1 small text-muted">
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ hotel.location }}
+                                </p>
+                                <h5 class="card-title fw-bold">
+                                    <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="text-decoration-none text-dark">{{ hotel.name }}</a>
+                                </h5>
+                                {% if hotel.star_rating %}
+                                <div class="mb-2" style="color: #f39c12;">
+                                    {% for i in range(hotel.star_rating) %}<i class="fas fa-star"></i>{% endfor %}{% for i in range(5 - hotel.star_rating) %}<i class="far fa-star"></i>{% endfor %}
+                                </div>
                                 {% endif %}
-                            </p>
-                            <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="btn btn-outline-primary btn-sm" style="border-color: #00796B; color: #00796B;">View Details</a>
+
+                                <div class="amenities-preview border-top border-bottom my-3">
+                                    {% for amenity in hotel.amenities[:4] %}
+                                    <span title="{{ amenity.name }}">
+                                        {% if 'Wifi' in amenity.name %}<i class="fas fa-wifi"></i>
+                                        {% elif 'Pool' in amenity.name %}<i class="fas fa-swimmer"></i>
+                                        {% elif 'Parking' in amenity.name %}<i class="fas fa-parking"></i>
+                                        {% elif 'Restaurant' in amenity.name %}<i class="fas fa-utensils"></i>
+                                        {% else %}<i class="fas fa-info-circle"></i>{% endif %}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="mt-auto">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        {% set min_price = hotel.get_min_price() %}
+                                        {% if min_price %}
+                                            <small class="text-muted">from</small>
+                                            <div class="h4 fw-bold mb-0" style="color: var(--primary-color);">₹{{ "%.0f"|format(min_price) }}</div>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Check Rates</span>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        {% if current_user.is_authenticated and current_user.role == 'agent' %}
+                                            {% if is_hotel_in_packages(hotel.id) %}
+                                                <button class="btn btn-success" disabled><i class="fas fa-check me-2"></i>Added</button>
+                                            {% else %}
+                                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addToPackageModal-{{ hotel.id }}">
+                                                    <i class="fas fa-plus"></i> Add to Proposal
+                                                </button>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+                {% if current_user.is_authenticated and current_user.role == 'agent' %}
+                    {% include '_add_to_package_modal.html' %}
+                {% endif %}
+                {% else %}
+                <div class="col-12">
+                    <div class="alert alert-info text-center p-5">
+                        <h4 class="alert-heading">No Hotels Found</h4>
+                        <p>Your search did not match any hotels. Please try adjusting your filters or search term.</p>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <div class="text-center py-5 my-5">
-        <div class="d-inline-block p-4 p-md-5 rounded-3" style="background-color: #f8f9fa;">
-            <i class="fas fa-search-minus fa-4x mb-4" style="color: #00796B;"></i>
-            <p class="h4 mb-2">No hotels found.</p>
-            <p class="text-muted">Try adjusting your search or clearing the filters to see more results.</p>
-            {% if request.args %}
-            <a href="{{url_for('index')}}" class="btn btn-primary mt-3" style="background-color: #00796B; border-color: #00796B;"><i class="fas fa-times-circle me-2"></i>Clear All Filters</a>
-            {% endif %}
+        <div class="col-lg-4">
+            <div id="map-container">
+                <div id="map"></div>
+            </div>
         </div>
     </div>
-    {% endif %}
-</div>
+</main>
 {% endblock %}
 
+
 {% block scripts %}
-<style>
-.hotel-card:hover { transform: translateY(-5px); box-shadow: 0 12px 35px rgba(0,0,0,0.12) !important; }
-.hotel-card:hover img { transform: scale(1.03); }
-.hotel-card img { transition: transform 0.4s ease; }
-.leaflet-popup-content-wrapper { border-radius: 12px !important; box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important; }
-.leaflet-popup-tip { box-shadow: none !important; }
-</style>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    let mapDefaultCenter = [20, 0]; let mapDefaultZoom = 2;
-    const hotelMapDiv = document.getElementById('hotelMap');
-    if (!hotelMapDiv) { console.error("Map DIV 'hotelMap' not found!"); return; }
-    
-    hotelMapDiv.innerHTML = ''; 
-    
-    const hotelsDataForMap = [
-        {% for hotel in hotels %}{% if hotel.latitude is not none and hotel.longitude is not none %}{% set min_price = hotel.get_min_price() %}{
-            name: {{ hotel.name|tojson|safe }},
-            lat: {{ hotel.latitude }},
-            lng: {{ hotel.longitude }},
-            url: "{{ url_for('hotel_detail', hotel_id=hotel.id) }}",
-            imageUrl: "{{ hotel.image_url or 'https://images.unsplash.com/photo-1549294413-26f195200c16?w=400&q=80' }}",
-            price: "{{ '%.2f'|format(min_price) if min_price else 'N/A' }}",
-            location: {{ hotel.location|tojson|safe }},
-            rating: {{ hotel.star_rating or 0 }}
-        },{% endif %}{% endfor %}
-    ];
+    document.addEventListener('DOMContentLoaded', function() {
+        const mapData = {{ map_data|tojson|safe }};
+        if (mapData && mapData.length > 0) {
+            const map = L.map('map');
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
 
-    if (hotelsDataForMap.length > 0) {
-        mapDefaultCenter = [hotelsDataForMap[0].lat, hotelsDataForMap[0].lng];
-        mapDefaultZoom = 10;
-    }
-    
-    const map = L.map('hotelMap').setView(mapDefaultCenter, mapDefaultZoom);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20
-    }).addTo(map);
-
-    const markers = L.featureGroup().addTo(map);
-
-    function plotHotelsOnMap(hotelData) {
-        markers.clearLayers();
-        if (hotelData.length === 0) { return; }
-
-        hotelData.forEach(function(hotel) {
-            const marker = L.marker([hotel.lat, hotel.lng], {title: hotel.name});
-            const priceText = hotel.price !== 'N/A' ? `<small style="color:#6c757d; font-size: 0.8em;">From</small> <strong style="color:#00796B; font-size: 1.2em;">$${hotel.price}</strong> <small style="color:#6c757d;font-size: 0.8em;">/ night</small>` : 'Check for availability';
-            
-            let starsHtml = '';
-            if (hotel.rating > 0) {
-                for (let i = 0; i < hotel.rating; i++) { starsHtml += '<i class="fas fa-star" style="color: #FFC107;"></i>'; }
-                for (let i = 0; i < 5 - hotel.rating; i++) { starsHtml += '<i class="far fa-star" style="color: #FFC107;"></i>'; }
+            const markers = L.featureGroup();
+            mapData.forEach(hotel => {
+                const popupContent = `
+                    <div style="width: 200px; font-family: var(--font-primary);">
+                        <img src="${hotel.imageUrl}" alt="${hotel.name}" style="width:100%; height:100px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;">
+                        <h6 class="mb-1 fw-bold"><a href="${hotel.url}" target="_blank" class="text-dark text-decoration-none">${hotel.name}</a></h6>
+                        <p class="mb-1 small text-muted">${hotel.location}</p>
+                        <strong style="color: var(--primary-color);">from ₹${hotel.price} / night</strong>
+                    </div>
+                `;
+                const marker = L.marker([hotel.lat, hotel.lng]).bindPopup(popupContent);
+                markers.addLayer(marker);
+            });
+            markers.addTo(map);
+            if (markers.getBounds().isValid()) {
+                map.fitBounds(markers.getBounds().pad(0.2));
+            } else if (mapData.length === 1) {
+                map.setView([mapData[0].lat, mapData[0].lng], 13);
             }
-
-            const popupContent = `
-                <div style="width: 250px; font-family: 'system-ui', sans-serif;">
-                    <img src="${hotel.imageUrl}" alt="${hotel.name}" style="width:100%; height:130px; object-fit:cover; border-radius: 8px; margin-bottom: 10px;">
-                    <div style="margin-bottom: 5px;">${starsHtml}</div>
-                    <h6 style="margin: 0 0 5px 0; font-weight: 600; color: #343a40; font-size: 1.1em; line-height: 1.2;">${hotel.name}</h6>
-                    <p style="font-size: 0.85em; margin-bottom: 8px; color: #6c757d;"><i class="fas fa-map-marker-alt fa-xs me-1"></i> ${hotel.location}</p>
-                    <p style="font-size: 1em; margin-bottom: 12px;">${priceText}</p>
-                    <a href="${hotel.url}" class="btn w-100" style="background-color: #00796B; color: white; padding: 8px; text-decoration: none; display: block; text-align: center; border-radius: 6px;">View Details</a>
-                </div>`;
-
-            marker.bindPopup(popupContent, {minWidth: 250});
-            markers.addLayer(marker);
-        });
-
-        if (markers.getLayers().length > 0) {
-            map.fitBounds(markers.getBounds(), { padding: [50, 50], maxZoom: 15 });
+        } else {
+             document.getElementById('map').innerHTML = '<div class="alert alert-warning h-100 d-flex align-items-center justify-content-center text-center">Map data is not available for the current selection.<br><small>Hotels need coordinates to be shown here.</small></div>';
         }
-    }
-
-    plotHotelsOnMap(hotelsDataForMap);
-    
-    if (hotelsDataForMap.length === 0 && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => map.setView([position.coords.latitude, position.coords.longitude], 10),
-            () => console.warn("Geolocation failed or was denied by user.")
-        );
-    }
-});
+    });
 </script>
 {% endblock %}

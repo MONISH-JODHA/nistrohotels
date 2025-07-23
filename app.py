@@ -10,10 +10,11 @@ import traceback
 from io import BytesIO
 from weasyprint import HTML
 from sqlalchemy import or_, and_, select, func, desc, text
-from collections import Counter
+from collections import Counter, defaultdict
 import logging
 from logging.handlers import RotatingFileHandler
 import re
+from urllib.parse import quote_plus
 
 
 # --- App Configuration ---
@@ -34,7 +35,7 @@ file_handler.setFormatter(logging.Formatter(
 file_handler.setLevel(logging.INFO)
 app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
-app.logger.info('TravelAgentApp startup')
+app.logger.info('Nestrohotels App startup')
 
 
 # --- Upload Configuration ---
@@ -64,7 +65,6 @@ login_manager.login_message_category = 'info'
 
 @login_manager.user_loader
 def load_user(user_id):
-    # FIX: Updated to modern SQLAlchemy 2.0 syntax to resolve LegacyAPIWarning
     user = db.session.get(User, int(user_id))
     if user and user.is_active:
         return user
@@ -172,7 +172,7 @@ class Hotel(db.Model):
     def update_min_price(self): self.price_per_night = self.get_min_price(); db.session.add(self)
     def to_dict_for_map(self):
         min_price = self.get_min_price()
-        return {'name': self.name, 'lat': self.latitude, 'lng': self.longitude, 'url': url_for('hotel_detail', hotel_id=self.id), 'imageUrl': self.image_url, 'price': "{:.2f}".format(min_price) if min_price else "N/A", 'location': self.location}
+        return {'name': self.name, 'lat': self.latitude, 'lng': self.longitude, 'url': url_for('hotel_detail', hotel_id=self.id), 'imageUrl': self.image_url, 'price': "{:.0f}".format(min_price) if min_price else "N/A", 'location': self.location}
 
 class Availability(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -200,7 +200,7 @@ class TravelPackage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     agent_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     hotel_id = db.Column(db.Integer, db.ForeignKey('hotel.id', ondelete='CASCADE'), nullable=False)
-    package_name = db.Column(db.String(150), nullable=False)
+    package_name = db.Column(db.String(150), nullable=False, index=True)
     notes = db.Column(db.Text, nullable=True)
     added_on = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
@@ -237,6 +237,7 @@ def verify_hotel_owner(f):
         if current_user.role == 'owner' and hotel.owner_id != current_user.id:
             flash("You are not authorized to manage this hotel.", "danger")
             return redirect(url_for('owner_dashboard'))
+        # Pass the hotel object to the route function if it expects it
         if 'hotel' in f.__code__.co_varnames:
              return f(hotel=hotel, *args, **kwargs)
         return f(hotel_id=hotel_id, *args, **kwargs)
@@ -332,9 +333,13 @@ def check_availability_and_calculate_price(room_type_id, check_in_date, check_ou
 def index():
     query = Hotel.query.filter_by(is_approved=True)
     search_term = request.args.get('search_term', '').strip()
-    min_price = request.args.get('min_price', type=float)
-    max_price = request.args.get('max_price', type=float)
-    star_rating = request.args.get('star_rating', type=int)
+    min_price_str = request.args.get('min_price', '')
+    max_price_str = request.args.get('max_price', '')
+    star_rating_str = request.args.get('star_rating', '')
+
+    min_price = float(min_price_str) if min_price_str.isdigit() else None
+    max_price = float(max_price_str) if max_price_str.isdigit() else None
+    star_rating = int(star_rating_str) if star_rating_str.isdigit() else None
 
     if search_term:
         query = query.filter(or_(Hotel.name.ilike(f"%{search_term}%"), Hotel.location.ilike(f"%{search_term}%")))
@@ -356,10 +361,16 @@ def index():
                 if price_ok:
                     filtered_hotels.append(hotel)
         hotels = filtered_hotels
-    else:
-        filtered_hotels = hotels
+    
+    map_data = [h.to_dict_for_map() for h in hotels if h.latitude and h.longitude]
+    
+    agent_packages = []
+    if current_user.is_authenticated and current_user.role == 'agent':
+        agent_packages = TravelPackage.query.filter_by(agent_id=current_user.id).with_entities(TravelPackage.package_name).distinct().all()
+        agent_packages = [p[0] for p in agent_packages]
 
-    return render_template('index.html', hotels=filtered_hotels)
+    return render_template('index.html', hotels=hotels, map_data=map_data, search_term=search_term, min_price=min_price_str, max_price=max_price_str, star_rating=star_rating_str, agent_packages=agent_packages)
+
 
 # --- Auth & Profile Routes ---
 @app.route('/register', methods=['GET', 'POST'])
@@ -388,7 +399,7 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter(func.lower(User.username) == func.lower(username)).first()
         if user and user.check_password(password):
             if not user.is_active:
                 flash('Your account has been suspended. Please contact an administrator.', 'danger')
@@ -454,7 +465,14 @@ def hotel_detail(hotel_id):
         flash("This hotel is not yet approved or does not exist.", "warning")
         return redirect(url_for('index'))
     room_types = hotel.room_types.order_by(RoomType.price_per_night.asc()).all()
-    return render_template('hotel_detail.html', hotel=hotel, room_types=room_types, today=date.today().isoformat())
+    
+    agent_packages = []
+    if current_user.is_authenticated and current_user.role == 'agent':
+        agent_packages = TravelPackage.query.filter_by(agent_id=current_user.id).with_entities(TravelPackage.package_name).distinct().all()
+        agent_packages = [p[0] for p in agent_packages]
+        
+    return render_template('hotel_detail.html', hotel=hotel, room_types=room_types, today=date.today().isoformat(), agent_packages=agent_packages)
+
 
 @app.route('/book_room/<int:room_type_id>', methods=['POST'])
 @login_required
@@ -592,7 +610,7 @@ def register_hotel():
         
         db.session.commit()
         log_audit(f"Owner '{current_user.username}' registered new hotel '{name}'.")
-        flash('Hotel registration submitted! Now, please add room types.', 'success')
+        flash('Hotel registration submitted! An administrator will review it shortly. Now, please add room types.', 'success')
         return redirect(url_for('manage_rooms', hotel_id=new_hotel.id))
         
     return render_template(
@@ -613,16 +631,8 @@ def owner_dashboard():
 @verify_hotel_owner
 def manage_rooms(hotel):
     if request.method == 'POST':
-        room_id_str = request.form.get('room_id')
-        is_editing = room_id_str and room_id_str.isdigit()
-        
-        if is_editing:
-            room = RoomType.query.filter_by(id=int(room_id_str), hotel_id=hotel.id).first_or_404()
-            log_action_prefix = "edited"
-        else:
-            room = RoomType(hotel_id=hotel.id)
-            db.session.add(room)
-            log_action_prefix = "added"
+        room = RoomType(hotel_id=hotel.id)
+        db.session.add(room)
         
         room.name = request.form.get('name')
         room.description = request.form.get('description')
@@ -632,17 +642,67 @@ def manage_rooms(hotel):
             room.number_of_rooms = int(request.form.get('number_of_rooms'))
         except (ValueError, TypeError):
             flash("Invalid price or number of rooms.", "danger")
+            db.session.rollback()
             return redirect(url_for('manage_rooms', hotel_id=hotel.id))
 
-        if is_editing:
-            images_to_delete_ids = request.form.getlist('images_to_delete')
-            if images_to_delete_ids:
-                images_to_delete = RoomImage.query.filter(RoomImage.id.in_(images_to_delete_ids), RoomImage.room_type_id == room.id).all()
-                for img in images_to_delete:
-                    try: os.remove(os.path.join(app.config['UPLOAD_FOLDER'], img.filename))
-                    except OSError as e: app.logger.error(f"Error deleting image file {img.filename}: {e}")
-                    db.session.delete(img)
-                flash(f"Deleted {len(images_to_delete)} image(s).", "info")
+        db.session.flush()
+
+        # Handle image uploads
+        uploaded_files = request.files.getlist('gallery_images_upload')
+        newly_saved_filenames = []
+        for i, file_obj in enumerate(uploaded_files):
+            if file_obj and allowed_file(file_obj.filename):
+                original_fn = secure_filename(file_obj.filename)
+                ts = datetime.now().strftime("%Y%m%d%H%M%S%f")
+                unique_fn = f"room{room.id}_gallery_{ts}_{i+1}{os.path.splitext(original_fn)[1]}"
+                try:
+                    file_obj.save(os.path.join(app.config['UPLOAD_FOLDER'], unique_fn))
+                    db.session.add(RoomImage(room_type_id=room.id, filename=unique_fn))
+                    newly_saved_filenames.append(unique_fn)
+                except Exception as e:
+                    app.logger.error(f"Gallery image save error for room {room.id}: {e}")
+
+        main_image_url_from_form = request.form.get('main_image_url', '').strip()
+        if main_image_url_from_form:
+            room.main_image_url = main_image_url_from_form
+        elif newly_saved_filenames:
+            room.main_image_url = url_for('static', filename=f'uploads/hotel_images/{newly_saved_filenames[0]}', _external=False)
+        else: # Default if nothing provided
+            room.main_image_url = 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=800&q=80'
+
+        hotel.update_min_price()
+        db.session.commit()
+        log_audit(f"User '{current_user.username}' added room '{room.name}' in hotel '{hotel.name}'.")
+        flash(f"Room '{room.name}' added successfully.", "success")
+        return redirect(url_for('manage_rooms', hotel_id=hotel.id))
+
+    room_types = hotel.room_types.order_by(RoomType.name.asc()).all()
+    return render_template('manage_rooms.html', hotel=hotel, room_types=room_types)
+
+@app.route('/hotel/<int:hotel_id>/edit_room/<int:room_type_id>', methods=['GET', 'POST'])
+@role_required(['owner', 'admin'])
+@verify_hotel_owner
+def edit_room(hotel, room_type_id):
+    room = RoomType.query.filter_by(id=room_type_id, hotel_id=hotel.id).first_or_404()
+    if request.method == 'POST':
+        room.name = request.form.get('name')
+        room.description = request.form.get('description')
+        room.amenities = request.form.get('amenities')
+        try:
+            room.price_per_night = float(request.form.get('price_per_night'))
+            room.number_of_rooms = int(request.form.get('number_of_rooms'))
+        except (ValueError, TypeError):
+            flash("Invalid price or number of rooms.", "danger")
+            return redirect(url_for('edit_room', hotel_id=hotel.id, room_type_id=room.id))
+
+        images_to_delete_ids = request.form.getlist('images_to_delete')
+        if images_to_delete_ids:
+            images_to_delete = RoomImage.query.filter(RoomImage.id.in_(images_to_delete_ids), RoomImage.room_type_id == room.id).all()
+            for img in images_to_delete:
+                try: os.remove(os.path.join(app.config['UPLOAD_FOLDER'], img.filename))
+                except OSError as e: app.logger.error(f"Error deleting image file {img.filename}: {e}")
+                db.session.delete(img)
+            flash(f"Deleted {len(images_to_delete)} image(s).", "info")
         
         db.session.flush()
 
@@ -665,17 +725,14 @@ def manage_rooms(hotel):
             room.main_image_url = main_image_url_from_form
         elif newly_saved_filenames:
             room.main_image_url = url_for('static', filename=f'uploads/hotel_images/{newly_saved_filenames[0]}', _external=False)
-        elif not room.main_image_url:
-            room.main_image_url = 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=800&q=80'
-
+        
         hotel.update_min_price()
         db.session.commit()
-        log_audit(f"User '{current_user.username}' {log_action_prefix} room '{room.name}' in hotel '{hotel.name}'.")
-        flash(f"Room '{room.name}' saved successfully.", "success")
+        log_audit(f"User '{current_user.username}' edited room '{room.name}' in hotel '{hotel.name}'.")
+        flash(f"Room '{room.name}' updated successfully.", "success")
         return redirect(url_for('manage_rooms', hotel_id=hotel.id))
 
-    room_types = hotel.room_types.order_by(RoomType.name.asc()).all()
-    return render_template('manage_rooms.html', hotel=hotel, room_types=room_types)
+    return render_template('edit_room.html', hotel=hotel, room=room)
 
 
 @app.route('/hotel/<int:hotel_id>/delete_room/<int:room_type_id>', methods=['POST'])
@@ -856,6 +913,8 @@ def edit_hotel_by_admin(hotel_id):
         hotel.name = request.form.get('name'); hotel.location = request.form.get('location'); hotel.description = request.form.get('description')
         hotel.star_rating = int(request.form.get('star_rating')) if request.form.get('star_rating') else None
         hotel.is_approved = 'is_approved' in request.form
+        hotel.latitude=float(request.form.get('latitude')) if request.form.get('latitude') else None
+        hotel.longitude=float(request.form.get('longitude')) if request.form.get('longitude') else None
         selected_amenity_ids = request.form.getlist('amenities')
         hotel.amenities = Amenity.query.filter(Amenity.id.in_(selected_amenity_ids)).all()
         log_audit(f"Admin edited hotel '{hotel.name}' (ID: {hotel_id}).")
@@ -929,8 +988,8 @@ def update_availability(room_type_id):
     data = request.json
     try:
         target_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
-        price = float(data['price']) if data.get('price') and data['price'].strip() != '' else None
-        available_rooms = int(data['available_rooms']) if data.get('available_rooms') and data['available_rooms'].strip() != '' else None
+        price = float(data['price']) if data.get('price') and str(data['price']).strip() != '' else None
+        available_rooms = int(data['available_rooms']) if data.get('available_rooms') and str(data['available_rooms']).strip() != '' else None
     except (ValueError, TypeError, KeyError): return jsonify({'error': 'Invalid data', 'success': False}), 400
     
     override = Availability.query.filter_by(room_type_id=room_type_id, date=target_date).first()
@@ -959,49 +1018,154 @@ def api_calculate_price(room_type_id):
     result = check_availability_and_calculate_price(room_type_id, check_in, check_out)
     return jsonify(result)
 
-# --- Package Routes ---
+# --- Package & Proposal Routes ---
 @app.route('/packages/add/<int:hotel_id>', methods=['POST'])
 @role_required('agent')
 def add_to_packages(hotel_id):
     hotel = db.session.get(Hotel, hotel_id)
-    if not hotel: abort(404)
-    if not TravelPackage.query.filter_by(agent_id=current_user.id, hotel_id=hotel.id).first():
-        package_name = f"Package for {hotel.name}"
-        db.session.add(TravelPackage(agent_id=current_user.id, hotel_id=hotel.id, package_name=package_name)); 
-        db.session.commit()
-        flash(f'{hotel.name} added to your packages!', 'success')
-    return redirect(request.referrer or url_for('index'))
+    if not hotel:
+        abort(404)
 
-@app.route('/packages/remove/<int:hotel_id>', methods=['POST'])
-@role_required('agent')
-def remove_from_packages(hotel_id):
-    item = TravelPackage.query.filter_by(agent_id=current_user.id, hotel_id=hotel_id).first()
-    if item:
-        db.session.delete(item)
+    package_name_choice = request.form.get('package_name_choice')
+    if package_name_choice == 'new':
+        package_name = request.form.get('new_package_name', '').strip()
+        if not package_name:
+            flash("New proposal name cannot be empty.", "danger")
+            return redirect(request.referrer or url_for('index'))
+    else:
+        package_name = request.form.get('existing_package_name')
+        if not package_name:
+            flash("You must select an existing proposal.", "danger")
+            return redirect(request.referrer or url_for('index'))
+
+    existing_package_item = TravelPackage.query.filter_by(agent_id=current_user.id, hotel_id=hotel.id, package_name=package_name).first()
+
+    if not existing_package_item:
+        package_item = TravelPackage(agent_id=current_user.id, hotel_id=hotel.id, package_name=package_name)
+        # Carry over notes if adding to an existing package
+        if package_name_choice == 'existing':
+            any_item_in_package = TravelPackage.query.filter_by(agent_id=current_user.id, package_name=package_name).first()
+            if any_item_in_package and any_item_in_package.notes:
+                package_item.notes = any_item_in_package.notes
+
+        db.session.add(package_item)
         db.session.commit()
-        flash('Hotel removed from your packages.', 'success')
+        log_audit(f"Agent '{current_user.username}' added hotel '{hotel.name}' to package '{package_name}'.")
+        flash(f"'{hotel.name}' has been added to the proposal '{package_name}'.", 'success')
+    else:
+        flash(f"'{hotel.name}' is already in the proposal '{package_name}'.", 'info')
+
+    return redirect(request.referrer or url_for('my_packages'))
+
+@app.route('/packages/remove/<int:package_id>', methods=['POST'])
+@role_required('agent')
+def remove_from_packages(package_id):
+    item = db.session.get(TravelPackage, package_id)
+    if item and item.agent_id == current_user.id:
+        package_name = item.package_name
+        hotel_name = item.hotel.name
+        db.session.delete(item)
+        
+        remaining_in_package = TravelPackage.query.filter_by(agent_id=current_user.id, package_name=package_name).first()
+        if not remaining_in_package:
+            log_audit(f"Agent '{current_user.username}' deleted the last hotel from package '{package_name}', effectively deleting the package.")
+        else:
+            log_audit(f"Agent '{current_user.username}' removed hotel '{hotel_name}' from package '{package_name}'.")
+            
+        db.session.commit()
+        flash(f"'{hotel_name}' removed from your package.", 'success')
     else:
         flash('Hotel not found in your packages.', 'warning')
-    return redirect(request.referrer or url_for('my_packages'))
+    return redirect(url_for('my_packages'))
 
 @app.route('/my_packages')
 @role_required('agent')
 def my_packages():
-    packaged_hotels = Hotel.query.join(TravelPackage).filter(TravelPackage.agent_id == current_user.id).all()
-    return render_template('manage_packages.html', hotels=packaged_hotels)
+    packages_query = TravelPackage.query.filter_by(agent_id=current_user.id).order_by(TravelPackage.package_name, TravelPackage.added_on).all()
+    
+    packages = defaultdict(lambda: {'hotels': [], 'notes': None})
+    for item in packages_query:
+        packages[item.package_name]['hotels'].append(item)
+        if item.notes: 
+            packages[item.package_name]['notes'] = item.notes
+            
+    return render_template('manage_packages.html', packages=packages)
+
+@app.route('/packages/edit', methods=['POST'])
+@role_required('agent')
+def edit_package():
+    old_name = request.form.get('old_package_name')
+    new_name = request.form.get('new_package_name').strip()
+    notes = request.form.get('notes')
+    
+    if not new_name:
+        flash("Package name cannot be empty.", "danger")
+        return redirect(url_for('my_packages'))
+        
+    items = TravelPackage.query.filter_by(agent_id=current_user.id, package_name=old_name).all()
+    if not items:
+        abort(404)
+        
+    for item in items:
+        item.package_name = new_name
+        item.notes = notes
+    
+    db.session.commit()
+    log_audit(f"Agent '{current_user.username}' updated package '{old_name}' to '{new_name}'.")
+    flash("Proposal updated successfully.", "success")
+    return redirect(url_for('my_packages'))
+
+@app.route('/packages/delete', methods=['POST'])
+@role_required('agent')
+def delete_package():
+    package_name = request.form.get('package_name_to_delete')
+    items = TravelPackage.query.filter_by(agent_id=current_user.id, package_name=package_name).all()
+    if items:
+        for item in items:
+            db.session.delete(item)
+        db.session.commit()
+        log_audit(f"Agent '{current_user.username}' deleted package '{package_name}'.")
+        flash(f"Package '{package_name}' has been deleted.", "success")
+    return redirect(url_for('my_packages'))
+
+@app.route('/proposal/<int:agent_id>/<package_name_url>')
+def share_proposal(agent_id, package_name_url):
+    package_name = package_name_url.replace('+', ' ')
+    agent = db.session.get(User, agent_id)
+    if not agent or agent.role != 'agent':
+        abort(404)
+        
+    package_items = TravelPackage.query.filter_by(agent_id=agent.id, package_name=package_name).all()
+    
+    if not package_items:
+        abort(404)
+        
+    hotels = [item.hotel for item in package_items]
+    notes = package_items[0].notes if package_items[0].notes else ""
+    
+    return render_template('proposal_template.html', 
+        package_name=package_name, 
+        hotels=hotels, 
+        notes=notes, 
+        agent=agent)
+
 
 # --- Chatbot API ---
 def answer_question_from_db(question):
     question = question.lower()
-    match = re.search(r'(?:hotels in|find hotels in|in) ([\w\s]+)\??$', question)
+    
+    # Location-based query
+    match = re.search(r'(?:hotels in|find hotels in|in|near) ([\w\s]+)\??$', question)
     if match:
         location = match.group(1).strip()
-        hotels = Hotel.query.filter(Hotel.location.ilike(f'%{location}%'), Hotel.is_approved==True).all()
+        hotels = Hotel.query.filter(Hotel.location.ilike(f'%{location}%'), Hotel.is_approved==True).limit(5).all()
         if hotels:
             hotel_names = ", ".join([h.name for h in hotels])
             return f"I found these hotels in {location.title()}: {hotel_names}."
         else:
             return f"I couldn't find any hotels in {location.title()} in our system."
+            
+    # Amenity-based query
     match = re.search(r'what amenities does ([\w\s]+) have\??$', question)
     if match:
         hotel_name = match.group(1).strip()
@@ -1014,17 +1178,20 @@ def answer_question_from_db(question):
                 return f"I don't have a list of specific amenities for {hotel.name}."
         else:
             return f"Sorry, I couldn't find a hotel named '{hotel_name}'."
+            
+    # Price-based query
     match = re.search(r'(?:how much is|price of) the ([\w\s]+) room at ([\w\s]+)\??$', question)
     if match:
         room_name = match.group(1).strip()
         hotel_name = match.group(2).strip()
         room = RoomType.query.join(Hotel).filter(Hotel.name.ilike(f'%{hotel_name}%'), RoomType.name.ilike(f'%{room_name}%')).first()
         if room:
-            return f"The base price for the {room.name} at {room.hotel.name} is ${room.price_per_night:.2f} per night. Prices may vary based on date."
+            return f"The base price for the {room.name} at {room.hotel.name} is ₹{room.price_per_night:.0f} per night. Prices may vary based on date."
         else:
             return f"I could not find a room named '{room_name}' at a hotel called '{hotel_name}'."
-    return "I can help you find information about hotels, their locations, amenities, and room prices. How can I assist you?"
 
+    # General fallback
+    return "I can help you find information about hotels, their locations, amenities, and room prices. For example, you can ask 'find hotels in Paris' or 'what amenities does The Grand Hotel have?'"
 
 @app.route('/api/chatbot', methods=['POST'])
 def chatbot_api():
@@ -1039,49 +1206,99 @@ def chatbot_api():
         app.logger.error(f"Chatbot error: {e}")
         return jsonify({'answer': 'I seem to be having some trouble right now. Please try again later.'})
 
+# --- Jinja Filter ---
+@app.template_filter('url_safe')
+def url_safe_filter(s):
+    return quote_plus(s)
+
 # --- App Runner & Migration Helper ---
 def migrate_database():
-    """
-    FIX: A pragmatic migration helper for SQLite.
-    Checks for and adds missing columns to the 'booking' table.
-    """
-    with db.engine.connect() as connection:
-        # Use SQLAlchemy's text() for safe query execution
-        result = connection.execute(text("PRAGMA table_info(booking);"))
-        columns = [row[1] for row in result]
-        
-        if 'client_name' not in columns:
-            print("Migrating database: Adding 'client_name' to 'booking' table.")
-            connection.execute(text('ALTER TABLE booking ADD COLUMN client_name VARCHAR(100) NOT NULL DEFAULT "N/A"'))
-            app.logger.info("Database migration: Added 'client_name' column to 'booking' table.")
-        
-        if 'client_email' not in columns:
-            print("Migrating database: Adding 'client_email' to 'booking' table.")
-            connection.execute(text('ALTER TABLE booking ADD COLUMN client_email VARCHAR(120)'))
-            app.logger.info("Database migration: Added 'client_email' column to 'booking' table.")
-        
-        # This commit is necessary for schema changes in SQLite
-        connection.commit()
+    """A pragmatic migration helper for SQLite."""
+    with app.app_context():
+        with db.engine.connect() as connection:
+            inspector = db.inspect(connection)
+            
+            booking_columns = [col['name'] for col in inspector.get_columns('booking')]
+            if 'client_name' not in booking_columns:
+                connection.execute(text('ALTER TABLE booking ADD COLUMN client_name VARCHAR(100) NOT NULL DEFAULT "N/A"'))
+                app.logger.info("DB Migration: Added 'client_name' to 'booking'.")
+            if 'client_email' not in booking_columns:
+                connection.execute(text('ALTER TABLE booking ADD COLUMN client_email VARCHAR(120)'))
+                app.logger.info("DB Migration: Added 'client_email' to 'booking'.")
+
+            if 'travel_package' in inspector.get_table_names():
+                package_columns = [col['name'] for col in inspector.get_columns('travel_package')]
+                if 'package_name' not in package_columns:
+                    connection.execute(text("ALTER TABLE travel_package ADD COLUMN package_name VARCHAR(150) NOT NULL DEFAULT 'Default Package'"))
+                    app.logger.info("DB Migration: Added 'package_name' to 'travel_package'.")
+                if 'notes' not in package_columns:
+                    connection.execute(text('ALTER TABLE travel_package ADD COLUMN notes TEXT'))
+                    app.logger.info("DB Migration: Added 'notes' to 'travel_package'.")
+            
+            hotel_columns = [col['name'] for col in inspector.get_columns('hotel')]
+            if 'latitude' not in hotel_columns:
+                connection.execute(text('ALTER TABLE hotel ADD COLUMN latitude FLOAT'))
+                app.logger.info("DB Migration: Added 'latitude' to 'hotel'.")
+            if 'longitude' not in hotel_columns:
+                connection.execute(text('ALTER TABLE hotel ADD COLUMN longitude FLOAT'))
+                app.logger.info("DB Migration: Added 'longitude' to 'hotel'.")
+
+            connection.commit()
 
 def create_initial_data():
     with app.app_context():
         db.create_all()
-        
-        # Run the migration check after ensuring all tables exist
-        migrate_database()
+        migrate_database() 
 
-        if not User.query.filter_by(username='admin').first():
-            admin_user = User(username='admin', email='admin@travelapp.com', role='admin', is_active=True)
-            admin_user.set_password('StrongAdminP@ssw0rd!')
-            db.session.add(admin_user)
-            print("Admin user created.")
+        def create_user_if_not_exists(username, email, password, role):
+            user = User.query.filter(or_(User.username == username, User.email == email)).first()
+            if not user:
+                new_user = User(username=username, email=email, role=role, is_active=True)
+                new_user.set_password(password)
+                db.session.add(new_user)
+                print(f"User '{username}' created.")
+                return new_user
+            return user
+
+        create_user_if_not_exists('admin', 'admin@nestrohotels.com', 'AdminPassword123!', 'admin')
+        owner = create_user_if_not_exists('mj_owner', 'owner@nestrohotels.com', 'OwnerPassword123!', 'owner')
+        create_user_if_not_exists('mj_agent', 'agent@nestrohotels.com', 'AgentPassword123!', 'agent')
+
         if Amenity.query.count() == 0:
             amenities = ['Wifi', 'Pool', 'Gym', 'Free Parking', 'Pet Friendly', 'Restaurant', 'Room Service', 'Air Conditioning', 'Spa', 'Bar']
             for name in amenities: db.session.add(Amenity(name=name))
             print(f"Added {len(amenities)} default amenities.")
+        
         db.session.commit()
+        
+        if owner and not Hotel.query.first():
+            hotels_data = [
+                {'name': 'Blue Sky Cottages', 'location': 'Jibhi, Himachal Pradesh', 'star': 3, 'lat': 31.3856, 'lon': 77.3061, 'price': 2500, 'img': 'https://images.unsplash.com/photo-1617364929972-20a283921b3a?auto=format&fit=crop&w=800&q=80', 'amenities': ['Wifi', 'Free Parking', 'Pet Friendly']},
+                {'name': 'Hotel Himalaya', 'location': 'Tosh, Himachal Pradesh', 'star': 2, 'lat': 32.0163, 'lon': 77.4485, 'price': 1500, 'img': 'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80', 'amenities': ['Wifi', 'Restaurant']},
+                {'name': 'Riverside Retreat', 'location': 'Kasol, Himachal Pradesh', 'star': 4, 'lat': 32.0100, 'lon': 77.3150, 'price': 4500, 'img': 'https://images.unsplash.com/photo-1596436889106-685c543216e5?auto=format&fit=crop&w=800&q=80', 'amenities': ['Wifi', 'Restaurant', 'Room Service', 'Air Conditioning']},
+                {'name': 'Mountain View Inn', 'location': 'Manali, Himachal Pradesh', 'star': 3, 'lat': 32.2396, 'lon': 77.1887, 'price': 3200, 'img': 'https://images.unsplash.com/photo-1549294413-26f195200c16?auto=format&fit=crop&w=800&q=80', 'amenities': ['Wifi', 'Free Parking', 'Restaurant', 'Room Service']},
+            ]
+            all_amenities = {a.name: a for a in Amenity.query.all()}
+            for data in hotels_data:
+                hotel = Hotel(
+                    name=data['name'], location=data['location'],
+                    description=f"A beautiful hotel located in the heart of {data['location']}. Enjoy stunning views and excellent service.",
+                    main_image_url=data['img'], owner_id=owner.id, is_approved=True,
+                    star_rating=data['star'], latitude=data['lat'], longitude=data['lon']
+                )
+                hotel.amenities = [all_amenities[name] for name in data['amenities'] if name in all_amenities]
+                db.session.add(hotel)
+                db.session.flush()
+                room = RoomType(
+                    hotel_id=hotel.id, name='Deluxe Room',
+                    description='A comfortable room with all modern amenities.',
+                    price_per_night=data['price'], number_of_rooms=10
+                )
+                db.session.add(room)
+            db.session.commit()
+            print(f"Added {len(hotels_data)} sample hotels with coordinates and amenities.")
 
 if __name__ == '__main__':
     create_initial_data()
-    app.logger.info('TravelAgentApp application started successfully.')
+    app.logger.info('Nestrohotels application started successfully.')
     app.run(debug=True, host='0.0.0.0', port=5001)

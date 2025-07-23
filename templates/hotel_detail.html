@@ -1,243 +1,185 @@
 {% extends "base.html" %}
+{% block title %}{{ hotel.name }} - Nestrohotels{% endblock %}
 
-{% block title %}{{ hotel.name }} - Hotel Details{% endblock %}
-
-{% block content %}
+{% block head_extra %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
-    body { background-color: #f8f9fa; }
-    .hero-section {
-        background-color: #ffffff;
-        border-radius: 20px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-        overflow: hidden;
-    }
-    .gallery-main-image {
-        border-radius: 12px;
-        aspect-ratio: 16/10;
+    .hotel-gallery img {
         object-fit: cover;
+        width: 100%;
+        height: 100%;
+        border-radius: 12px;
     }
-    .gallery-thumbnail {
-        border-radius: 8px;
-        cursor: pointer;
-        opacity: 0.7;
-        transition: opacity 0.2s ease, transform 0.2s ease;
-    }
-    .gallery-thumbnail:hover, .gallery-thumbnail.active {
-        opacity: 1;
-        transform: scale(1.05);
-    }
+    #map { height: 400px; border-radius: 12px; z-index: 1; }
     .amenity-tag {
-        background-color: #eef2f7;
-        color: #495057;
-        padding: 6px 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        padding: 0.4rem 0.9rem;
         border-radius: 20px;
         font-size: 0.9rem;
-        font-weight: 500;
     }
     .room-card {
-        background-color: #fff;
-        border: 1px solid #eef2f7;
-        border-radius: 16px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
-        overflow: hidden;
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     }
     .room-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
-    .room-card .form-control {
-        background-color: #f8f9fa;
-        border-radius: 8px;
-    }
-    .room-image-container {
-        position: relative;
-        cursor: pointer;
-    }
-    .gallery-overlay {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.4);
-        color: white;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-    .room-image-container:hover .gallery-overlay { opacity: 1; }
 </style>
+{% endblock %}
 
+{% block content %}
 <div class="container my-5">
-
-    <div class="hero-section p-4 p-lg-5 mb-5">
-        <div class="row g-5">
-            <div class="col-lg-7">
-                {% set main_image_src = hotel.image_url if hotel.image_url and (hotel.image_url.startswith('http') or hotel.image_url.startswith('/static')) else 'https://images.unsplash.com/photo-1542314831-068cd1dbb5eb?auto=format&fit=crop&w=1200&q=80' %}
-                <img id="main-hotel-image" src="{{ main_image_src }}" alt="{{ hotel.name }} Main Image" class="img-fluid gallery-main-image w-100">
-                
-                {% set gallery_images = hotel.gallery_images.all() %}
-                {% if gallery_images %}
-                <div class="row g-2 mt-2">
-                    <div class="col"><img src="{{ main_image_src }}" alt="Main Thumbnail" class="img-fluid gallery-thumbnail w-100 active" onclick="changeMainImage(this)"></div>
-                    {% for image in gallery_images[:4] %}
-                    <div class="col"><img src="{{ url_for('static', filename='uploads/hotel_images/' + image.filename) }}" alt="Thumbnail {{ loop.index }}" class="img-fluid gallery-thumbnail w-100" onclick="changeMainImage(this)"></div>
-                    {% endfor %}
+    <!-- Hotel Header -->
+    <div class="row mb-5">
+        <div class="col-lg-8">
+            <h1 class="display-5 fw-bold">{{ hotel.name }}</h1>
+            <p class="text-muted fs-5"><i class="fas fa-map-marker-alt me-2"></i>{{ hotel.location }}</p>
+            {% if hotel.star_rating %}
+                <div class="h4" style="color: #f39c12;">
+                    {% for i in range(hotel.star_rating) %}<i class="fas fa-star"></i>{% endfor %}{% for i in range(5 - hotel.star_rating) %}<i class="far fa-star text-muted"></i>{% endfor %}
+                    <span class="fs-6 text-dark align-middle ms-2">({{ hotel.star_rating }}-Star Hotel)</span>
                 </div>
-                {% endif %}
-            </div>
-
-            <div class="col-lg-5 d-flex flex-column">
-                 <h1 class="display-5 fw-bold" style="color: #2c3e50;">{{ hotel.name }}</h1>
-                {% if hotel.star_rating %}<div class="my-2" style="font-size: 1.1rem; color: #f39c12;">{% for i in range(hotel.star_rating) %}<i class="fas fa-star"></i>{% endfor %}{% for i in range(5 - hotel.star_rating) %}<i class="far fa-star"></i>{% endfor %}</div>{% endif %}
-                <p class="lead text-muted mb-4"><i class="fas fa-map-marker-alt me-2"></i>{{ hotel.location }}</p>
-                <p style="color: #495057; line-height: 1.7;">{{ hotel.description or 'No description available for this hotel.' }}</p>
-                {% if hotel.amenities %}<h5 class="mt-3 mb-3 fw-bold" style="color: #34495e;">Hotel Amenities</h5><div class="d-flex flex-wrap gap-2">{% for amenity in hotel.amenities %}<span class="amenity-tag">{{ amenity.name }}</span>{% endfor %}</div>{% endif %}
-                <div class="mt-auto pt-4">
-                    {% if current_user.is_authenticated and current_user.role == 'agent' %}
-                        {% if is_hotel_in_packages(hotel.id) %}
-                            <form action="{{ url_for('remove_from_packages', hotel_id=hotel.id) }}" method="POST" class="d-grid">
-                                <button type="submit" class="btn btn-outline-danger btn-lg"><i class="fas fa-folder-minus me-2"></i> Remove from Packages</button>
-                            </form>
-                        {% else %}
-                            <form action="{{ url_for('add_to_packages', hotel_id=hotel.id) }}" method="POST" class="d-grid">
-                                <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-folder-plus me-2"></i> Add to Packages</button>
-                            </form>
-                        {% endif %}
-                    {% endif %}
-                </div>
-            </div>
+            {% endif %}
         </div>
     </div>
 
-    <div class="text-center mb-5">
-        <h2 class="display-6 fw-bold" style="color: #2c3e50;"><i class="fas fa-door-open me-2" style="color: #00796B;"></i> Select Room and Book for Client</h2>
-    </div>
-
-    {% if room_types %}
-    <div class="row row-cols-1 row-cols-lg-2 g-4">
-        {% for room in room_types %}
-        <div class="col">
-            <div class="room-card h-100">
-                <div class="row g-0 h-100">
-                    {% set all_image_urls = [] %}
-                    {% if room.main_image_url and (room.main_image_url.startswith('http') or room.main_image_url.startswith('/static')) %}{% do all_image_urls.append(room.main_image_url) %}{% endif %}
-                    {% for img in room.gallery_images.all() %}{% do all_image_urls.append(url_for('static', filename='uploads/hotel_images/' + img.filename)) %}{% endfor %}
-                    
-                    <div class="col-md-5 room-image-container" data-bs-toggle="modal" data-bs-target="#roomImageModal" data-room-name="{{ room.name }}" data-room-images='{{ all_image_urls|tojson|safe }}'>
-                        {% set room_image_src = all_image_urls[0] if all_image_urls else 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=800&q=80' %}
-                        <img src="{{ room_image_src }}" class="img-fluid h-100" alt="{{ room.name }}" style="object-fit: cover;">
-                        <div class="gallery-overlay"><i class="fas fa-camera fa-2x"></i><span class="mt-2">View Gallery</span></div>
+    <!-- Gallery -->
+    <div class="row g-3 mb-5 hotel-gallery">
+        <div class="col-lg-7">
+            <img src="{{ hotel.image_url|default('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80', true) }}" alt="Main view of {{ hotel.name }}" style="height: 500px;">
+        </div>
+        <div class="col-lg-5">
+            <div class="row g-3">
+                {% set gallery_images = hotel.gallery_images.limit(4).all() %}
+                {% for image in gallery_images %}
+                    <div class="col-6">
+                        <img src="{{ url_for('static', filename='uploads/hotel_images/' + image.filename) }}" alt="Gallery image of {{ hotel.name }}">
                     </div>
+                {% endfor %}
+                {% if gallery_images|length < 4 %}
+                    {% for i in range(4 - gallery_images|length) %}
+                    <div class="col-6"><img src="https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=400&q=80" alt="Placeholder image"></div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Agent Actions Section -->
+    {% if current_user.is_authenticated and current_user.role == 'agent' %}
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-body p-4">
+                 <!-- THIS IS THE CRITICAL FIX: Replaced remove button with a status or an add form -->
+                {% if is_hotel_in_packages(hotel.id) %}
+                    <div class="alert alert-success d-flex align-items-center mb-0">
+                        <i class="fas fa-check-circle fa-2x me-3"></i>
+                        <div>
+                            <h5 class="alert-heading mb-0">This hotel is in one or more of your proposals.</h5>
+                            <a href="{{ url_for('my_packages') }}" class="fw-bold text-decoration-none">Manage my proposals <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                    </div>
+                {% else %}
+                    <h5 class="mb-3">Add to a Client Proposal</h5>
+                    <form action="{{ url_for('add_to_packages', hotel_id=hotel.id) }}" method="POST">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="package_name" list="package-names" placeholder="Enter new or existing proposal name..." required>
+                            <datalist id="package-names">
+                                {% for package_name in agent_packages %}
+                                <option value="{{ package_name }}">
+                                {% endfor %}
+                            </datalist>
+                            <button class="btn btn-primary" type="submit"><i class="fas fa-plus me-2"></i>Add to Proposal</button>
+                        </div>
+                         <div class="form-text">You can add this hotel to an existing proposal or create a new one by typing a new name.</div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
 
-                    <div class="col-md-7 d-flex flex-column">
-                        <div class="card-body p-4 d-flex flex-column flex-grow-1">
-                            <h4 class="card-title fw-bold" style="color: #34495e;">{{ room.name }}</h4>
-                            <p class="card-text text-muted small flex-grow-1">{{ room.description or 'No description for this room type.' }}</p>
-                            
-                            {% set room_amenities = room.get_amenities_list() %}{% if room_amenities %}<div class="mb-3">{% for amenity in room_amenities[:3] %}<span class="badge rounded-pill" style="background-color: #e9ecef; color: #495057; font-weight: 500;">{{ amenity }}</span>{% endfor %}</div>{% endif %}
-                            
-                            <div class="mt-auto">
-                                <p class="h3 fw-bold mb-3" style="color: #16a085;">${{ "%.2f"|format(room.price_per_night) }} <span class="fs-6 fw-normal text-muted">/ night</span></p>
-                                
-                                <form action="{{ url_for('book_room', room_type_id=room.id) }}" method="POST">
-                                    <h6 class="fw-bold small text-uppercase text-muted">Client Details</h6>
-                                    <div class="row g-2">
-                                        <div class="col-sm-7"><label for="client_name_{{ room.id }}" class="form-label visually-hidden">Client Name</label><input type="text" name="client_name" id="client_name_{{ room.id }}" class="form-control" placeholder="Client Full Name" required></div>
-                                        <div class="col-sm-5"><label for="client_email_{{ room.id }}" class="form-label visually-hidden">Client Email</label><input type="email" name="client_email" id="client_email_{{ room.id }}" class="form-control" placeholder="Client Email (Optional)"></div>
-                                    </div>
 
-                                    <h6 class="fw-bold small text-uppercase text-muted mt-3">Booking Dates</h6>
-                                    <div class="row g-2 align-items-end">
-                                        <div class="col"><label for="check_in_{{ room.id }}" class="form-label visually-hidden">Check-in</label><input type="date" name="check_in_date" id="check_in_{{ room.id }}" class="form-control" required min="{{ today }}"></div>
-                                        <div class="col"><label for="check_out_{{ room.id }}" class="form-label visually-hidden">Check out</label><input type="date" name="check_out_date" id="check_out_{{ room.id }}" class="form-control" required min="{{ today }}"></div>
-                                    </div>
-                                    <div class="d-grid mt-3"><button type="submit" class="btn btn-primary btn-lg" style="background-color: #00796B; border-color: #00796B;">Book for Client</button></div>
-                                </form>
+    <!-- Details and Map -->
+    <div class="row g-5">
+        <div class="col-lg-8">
+            <!-- Description -->
+            <section id="description">
+                <h3 class="mb-3">About {{ hotel.name }}</h3>
+                <p class="lh-lg">{{ hotel.description }}</p>
+            </section>
+            
+            <!-- Amenities -->
+            {% set amenities = hotel.get_amenities_list() %}
+            {% if amenities %}
+                <section id="amenities" class="mt-5">
+                    <h3 class="mb-4">Amenities</h3>
+                    <div class="d-flex flex-wrap gap-3">
+                        {% for amenity in amenities %}
+                            <div class="amenity-tag">{{ amenity }}</div>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+            <!-- Rooms -->
+            <section id="rooms" class="mt-5">
+                <h3 class="mb-4">Available Room Types</h3>
+                {% for room in room_types %}
+                <div class="card mb-4 room-card border-0 shadow-sm">
+                    <div class="row g-0">
+                        <div class="col-md-4">
+                            <img src="{{ room.main_image_url }}" class="img-fluid rounded-start" alt="{{ room.name }}" style="height: 100%; object-fit: cover;">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body p-4">
+                                <h5 class="card-title">{{ room.name }}</h5>
+                                <p class="card-text">{{ room.description }}</p>
+                                {% if room.get_amenities_list() %}
+                                    <p class="small text-muted mb-3"><strong>Room features:</strong> {{ room.get_amenities_list()|join(', ') }}</p>
+                                {% endif %}
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <p class="h4 fw-bold text-success mb-0">${{ "%.2f"|format(room.price_per_night) }}<span class="fs-6 fw-normal text-muted">/night</span></p>
+                                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#bookingModal-{{ room.id }}">Book for Client</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <!-- Booking Modal for each room -->
+                {% include '_booking_modal.html' %}
+                {% endfor %}
+            </section>
+
+        </div>
+
+        <div class="col-lg-4">
+            <div class="sticky-top" style="top: 100px;">
+                <h3 class="mb-3">Location</h3>
+                <div id="map"></div>
             </div>
         </div>
-        {% endfor %}
     </div>
-    {% else %}
-        <div class="text-center p-5" style="background-color: #fff; border-radius: 16px;"><p class="lead text-muted">There are currently no rooms available for this hotel. Please check back later.</p></div>
-    {% endif %}
-</div>
-
-<!-- Reusable Room Image Gallery Modal -->
-<div class="modal fade" id="roomImageModal" tabindex="-1" aria-labelledby="roomImageModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="roomImageModalLabel">Room Gallery</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body p-0">
-        <div id="roomCarousel" class="carousel slide" data-bs-ride="carousel">
-          <div class="carousel-indicators" id="galleryModalIndicators"></div>
-          <div class="carousel-inner" id="galleryModalInner"></div>
-          <button class="carousel-control-prev" type="button" data-bs-target="#roomCarousel" data-bs-slide="prev"><span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="visually-hidden">Previous</span></button>
-          <button class="carousel-control-next" type="button" data-bs-target="#roomCarousel" data-bs-slide="next"><span class="carousel-control-next-icon" aria-hidden="true"></span><span class="visually-hidden">Next</span></button>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Gallery thumbnail logic
-    function changeMainImage(thumbnailElement) {
-        document.getElementById('main-hotel-image').src = thumbnailElement.src;
-        document.querySelectorAll('.gallery-thumbnail').forEach(el => el.classList.remove('active'));
-        thumbnailElement.classList.add('active');
-    }
-    window.changeMainImage = changeMainImage;
-
-    // Room image modal logic
-    const roomImageModal = document.getElementById('roomImageModal');
-    roomImageModal.addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget;
-        const roomName = button.getAttribute('data-room-name');
-        const imageUrls = JSON.parse(button.getAttribute('data-room-images'));
-        
-        const modalTitle = roomImageModal.querySelector('.modal-title');
-        const indicatorsContainer = roomImageModal.querySelector('#galleryModalIndicators');
-        const innerContainer = roomImageModal.querySelector('#galleryModalInner');
-        
-        modalTitle.textContent = roomName + ' - Image Gallery';
-        indicatorsContainer.innerHTML = '';
-        innerContainer.innerHTML = '';
-        
-        if (imageUrls && imageUrls.length > 0) {
-            imageUrls.forEach((url, index) => {
-                const isActive = index === 0;
-                
-                const indicator = document.createElement('button');
-                indicator.type = 'button';
-                indicator.setAttribute('data-bs-target', '#roomCarousel');
-                indicator.setAttribute('data-bs-slide-to', index);
-                if (isActive) {
-                    indicator.classList.add('active');
-                    indicator.setAttribute('aria-current', 'true');
-                }
-                indicatorsContainer.appendChild(indicator);
-
-                const carouselItem = document.createElement('div');
-                carouselItem.classList.add('carousel-item');
-                if (isActive) { carouselItem.classList.add('active'); }
-                carouselItem.innerHTML = `<img src="${url}" class="d-block w-100" style="aspect-ratio: 16/9; object-fit: cover;" alt="Image ${index + 1}">`;
-                innerContainer.appendChild(carouselItem);
-            });
-        } else {
-            innerContainer.innerHTML = '<div class="carousel-item active"><div class="p-5 text-center text-muted">No images available for this room.</div></div>';
-        }
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if hotel.latitude and hotel.longitude %}
+            const map = L.map('map').setView([{{ hotel.latitude }}, {{ hotel.longitude }}], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            L.marker([{{ hotel.latitude }}, {{ hotel.longitude }}]).addTo(map)
+                .bindPopup("<b>{{ hotel.name|e }}</b><br>{{ hotel.location|e }}")
+                .openPopup();
+        {% else %}
+            document.getElementById('map').innerHTML = '<div class="alert alert-warning">Location data is not available for this hotel.</div>';
+        {% endif %}
     });
-});
 </script>
 {% endblock %}

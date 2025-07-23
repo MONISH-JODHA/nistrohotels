@@ -1,0 +1,86 @@
+<!-- Booking Modal -->
+<div class="modal fade" id="bookingModal-{{ room.id }}" tabindex="-1" aria-labelledby="bookingModalLabel-{{ room.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="bookingModalLabel-{{ room.id }}">Book: {{ room.name }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('book_room', room_type_id=room.id) }}" method="POST">
+        <div class="modal-body">
+            <div class="alert alert-info small">You are booking the <strong>{{ room.name }}</strong> at <strong>{{ hotel.name }}</strong> on behalf of a client.</div>
+            
+            <div class="mb-3">
+                <label for="client_name-{{ room.id }}" class="form-label">Client's Full Name *</label>
+                <input type="text" class="form-control" id="client_name-{{ room.id }}" name="client_name" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="client_email-{{ room.id }}" class="form-label">Client's Email (Optional)</label>
+                <input type="email" class="form-control" id="client_email-{{ room.id }}" name="client_email">
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="check_in_date-{{ room.id }}" class="form-label">Check-in Date *</label>
+                    <input type="date" class="form-control" id="check_in_date-{{ room.id }}" name="check_in_date" min="{{ today }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="check_out_date-{{ room.id }}" class="form-label">Check-out Date *</label>
+                    <input type="date" class="form-control" id="check_out_date-{{ room.id }}" name="check_out_date" min="{{ today }}" required>
+                </div>
+            </div>
+
+            <div class="mt-4 p-3 bg-light rounded text-center">
+                <h6 class="text-muted">TOTAL PRICE</h6>
+                <p class="h3 fw-bold text-success mb-0" id="total-price-{{ room.id }}">₹0.00</p>
+                <small class="text-muted" id="price-message-{{ room.id }}">Please select dates to calculate price.</small>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-calendar-check me-2"></i>Confirm Booking</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// Attach event listeners for price calculation
+document.addEventListener('DOMContentLoaded', function() {
+    const checkInInput = document.getElementById('check_in_date-{{ room.id }}');
+    const checkOutInput = document.getElementById('check_out_date-{{ room.id }}');
+    const totalPriceEl = document.getElementById('total-price-{{ room.id }}');
+    const priceMessageEl = document.getElementById('price-message-{{ room.id }}');
+    
+    function calculatePrice() {
+        const checkIn = checkInInput.value;
+        const checkOut = checkOutInput.value;
+
+        if (checkIn && checkOut && new Date(checkOut) > new Date(checkIn)) {
+            priceMessageEl.textContent = 'Calculating...';
+            fetch(`/api/room/{{ room.id }}/calculate_price?check_in=${checkIn}&check_out=${checkOut}`)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.available) {
+                        const nights = (new Date(checkOut) - new Date(checkIn)) / (1000 * 3600 * 24);
+                        totalPriceEl.textContent = '₹' + data.price.toFixed(2);
+                        priceMessageEl.textContent = `For ${nights} night(s).`;
+                    } else {
+                        totalPriceEl.textContent = '₹0.00';
+                        priceMessageEl.textContent = data.message;
+                    }
+                });
+        } else {
+            totalPriceEl.textContent = '₹0.00';
+            priceMessageEl.textContent = 'Please select valid dates.';
+        }
+    }
+
+    if(checkInInput && checkOutInput) {
+        checkInInput.addEventListener('change', calculatePrice);
+        checkOutInput.addEventListener('change', calculatePrice);
+    }
+});
+</script>

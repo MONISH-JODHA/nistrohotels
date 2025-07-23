@@ -1,0 +1,80 @@
+<!-- Add to Package Modal -->
+<div class="modal fade" id="addToPackageModal-{{ hotel.id }}" tabindex="-1" aria-labelledby="addToPackageModalLabel-{{ hotel.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addToPackageModalLabel-{{ hotel.id }}">Add "{{ hotel.name }}" to Proposal</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('add_to_packages', hotel_id=hotel.id) }}" method="POST" onsubmit="return preparePackageName(this)">
+        <div class="modal-body">
+            
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="package_name_choice" id="choiceExisting-{{ hotel.id }}" value="existing" checked>
+              <label class="form-check-label" for="choiceExisting-{{ hotel.id }}">
+                Add to an existing proposal
+              </label>
+            </div>
+            <div class="mb-3 ps-4">
+                <select name="existing_package_name" class="form-select" id="selectExisting-{{ hotel.id }}">
+                    {% if agent_packages %}
+                        {% for package_name in agent_packages %}
+                            <option value="{{ package_name }}">{{ package_name }}</option>
+                        {% endfor %}
+                    {% else %}
+                        <option value="" disabled>No existing proposals</option>
+                    {% endif %}
+                </select>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="package_name_choice" id="choiceNew-{{ hotel.id }}" value="new">
+              <label class="form-check-label" for="choiceNew-{{ hotel.id }}">
+                Create a new proposal
+              </label>
+            </div>
+            <div class="mb-3 ps-4">
+                <input type="text" name="new_package_name" class="form-control" id="inputNew-{{ hotel.id }}" placeholder="e.g., Bali Honeymoon Trip" disabled>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-plus-circle me-2"></i>Add to Proposal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+    // This script should be loaded once, so it's placed here but will attach events to all modals.
+    document.addEventListener('DOMContentLoaded', function() {
+        const modals = document.querySelectorAll('.modal[id^="addToPackageModal-"]');
+        modals.forEach(modal => {
+            const choiceExisting = modal.querySelector('input[id^="choiceExisting-"]');
+            const choiceNew = modal.querySelector('input[id^="choiceNew-"]');
+            const selectExisting = modal.querySelector('select[id^="selectExisting-"]');
+            const inputNew = modal.querySelector('input[id^="inputNew-"]');
+            
+            if(choiceExisting && choiceNew && selectExisting && inputNew) {
+                choiceExisting.addEventListener('change', () => {
+                    selectExisting.disabled = false;
+                    inputNew.disabled = true;
+                });
+                
+                choiceNew.addEventListener('change', () => {
+                    selectExisting.disabled = true;
+                    inputNew.disabled = false;
+                });
+
+                // Set initial state based on whether packages exist
+                if (selectExisting.options.length === 0 || selectExisting.options[0].disabled) {
+                    choiceNew.checked = true;
+                    choiceExisting.disabled = true;
+                    selectExisting.disabled = true;
+                    inputNew.disabled = false;
+                }
+            }
+        });
+    });
+</script>
