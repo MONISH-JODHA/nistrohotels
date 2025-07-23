@@ -195,14 +195,21 @@
                 </div>
                 <div class="col-lg-5">
                      <h5>Images & Rating</h5>
+                    <!-- === START OF CHANGES === -->
                     <div class="mb-3">
-                        <label for="main_image_url" class="form-label">Main Image (URL)</label>
+                        <label for="main_image_upload" class="form-label">Main Display Image</label>
+                        <input class="form-control" type="file" id="main_image_upload" name="main_image_upload">
+                        <div class="form-text">Upload a high-quality main photo for your property.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="main_image_url" class="form-label">Or paste image URL</label>
                         <input type="url" class="form-control" id="main_image_url" name="main_image_url" placeholder="https://example.com/image.jpg">
                     </div>
-                    <div class="mb-3">
-                        <label for="gallery_images_upload" class="form-label">Or Upload Gallery Images</label>
+                     <div class="mb-3">
+                        <label for="gallery_images_upload" class="form-label">Upload Gallery Images</label>
                         <input class="form-control" type="file" id="gallery_images_upload" name="gallery_images_upload" multiple>
                     </div>
+                    <!-- === END OF CHANGES === -->
                     <div class="mb-3">
                         <label for="star_rating" class="form-label">Star Rating</label>
                         <select class="form-select" id="star_rating" name="star_rating">

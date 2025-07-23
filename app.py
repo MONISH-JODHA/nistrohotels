@@ -564,10 +564,10 @@ def register_hotel():
     if request.method == 'POST':
         name = request.form.get('name')
         location = request.form.get('location')
-        main_image_url_from_form = request.form.get('main_image_url', '').strip()
-
+        
         if not name or not location:
             flash("Hotel Name and Location are required.", "danger")
+            # Repopulate form data for better UX on error
             form_data = request.form
             selected_amenities = [int(a_id) for a_id in request.form.getlist('amenities')]
             return render_template(
@@ -586,10 +586,15 @@ def register_hotel():
         )
         selected_amenity_ids = request.form.getlist('amenities')
         new_hotel.amenities = Amenity.query.filter(Amenity.id.in_(selected_amenity_ids)).all()
-        db.session.add(new_hotel); db.session.flush()
-        uploaded_files = request.files.getlist('gallery_images_upload')
-        image_filenames_saved = []
-        for i, file_obj in enumerate(uploaded_files):
+        db.session.add(new_hotel)
+        db.session.flush() # IMPORTANT: Get the new_hotel.id before creating filenames
+
+        # --- NEW IMAGE HANDLING LOGIC ---
+
+        # 1. Handle Gallery Images first
+        gallery_files = request.files.getlist('gallery_images_upload')
+        saved_gallery_filenames = []
+        for i, file_obj in enumerate(gallery_files):
             if file_obj and allowed_file(file_obj.filename):
                 original_fn = secure_filename(file_obj.filename)
                 ts = datetime.now().strftime("%Y%m%d%H%M%S%f")
@@ -597,16 +602,35 @@ def register_hotel():
                 try:
                     file_obj.save(os.path.join(app.config['UPLOAD_FOLDER'], unique_fn))
                     db.session.add(HotelImage(hotel_id=new_hotel.id, filename=unique_fn))
-                    image_filenames_saved.append(unique_fn)
+                    saved_gallery_filenames.append(unique_fn)
                 except Exception as e:
                     app.logger.error(f"Gallery image save error {original_fn}: {e}")
         
-        if main_image_url_from_form:
+        # 2. Handle Main Image with priority
+        main_image_file = request.files.get('main_image_upload')
+        main_image_url_from_form = request.form.get('main_image_url', '').strip()
+
+        if main_image_file and allowed_file(main_image_file.filename):
+            # Priority 1: Use uploaded main image
+            original_fn = secure_filename(main_image_file.filename)
+            ts = datetime.now().strftime("%Y%m%d%H%M%S%f")
+            unique_fn = f"hotel{new_hotel.id}_main_{ts}{os.path.splitext(original_fn)[1]}"
+            try:
+                main_image_file.save(os.path.join(app.config['UPLOAD_FOLDER'], unique_fn))
+                new_hotel.main_image_url = url_for('static', filename=f'uploads/hotel_images/{unique_fn}', _external=False)
+            except Exception as e:
+                 app.logger.error(f"Main image save error {original_fn}: {e}")
+        elif main_image_url_from_form:
+            # Priority 2: Use pasted URL
             new_hotel.main_image_url = main_image_url_from_form
-        elif image_filenames_saved:
-            new_hotel.main_image_url = url_for('static', filename=f'uploads/hotel_images/{image_filenames_saved[0]}', _external=False)
+        elif saved_gallery_filenames:
+            # Priority 3: Use first uploaded gallery image
+            new_hotel.main_image_url = url_for('static', filename=f'uploads/hotel_images/{saved_gallery_filenames[0]}', _external=False)
         else:
+            # Priority 4: Use default placeholder
             new_hotel.main_image_url = 'https://images.unsplash.com/photo-1542314831-068cd1dbb5eb?auto=format&fit=crop&w=1200&q=80'
+        
+        # --- END OF NEW IMAGE LOGIC ---
         
         db.session.commit()
         log_audit(f"Owner '{current_user.username}' registered new hotel '{name}'.")
@@ -619,6 +643,7 @@ def register_hotel():
         selected_amenities=[],
         all_amenities=all_amenities
     )
+
 
 @app.route('/owner_dashboard')
 @role_required('owner')

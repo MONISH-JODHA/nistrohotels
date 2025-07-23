@@ -28,18 +28,13 @@
         color: var(--primary-color);
         font-weight: 700;
     }
-    .controls-card {
-        background-color: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        box-shadow: var(--shadow-sm);
-    }
     .hotel-card {
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
         border-radius: 16px;
         box-shadow: var(--shadow-sm);
         display: flex;
+        flex-direction: column;
         gap: 1.5rem;
         padding: 1.5rem;
         margin-bottom: 1.5rem;
@@ -49,17 +44,19 @@
         box-shadow: var(--shadow-md);
         transform: translateY(-5px);
     }
+    .hotel-card-main {
+        display: flex;
+        gap: 1.5rem;
+    }
     .hotel-card-image {
         width: 150px;
-        height: 100%;
+        height: 100px;
         object-fit: cover;
         border-radius: 12px;
         flex-shrink: 0;
     }
     .hotel-card-details {
         flex-grow: 1;
-        display: flex;
-        flex-direction: column;
     }
     .hotel-card-name {
         font-size: 1.25rem;
@@ -93,6 +90,7 @@
     }
     .meta-tag.status-approved { background-color: rgba(42, 157, 143, 0.1); color: var(--success-color); }
     .meta-tag.status-pending { background-color: rgba(252, 163, 17, 0.1); color: var(--warning-color); }
+    
     .hotel-card-footer {
         margin-top: auto;
         display: flex;
@@ -118,56 +116,62 @@
     <div class="hotels-list">
         {% for hotel in hotels %}
         <div class="hotel-card">
-            {% set hotel_img_src = hotel.main_image_url if hotel.main_image_url and (hotel.main_image_url.startswith('http') or hotel.main_image_url.startswith('/static')) else 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80' %}
-            <img src="{{ hotel_img_src }}" alt="{{ hotel.name }}" class="hotel-card-image d-none d-md-block">
+            <div class="hotel-card-main">
+                {% set hotel_img_src = hotel.main_image_url if hotel.main_image_url and (hotel.main_image_url.startswith('http') or hotel.main_image_url.startswith('/static')) else 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80' %}
+                <img src="{{ hotel_img_src }}" alt="{{ hotel.name }}" class="hotel-card-image d-none d-md-block">
 
-            <div class="hotel-card-details">
-                <div>
-                    <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="hotel-card-name">{{ hotel.name }}</a>
-                    <div class="hotel-card-location"><i class="fas fa-map-marker-alt me-1"></i>{{ hotel.location }}</div>
-                </div>
-
-                <div class="hotel-card-meta">
-                    <div class="meta-tag">
-                        <i class="fas fa-user-tie"></i>
-                        <span>Owner: {{ hotel.owner_user.username if hotel.owner_user else 'N/A' }}</span>
+                <div class="hotel-card-details">
+                    <div>
+                        <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="hotel-card-name">{{ hotel.name }}</a>
+                        <div class="hotel-card-location"><i class="fas fa-map-marker-alt me-1"></i>{{ hotel.location }}</div>
                     </div>
-                    {% if hotel.is_approved %}
-                        <div class="meta-tag status-approved"><i class="fas fa-check-circle"></i> Approved</div>
-                    {% else %}
-                        <div class="meta-tag status-pending"><i class="fas fa-clock"></i> Pending Approval</div>
-                    {% endif %}
-                </div>
 
-                <div class="hotel-card-footer">
-                    <a href="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" class="btn btn-dark"><i class="fas fa-bed me-2"></i> Manage Rooms</a>
-                    <div class="dropdown">
-                        <button class="btn btn-outline-secondary" type="button" id="actionsDropdown-{{ hotel.id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-ellipsis-h"></i>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown-{{ hotel.id }}">
-                            <li><a class="dropdown-item" href="{{ url_for('edit_hotel_by_admin', hotel_id=hotel.id) }}"><i class="fas fa-edit"></i> Edit Details</a></li>
-                            {% if not hotel.is_approved %}
-                            <li>
-                                <form action="{{ url_for('approve_hotel', hotel_id=hotel.id) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="dropdown-item text-success"><i class="fas fa-check"></i> Approve</button>
-                                </form>
-                            </li>
-                            {% endif %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <form action="{{ url_for('delete_hotel_by_admin', hotel_id=hotel.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this hotel?');">
-                                    <button type="submit" class="dropdown-item text-danger"><i class="fas fa-trash-alt"></i> Delete Hotel</button>
-                                </form>
-                            </li>
-                        </ul>
+                    <div class="hotel-card-meta">
+                        <div class="meta-tag">
+                            <i class="fas fa-user-tie"></i>
+                            <span>Owner: {{ hotel.owner_user.username if hotel.owner_user else 'N/A' }}</span>
+                        </div>
+                        {% if hotel.is_approved %}
+                            <div class="meta-tag status-approved"><i class="fas fa-check-circle"></i> Approved</div>
+                        {% else %}
+                            <div class="meta-tag status-pending"><i class="fas fa-clock"></i> Pending Approval</div>
+                        {% endif %}
                     </div>
+                </div>
+            </div>
+
+            <div class="hotel-card-footer">
+                <!-- === START OF FIX: Prominent Edit Button === -->
+                <a href="{{ url_for('edit_hotel_by_admin', hotel_id=hotel.id) }}" class="btn btn-secondary"><i class="fas fa-edit me-2"></i> Edit Details</a>
+                <!-- === END OF FIX === -->
+                <a href="{{ url_for('manage_rooms', hotel_id=hotel.id) }}" class="btn btn-dark"><i class="fas fa-bed me-2"></i> Manage Rooms</a>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary" type="button" id="actionsDropdown-{{ hotel.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown-{{ hotel.id }}">
+                        {% if not hotel.is_approved %}
+                        <li>
+                            <form action="{{ url_for('approve_hotel', hotel_id=hotel.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="dropdown-item text-success"><i class="fas fa-check"></i> Approve Hotel</button>
+                            </form>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% endif %}
+                        <li>
+                            <form action="{{ url_for('delete_hotel_by_admin', hotel_id=hotel.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this hotel?');">
+                                <button type="submit" class="dropdown-item text-danger"><i class="fas fa-trash-alt"></i> Delete Hotel</button>
+                            </form>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>
         {% else %}
             <div class="text-center p-5 bg-light rounded">
-                <p class="lead">No hotels found.</p>
+                <i class="fas fa-hotel fa-3x text-muted mb-3"></i>
+                <p class="lead">No hotels found in the system.</p>
+                <p class="text-muted">Once owners register hotels, they will appear here for your management.</p>
             </div>
         {% endfor %}
     </div>
