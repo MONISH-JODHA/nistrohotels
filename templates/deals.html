@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Special Deals - Nestrohotels{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold">Exclusive Partner Deals</h1>
+        <p class="lead text-muted">Check out our top-value hotels, offering great experiences at unbeatable prices.</p>
+    </div>
+
+    {% if hotels %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for hotel in hotels %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-light" style="border-radius: 15px; overflow: hidden; transition: all 0.3s ease;">
+                        <img src="{{ hotel.image_url }}" class="card-img-top" alt="{{ hotel.name }}" style="height: 200px; object-fit: cover;">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title fw-bold">{{ hotel.name }}</h5>
+                            <p class="text-muted small"><i class="fas fa-map-marker-alt me-1"></i>{{ hotel.location }}</p>
+                            
+                            {% if hotel.star_rating %}
+                                <div class="mb-2">
+                                {% for i in range(hotel.star_rating) %}<i class="fas fa-star text-warning"></i>{% endfor %}{% for i in range(5 - hotel.star_rating) %}<i class="far fa-star text-warning"></i>{% endfor %}
+                                </div>
+                            {% endif %}
+                            
+                            <div class="mt-auto d-flex justify-content-between align-items-center">
+                                <span class="fw-bold fs-5" style="color: var(--primary-color);">
+                                    {% set min_price = hotel.get_min_price() %}
+                                    {% if min_price %}
+                                        ₹{{ "%.0f"|format(min_price) }}<small class="text-muted fw-normal">/night</small>
+                                    {% else %}
+                                        <small>Rates vary</small>
+                                    {% endif %}
+                                </span>
+                                <a href="{{ url_for('hotel_detail', hotel_id=hotel.id) }}" class="btn btn-primary">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center p-5 bg-light rounded-3">
+            <h2>No Special Deals Available</h2>
+            <p class="text-muted">We are always negotiating the best rates. Please check back soon for exclusive deals!</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -114,6 +114,11 @@ class User(UserMixin, db.Model):
     def set_password(self, password): self.password_hash = generate_password_hash(password)
     def check_password(self, password): return check_password_hash(self.password_hash, password)
 
+class Subscriber(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    subscribed_on = db.Column(db.DateTime, default=datetime.utcnow)
+
 class RoomType(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     hotel_id = db.Column(db.Integer, db.ForeignKey('hotel.id', ondelete='CASCADE'), nullable=False)
@@ -555,6 +560,56 @@ def client_bookings():
     bookings = Booking.query.filter_by(user_id=current_user.id).order_by(desc(Booking.created_at)).all()
     return render_template('my_bookings.html', bookings=bookings)
 
+# --- Static Page Routes (for footer) ---
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+@app.route('/contact')
+def contact():
+    return render_template('contact.html')
+
+@app.route('/partner_program')
+def partner_program():
+    return render_template('partner_program.html')
+
+@app.route('/destinations')
+def destinations():
+    locations = db.session.query(Hotel.location, func.count(Hotel.id).label('hotel_count'))\
+        .filter(Hotel.is_approved == True)\
+        .group_by(Hotel.location)\
+        .order_by(desc('hotel_count')).all()
+    return render_template('destinations.html', locations=locations)
+
+@app.route('/deals')
+def deals():
+    # Simple logic for deals: hotels with the lowest room prices
+    deal_hotels = db.session.query(Hotel)\
+        .join(RoomType)\
+        .filter(Hotel.is_approved == True)\
+        .group_by(Hotel.id)\
+        .order_by(func.min(RoomType.price_per_night).asc())\
+        .limit(10).all()
+    return render_template('deals.html', hotels=deal_hotels)
+
+@app.route('/subscribe', methods=['POST'])
+def subscribe():
+    email = request.form.get('email')
+    if email:
+        existing_subscriber = Subscriber.query.filter(func.lower(Subscriber.email) == func.lower(email)).first()
+        if existing_subscriber:
+            flash(f"{email} is already on our mailing list. Thank you!", "info")
+        else:
+            new_subscriber = Subscriber(email=email)
+            db.session.add(new_subscriber)
+            db.session.commit()
+            log_audit(f"New newsletter subscription: {email}")
+            flash(f"Thank you for subscribing, {email}! You're now on our mailing list.", "success")
+    else:
+        flash("Please provide a valid email address to subscribe.", "warning")
+    return redirect(request.referrer or url_for('index'))
+
 # --- Owner Routes ---
 @app.route('/register_hotel', methods=['GET', 'POST'])
 @role_required('owner')
@@ -784,6 +839,12 @@ def manage_availability(hotel, room_type_id):
 @role_required('admin')
 def admin_dashboard():
     return render_template('admin_dashboard.html')
+
+@app.route('/admin/subscribers')
+@role_required('admin')
+def manage_subscribers():
+    subscribers = Subscriber.query.order_by(desc(Subscriber.subscribed_on)).all()
+    return render_template('admin_manage_subscribers.html', subscribers=subscribers)
 
 @app.route('/admin/dashboards')
 @role_required('admin')
@@ -1298,7 +1359,7 @@ def create_initial_data():
         
         if owner and not Hotel.query.first():
             hotels_data = [
-                {'name': 'Blue Sky Cottages', 'location': 'Jibhi, Himachal Pradesh', 'star': 3, 'lat': 31.3856, 'lon': 77.3061, 'price': 2500, 'img': 'https://images.unsplash.com/photo-1617364929972-20a283921b3a?auto=format&fit=crop&w=800&q=80', 'amenities': ['Wifi', 'Free Parking', 'Pet Friendly']},
+                {'name': 'Blue Sky Cottages', 'location': 'Jibhi, Himachal Pradesh', 'star': 3, 'lat': 31.3856, 'lon': 77.3061, 'price': 2500, 'img': 'https://images.unsplash.com/photo-1617364929972-20a2839211b3a?auto=format&fit=crop&w=800&q=80', 'amenities': ['Wifi', 'Free Parking', 'Pet Friendly']},
                 {'name': 'Hotel Himalaya', 'location': 'Tosh, Himachal Pradesh', 'star': 2, 'lat': 32.0163, 'lon': 77.4485, 'price': 1500, 'img': 'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80', 'amenities': ['Wifi', 'Restaurant']},
                 {'name': 'Riverside Retreat', 'location': 'Kasol, Himachal Pradesh', 'star': 4, 'lat': 32.0100, 'lon': 77.3150, 'price': 4500, 'img': 'https://images.unsplash.com/photo-1596436889106-685c543216e5?auto=format&fit=crop&w=800&q=80', 'amenities': ['Wifi', 'Restaurant', 'Room Service', 'Air Conditioning']},
                 {'name': 'Mountain View Inn', 'location': 'Manali, Himachal Pradesh', 'star': 3, 'lat': 32.2396, 'lon': 77.1887, 'price': 3200, 'img': 'https://images.unsplash.com/photo-1549294413-26f195200c16?auto=format&fit=crop&w=800&q=80', 'amenities': ['Wifi', 'Free Parking', 'Restaurant', 'Room Service']},

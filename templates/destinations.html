@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Explore Destinations - Nestrohotels{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold">Explore Our Destinations</h1>
+        <p class="lead text-muted">Discover the amazing places where our partner hotels are located.</p>
+    </div>
+
+    {% if locations %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+        {% for location, hotel_count in locations %}
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0" style="border-radius: 15px; overflow: hidden;">
+                <!-- FIX: Use only the first part of the location for a more general image search -->
+                <img src="https://source.unsplash.com/400x300/?{{ location.split(',')[0] | urlencode }}" class="card-img-top" alt="{{ location }}">
+                <div class="card-body text-center">
+                    <h5 class="card-title fw-bold">{{ location }}</h5>
+                    <p class="card-text text-muted">{{ hotel_count }} Hotel(s)</p>
+                    <a href="{{ url_for('index', search_term=location) }}" class="btn btn-outline-primary stretched-link">View Hotels</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center p-5 bg-light rounded-3">
+        <h2>No Destinations Found</h2>
+        <p class="text-muted">We are currently adding hotels to our platform. Please check back soon!</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}About Nestrohotels{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold">About Nestrohotels</h1>
+                <p class="lead text-muted">Empowering travel professionals worldwide.</p>
+            </div>
+
+            <div class="bg-white p-5 rounded-3 shadow-sm">
+                <h3 class="mb-4" style="color: var(--primary-color);">Our Mission</h3>
+                <p>At Nestrohotels, our mission is to revolutionize the way travel agents and hotel owners collaborate. We provide a seamless, powerful, and intuitive platform that bridges the gap between accommodation providers and travel experts. By equipping our partners with the best tools and a vast inventory of properties, we empower them to create truly unforgettable travel experiences for their clients.</p>
+                <p>We believe in the power of partnership and technology to elevate the travel industry, making it more efficient, profitable, and enjoyable for everyone involved.</p>
+
+                <hr class="my-5">
+
+                <h3 class="mb-4" style="color: var(--primary-color);">Our Vision</h3>
+                <p>Our vision is to be the world's most trusted and indispensable B2B platform for the travel and hospitality sector. We aim to build a global community of travel professionals who can rely on Nestrohotels for sourcing, booking, and managing accommodations with confidence and ease. We strive to continuously innovate, offering cutting-edge features like our AI-powered assistant, dynamic packaging tools, and comprehensive analytics dashboards that provide real value to our partners and help their businesses thrive.</p>
+
+                <hr class="my-5">
+
+                <div class="text-center">
+                    <p class="fs-5">Ready to join the future of travel?</p>
+                    <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg mt-2">Become a Partner Today</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

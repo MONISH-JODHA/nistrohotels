@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Manage Subscribers{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 fw-bold" style="color: #2c3e50;"><i class="fas fa-envelope-open-text me-3"></i>Mailing List Subscribers</h1>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <div class="card shadow-sm" style="border-radius: 12px; border: none;">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" class="p-3">#</th>
+                            <th scope="col" class="p-3">Email Address</th>
+                            <th scope="col" class="p-3">Subscription Date (UTC)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for subscriber in subscribers %}
+                        <tr>
+                            <th scope="row" class="p-3">{{ loop.index }}</th>
+                            <td class="p-3 fw-bold">{{ subscriber.email }}</td>
+                            <td class="p-3 text-muted">{{ subscriber.subscribed_on.strftime('%B %d, %Y') }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center p-5">
+                                <p class="lead text-muted">Your mailing list is empty.</p>
+                                <p>When users subscribe to your newsletter from the footer, their emails will appear here.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
